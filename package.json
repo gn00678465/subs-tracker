@@ -8,16 +8,21 @@
     "deploy": "$npm_execpath run build && wrangler deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "lint": "eslint",
-    "lint:fix": "eslint --fix"
+    "lint:fix": "eslint --fix",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "hono": "^4.11.0"
+    "@tailwindcss/vite": "^4.1.18",
+    "hono": "^4.11.0",
+    "tailwindcss": "^4.1.18"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^6.6.1",
     "@cloudflare/vite-plugin": "^1.2.3",
     "@cloudflare/workers-types": "^4.20251213.0",
+    "@types/bun": "^1.3.4",
     "eslint": "^9.39.2",
+    "simple-git-hooks": "^2.13.1",
     "vite": "^6.3.5",
     "vite-ssr-components": "^0.5.1",
     "wrangler": "^4.17.0"
