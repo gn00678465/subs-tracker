@@ -7,6 +7,7 @@ export default antfu({
   jsonc: false,
   yaml: false,
   markdown: false,
+  toml: false,
 }, {
   ignores: [
     'index.js',
