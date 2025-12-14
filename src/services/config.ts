@@ -1,5 +1,5 @@
 import type { Bindings, Config } from '../types'
-import { generateRandomSecret } from '../utils/crypto'
+import { generateRandomSecret, hashPassword } from '../utils/crypto'
 import * as logger from '../utils/logger'
 
 /**
@@ -122,6 +122,15 @@ export async function updateConfig(
     const updatedConfig: Config = {
       ...currentConfig,
       ...newConfig,
+    }
+
+    // 特殊處理：ADMIN_PASSWORD 需要加密
+    if (newConfig.ADMIN_PASSWORD) {
+      updatedConfig.ADMIN_PASSWORD = await hashPassword(
+        newConfig.ADMIN_PASSWORD,
+        currentConfig.JWT_SECRET,
+      )
+      logger.config('管理員密碼已加密')
     }
 
     // 特殊處理：NOTIFICATION_HOURS 需要規範化

@@ -123,6 +123,7 @@ export function setTokenCookie(c: Context, token: string, maxAge = COOKIE_MAX_AG
     path: '/',
     httpOnly: true,
     sameSite: 'Strict',
+    secure: true,
     maxAge,
   })
 }

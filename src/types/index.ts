@@ -32,6 +32,13 @@ export interface Bindings {
   ENABLED_NOTIFIERS?: string
 }
 
+export interface HonoEnv {
+  Bindings: Bindings
+  Variables: {
+    user: JWTPayload
+  }
+}
+
 // 訂閱數據結構
 export interface Subscription {
   id: string
