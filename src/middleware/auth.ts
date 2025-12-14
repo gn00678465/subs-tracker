@@ -1,7 +1,7 @@
 import type { Context, Next } from 'hono'
-import type { HonoEnv, JWTPayload } from '../types'
+import type { HonoEnv } from '../types'
 import { getConfig } from '../services/config'
-import { extractToken, verifyJWT } from '../utils/crypto'
+import { clearTokenCookie, extractToken, verifyJWT } from '../utils/crypto'
 import * as logger from '../utils/logger'
 
 /**
@@ -82,5 +82,45 @@ export async function optionalAuthMiddleware(
     logger.error('可選認證中間件執行失敗', error, { prefix: 'Auth' })
     // 即使出錯也繼續處理請求
     await next()
+  }
+}
+
+/**
+ * 頁面認證中間件
+ * 認證失敗時重定向到登入頁，而非返回 JSON
+ * 用於頁面路由（/admin、/admin/config 等）
+ */
+export async function pageAuthMiddleware(
+  c: Context<HonoEnv>,
+  next: Next,
+): Promise<Response | void> {
+  try {
+    const token = extractToken(c)
+
+    if (!token) {
+      logger.warning('頁面訪問未授權，重定向到登入頁', { prefix: 'Auth' })
+      return c.redirect('/')
+    }
+
+    const config = await getConfig(c.env)
+    const payload = await verifyJWT(token, config.JWT_SECRET)
+
+    if (!payload) {
+      logger.warning('Token 驗證失敗，重定向到登入頁', { prefix: 'Auth' })
+      // 清除無效 Cookie
+      clearTokenCookie(c)
+      return c.redirect('/')
+    }
+
+    // 將用戶信息存入 context
+    c.set('user', payload)
+
+    logger.jwt(`頁面認證成功: ${payload.username}`)
+
+    await next()
+  }
+  catch (error) {
+    logger.error('頁面認證中間件執行失敗', error, { prefix: 'Auth' })
+    return c.redirect('/')
   }
 }

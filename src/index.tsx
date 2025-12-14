@@ -3,8 +3,9 @@ import { cors } from 'hono/cors'
 import { csrf } from 'hono/csrf'
 import { logger } from 'hono/logger'
 import { prettyJSON } from 'hono/pretty-json'
+import { optionalAuthMiddleware, pageAuthMiddleware } from './middleware/auth'
 import { createOpenAPIApp } from './openapi'
-import { optionalAuthMiddleware } from './middleware/auth'
+import { ConfigPage } from './pages/Config'
 import { LoginPage } from './pages/Login'
 import auth from './routes/auth'
 import config from './routes/config'
@@ -47,6 +48,19 @@ app.get('/', optionalAuthMiddleware, (c) => {
 
   // 未登入，渲染登入頁
   return c.html(<LoginPage />)
+})
+
+// 配置頁面路由
+app.get('/admin/config', pageAuthMiddleware, (c) => {
+  const user = c.get('user')
+  return c.html(<ConfigPage username={user.username} />)
+})
+
+// 管理頁面路由（未來實作）
+app.get('/admin', pageAuthMiddleware, (c) => {
+  const user = c.get('user')
+  // TODO: 實作 AdminPage
+  return c.text(`管理頁面開發中... 用戶：${user.username}`)
 })
 
 export default {
