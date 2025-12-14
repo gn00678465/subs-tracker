@@ -4,6 +4,8 @@ import { csrf } from 'hono/csrf'
 import { logger } from 'hono/logger'
 import { prettyJSON } from 'hono/pretty-json'
 import { createOpenAPIApp } from './openapi'
+import { optionalAuthMiddleware } from './middleware/auth'
+import { LoginPage } from './pages/Login'
 import auth from './routes/auth'
 import config from './routes/config'
 import notify from './routes/notify'
@@ -34,8 +36,17 @@ app.route('/api/config', config)
 // 掛載第三方通知路由（無需認證，使用 API Token）
 app.route('/api/notify', notify)
 
-app.get('/', (c) => {
-  return c.text('SubsTracker - Refactored with Hono')
+// 登入頁面路由
+app.get('/', optionalAuthMiddleware, (c) => {
+  const user = c.get('user')
+
+  if (user) {
+    // 已登入，重定向到管理頁面
+    return c.redirect('/admin')
+  }
+
+  // 未登入，渲染登入頁
+  return c.html(<LoginPage />)
 })
 
 export default {
