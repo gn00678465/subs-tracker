@@ -11,4 +11,6 @@ export default antfu({
   ignores: [
     'index.js',
   ],
+}).overrideRules({
+  'no-console': 'warn',
 })
