@@ -27,6 +27,6 @@
     "simple-git-hooks": "^2.13.1",
     "vite": "^6.3.5",
     "vite-ssr-components": "^0.5.1",
-    "wrangler": "^4.17.0"
+    "wrangler": "^4.54.0"
   }
 }

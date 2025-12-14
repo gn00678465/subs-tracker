@@ -9,16 +9,16 @@ name = "subscription-manager"
 [env.staging]
 name = "subscription-manager-staging"
 
-# KV 命名空间配置
+# KV 命名空間設定
 [[kv_namespaces]]
 binding = "SUBSCRIPTIONS_KV"
-preview_id = "your-preview-kv-namespace-id"
-id = "3f68b48591e14565bf1ad681271576cc"
+preview_id = "2bae9e931ea04772b5e4dd39adb191f6"
+id = "2bae9e931ea04772b5e4dd39adb191f6"
 
-# 定时任务配置 - 每天早上8点检查
+# Cron 任務設定 - 每天上午 8 點檢查
 [triggers]
 crons = ["0 8 * * *"]
 
-# 环境变量（可选，也可以在 Cloudflare Dashboard 中设置）
+# 環境變數（可選，也可以在 Cloudflare Dashboard 內設定）
 [vars]
 ENVIRONMENT = "production"
