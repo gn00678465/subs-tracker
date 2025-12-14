@@ -3,6 +3,8 @@
  * 適用於 Cloudflare Workers 環境，無需額外依賴
  */
 
+import * as logger from './logger'
+
 // 常量
 export const MS_PER_HOUR = 1000 * 60 * 60
 export const MS_PER_DAY = MS_PER_HOUR * 24
@@ -87,7 +89,7 @@ export function getDateParts(date: Date, timezone = 'UTC'): DateParts {
   }
   catch (error) {
     // Fallback to UTC
-    console.error(`Failed to parse timezone ${timezone}:`, error)
+    logger.error(`Failed to parse timezone ${timezone}`, error)
     return {
       year: date.getUTCFullYear(),
       month: date.getUTCMonth() + 1,
@@ -132,7 +134,7 @@ export function formatTime(
     return date.toLocaleString(locale, options)
   }
   catch (error) {
-    console.error('Time formatting error:', error)
+    logger.error('Time formatting error', error)
     return new Date(time).toISOString()
   }
 }
@@ -155,7 +157,7 @@ export function getTimezoneOffset(timezone = 'UTC'): number {
     return Math.round((zonedTimestamp - now.getTime()) / MS_PER_HOUR)
   }
   catch (error) {
-    console.error('Failed to get timezone offset:', error)
+    logger.error('Failed to get timezone offset', error)
     return 0
   }
 }
@@ -171,7 +173,7 @@ export function formatTimezoneDisplay(timezone = 'UTC'): string {
     return `${name} (UTC${offsetStr})`
   }
   catch (error) {
-    console.error('Failed to format timezone display:', error)
+    logger.error('Failed to format timezone display', error)
     return timezone
   }
 }

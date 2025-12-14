@@ -3,6 +3,7 @@ import type { JWTPayload } from '../types'
 import crypto from 'node:crypto'
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import { sign, verify } from 'hono/jwt'
+import * as logger from './logger'
 
 // JWT 配置常量
 export const JWT_EXPIRATION_SECONDS = 60 * 60 * 24 * 7 // 7 天
@@ -44,7 +45,7 @@ export async function generateJWT(
     return await sign(payload, secret, 'HS256')
   }
   catch (error) {
-    console.error('[JWT] 生成失敗:', error)
+    logger.error('JWT 生成失敗', error, { prefix: 'JWT' })
     throw new Error('JWT 生成失敗')
   }
 }
@@ -61,7 +62,7 @@ export async function verifyJWT(
 ): Promise<JWTPayload | null> {
   try {
     if (!token || !secret) {
-      console.log('[JWT] Token 或 Secret 為空')
+      logger.jwt('Token 或 Secret 為空')
       return null
     }
 
@@ -70,22 +71,22 @@ export async function verifyJWT(
 
     // 驗證必要字段
     if (!payload.username || typeof payload.username !== 'string') {
-      console.log('[JWT] Payload 格式錯誤')
+      logger.jwt('Payload 格式錯誤')
       return null
     }
 
     // 檢查過期時間
     const now = Math.floor(Date.now() / 1000)
     if (payload.exp && payload.exp < now) {
-      console.log('[JWT] Token 已過期')
+      logger.jwt('Token 已過期')
       return null
     }
 
-    console.log('[JWT] 驗證成功，用戶:', payload.username)
+    logger.jwt(`驗證成功，用戶: ${payload.username}`)
     return payload
   }
   catch (error) {
-    console.error('[JWT] 驗證過程出錯:', error)
+    logger.error('JWT 驗證過程出錯', error, { prefix: 'JWT' })
     return null
   }
 }

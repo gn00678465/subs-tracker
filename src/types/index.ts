@@ -44,6 +44,8 @@ export interface Subscription {
   periodUnit?: 'day' | 'month' | 'year'
   reminderUnit: 'day' | 'hour'
   reminderValue: number
+  reminderDays?: number // 向後兼容字段
+  reminderHours?: number // 向後兼容字段
   notes?: string
   isActive: boolean
   createdAt: string
