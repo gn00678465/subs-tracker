@@ -1,4 +1,5 @@
 import type { FC } from 'hono/jsx'
+import ToggleTheme from './ToggleTheme'
 
 interface NavbarProps {
   currentPage: 'admin' | 'config'
@@ -64,6 +65,8 @@ export const Navbar: FC<NavbarProps> = ({ currentPage, username }) => {
             </svg>
             系統配置
           </a>
+
+          <ToggleTheme />
 
           {username
             ? (

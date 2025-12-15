@@ -1,9 +1,11 @@
 import type { FC } from 'hono/jsx'
 import { Layout } from '../components/Layout'
+import ThemeToggle from '../components/ToggleTheme'
 
 export const LoginPage: FC = () => {
   return (
     <Layout title="登入 - SubsTracker" description="登入訂閱管理系統">
+      <ThemeToggle class="fixed top-4 right-4 z-50" />
       <div class="min-h-screen flex items-center justify-center bg-base-200 p-4">
         <div class="card w-full max-w-md bg-base-100 shadow-xl">
           <div class="card-body">
