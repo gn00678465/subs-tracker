@@ -1,4 +1,5 @@
 import type { FC } from 'hono/jsx'
+import { Avatar } from './Avatar'
 import ToggleTheme from './ToggleTheme'
 
 interface NavbarProps {
@@ -70,37 +71,7 @@ export const Navbar: FC<NavbarProps> = ({ currentPage, username }) => {
 
           {username
             ? (
-                <div class="dropdown dropdown-end">
-                  <label tabindex={0} class="btn btn-ghost btn-sm btn-circle avatar placeholder">
-                    <div class="bg-neutral text-neutral-content rounded-full w-8">
-                      <span class="text-xs">{username[0].toUpperCase()}</span>
-                    </div>
-                  </label>
-                  <ul
-                    tabindex={0}
-                    class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 mt-2"
-                  >
-                    <li class="menu-title">
-                      <span>
-                        用戶：
-                        {username}
-                      </span>
-                    </li>
-                    <li>
-                      <a href="/api/logout">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                          />
-                        </svg>
-                        登出
-                      </a>
-                    </li>
-                  </ul>
-                </div>
+                <Avatar username={username} />
               )
             : (
                 <a href="/api/logout" class="btn btn-ghost btn-sm">
