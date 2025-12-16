@@ -22,16 +22,11 @@ export const Layout: FC<PropsWithChildren<LayoutProps>> = ({
         <ViteClient />
         <script src="https://unpkg.com/htmx.org@2.0.4"></script>
         <Link href="/src/style.css" rel="stylesheet" />
-
-        {/* 主題初始化 - 在渲染前執行，避免 FOUC (Flash of Unstyled Content) */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){const theme=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-theme',theme);})();`,
-          }}
-        />
-
         {/* 載入主題切換模組 */}
         <script type="module" src="/src/utils/themeToggle.ts"></script>
+
+        {/* 載入 Toast 通知模組 */}
+        <script type="module" src="/src/utils/toast.ts"></script>
       </head>
       <body>
         <main>{children}</main>
