@@ -16,7 +16,7 @@ export const LoginPage: FC = () => {
             </div>
 
             {/* 表單 */}
-            <form id="loginForm" class="space-y-4">
+            <form id="loginForm" class="space-y-4" hx-post="/api/login" hx-swap="none">
               {/* 用戶名輸入 */}
               <div class="form-control">
                 <label class="label" for="username">
@@ -50,7 +50,7 @@ export const LoginPage: FC = () => {
               </div>
 
               {/* 錯誤訊息 */}
-              <div id="errorMsg" class="alert alert-error hidden">
+              <div id="errorMsg" role="alert" class="alert alert-error hidden">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   class="stroke-current shrink-0 h-6 w-6"
@@ -69,9 +69,9 @@ export const LoginPage: FC = () => {
 
               {/* 提交按鈕 */}
               <div class="form-control mt-6">
-                <button type="submit" class="btn btn-primary w-full" id="submitBtn">
-                  <span id="btnText">登入</span>
+                <button type="submit" class="btn btn-square btn-primary w-full" id="submitBtn">
                   <span id="btnLoading" class="loading loading-spinner loading-sm hidden"></span>
+                  <span id="btnText">登入</span>
                 </button>
               </div>
             </form>
@@ -79,69 +79,7 @@ export const LoginPage: FC = () => {
         </div>
       </div>
 
-      {/* 表單提交邏輯 */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            (function(){
-              const form=document.getElementById('loginForm');
-              const btn=document.getElementById('submitBtn');
-              const btnText=document.getElementById('btnText');
-              const btnLoading=document.getElementById('btnLoading');
-              const errorMsg=document.getElementById('errorMsg');
-              const errorText=document.getElementById('errorText');
-
-              form.addEventListener('submit',async function(e){
-                e.preventDefault();
-
-                // 隱藏錯誤訊息
-                errorMsg.classList.add('hidden');
-
-                // 顯示 loading 狀態
-                btn.disabled=true;
-                btnText.classList.add('hidden');
-                btnLoading.classList.remove('hidden');
-
-                try{
-                  const response=await fetch('/api/login',{
-                    method:'POST',
-                    headers:{'Content-Type':'application/json'},
-                    body:JSON.stringify({
-                      username:document.getElementById('username').value,
-                      password:document.getElementById('password').value
-                    })
-                  });
-
-                  const data=await response.json();
-
-                  if(data.success){
-                    // 登入成功，重定向到管理頁面
-                    window.location.href='/admin';
-                  }else{
-                    // 登入失敗，顯示錯誤訊息
-                    errorText.textContent=data.message||'登入失敗，請檢查用戶名和密碼';
-                    errorMsg.classList.remove('hidden');
-
-                    // 恢復按鈕狀態
-                    btn.disabled=false;
-                    btnText.classList.remove('hidden');
-                    btnLoading.classList.add('hidden');
-                  }
-                }catch(error){
-                  // 發生錯誤
-                  errorText.textContent='發生錯誤，請稍後再試';
-                  errorMsg.classList.remove('hidden');
-
-                  // 恢復按鈕狀態
-                  btn.disabled=false;
-                  btnText.classList.remove('hidden');
-                  btnLoading.classList.add('hidden');
-                }
-              });
-            })();
-          `,
-        }}
-      />
+      <script type="module" src="/src/client/login/index.ts"></script>
     </Layout>
   )
 }
