@@ -93,6 +93,24 @@ export async function getConfig(env: Bindings): Promise<Config> {
         : DEFAULT_CONFIG.ENABLED_NOTIFIERS,
     }
 
+    // 檢測並強制升級明文密碼
+    if (isPlainTextPassword(config.ADMIN_PASSWORD)) {
+      logger.config('偵測到明文密碼，強制升級為 Hash')
+      const hashedPassword = await hashPassword(config.ADMIN_PASSWORD, jwtSecret)
+
+      // 更新配置並保存（確保包含 JWT_SECRET）
+      const updatedStoredConfig = {
+        ...stored,
+        JWT_SECRET: jwtSecret,
+        ADMIN_PASSWORD: hashedPassword,
+      }
+      await env.SUBSCRIPTIONS_KV.put('config', JSON.stringify(updatedStoredConfig))
+
+      // 更新返回的 config 對象
+      config.ADMIN_PASSWORD = hashedPassword
+      logger.config('密碼已自動升級為 Hash 並保存')
+    }
+
     logger.config(`配置加載完成，用戶名: ${config.ADMIN_USERNAME}`)
     return config
   }
@@ -126,11 +144,12 @@ export async function updateConfig(
 
     // 特殊處理：ADMIN_PASSWORD 需要加密
     if (newConfig.ADMIN_PASSWORD) {
+      logger.config('開始加密管理員密碼')
       updatedConfig.ADMIN_PASSWORD = await hashPassword(
         newConfig.ADMIN_PASSWORD,
         currentConfig.JWT_SECRET,
       )
-      logger.config('管理員密碼已加密')
+      logger.config('管理員密碼已成功加密並更新')
     }
 
     // 特殊處理：NOTIFICATION_HOURS 需要規範化
@@ -210,4 +229,25 @@ export function isNotificationAllowedAtHour(config: Config, currentHour: number)
 
   // 檢查當前小時是否在允許列表中
   return NOTIFICATION_HOURS.includes(currentHour)
+}
+
+/**
+ * 檢測密碼是否為明文
+ * Hash 值為固定長度的 hex 字串（64 字元）
+ * HMAC-SHA256 會產生 32 字節 = 64 個 hex 字符
+ */
+function isPlainTextPassword(password: string): boolean {
+  // Hash 值的特徵：64 字符的純 hex 字串
+  // 如果不符合這個特徵，視為明文
+  if (password.length !== 64) {
+    return true
+  }
+
+  // 檢查是否為純 hex 字串（0-9, a-f）
+  if (!/^[0-9a-f]{64}$/i.test(password)) {
+    return true
+  }
+
+  // 符合 Hash 格式
+  return false
 }

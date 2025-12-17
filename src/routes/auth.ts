@@ -1,7 +1,7 @@
 import type { HonoEnv } from '../types'
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
 import { getConfig } from '../services/config'
-import { clearTokenCookie, generateJWT, setTokenCookie } from '../utils/crypto'
+import { clearTokenCookie, generateJWT, setTokenCookie, verifyPassword } from '../utils/crypto'
 import * as logger from '../utils/logger'
 
 // 創建認證路由實例
@@ -102,9 +102,20 @@ auth.openapi(loginRoute, async (c) => {
 
     logger.info(`登入嘗試: ${username}`, { prefix: 'Auth' })
 
-    // 驗證用戶名和密碼
-    if (username !== config.ADMIN_USERNAME || password !== config.ADMIN_PASSWORD) {
-      logger.warning(`登入失敗: 用戶名或密碼錯誤 (${username})`, { prefix: 'Auth' })
+    // 驗證用戶名
+    if (username !== config.ADMIN_USERNAME) {
+      logger.warning(`登入失敗: 用戶名錯誤 (${username})`, { prefix: 'Auth' })
+      return c.json({
+        success: false,
+        message: '用戶名或密碼錯誤',
+        code: 'UNAUTHORIZED',
+      }, 401)
+    }
+
+    // 驗證密碼（使用 Hash 驗證）
+    const passwordValid = await verifyPassword(password, config.ADMIN_PASSWORD, config.JWT_SECRET)
+    if (!passwordValid) {
+      logger.warning(`登入失敗: 密碼錯誤 (${username})`, { prefix: 'Auth' })
       return c.json({
         success: false,
         message: '用戶名或密碼錯誤',
