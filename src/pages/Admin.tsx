@@ -299,6 +299,8 @@ export const AdminPage: FC<AdminPageProps> = ({ username }) => {
         </form>
       </dialog>
 
+      <script type="module" src="/src/client/admin/index.ts"></script>
+
       {/* 客戶端 JavaScript */}
       <script
         dangerouslySetInnerHTML={{
