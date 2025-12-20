@@ -58,10 +58,6 @@ export interface Subscription {
   website?: string
   isReminderSet?: boolean
   reminderMe?: number // 提前提醒天數 (1, 3, 7, 14, 21, 30, 60, 90)
-  reminderUnit?: 'day' | 'hour' // 向後兼容字段
-  reminderValue?: number // 向後兼容字段
-  reminderDays?: number // 向後兼容字段
-  reminderHours?: number // 向後兼容字段
   notes?: string
   isActive: boolean
   createdAt: string

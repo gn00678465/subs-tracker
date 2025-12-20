@@ -44,9 +44,6 @@ const subscriptionSchema = z.object({
   website: z.string().optional(),
   isReminderSet: z.boolean().optional(),
   reminderMe: z.number().int().nonnegative().optional(),
-  // 向後兼容欄位
-  reminderUnit: z.enum(['day', 'hour']).optional(),
-  reminderValue: z.number().int().positive().optional(),
   notes: z.string().optional(),
   isActive: z.boolean().default(true),
 })

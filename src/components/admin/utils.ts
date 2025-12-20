@@ -58,12 +58,9 @@ export function getSubscriptionStatus(
   if (diffDays < 0)
     return 'expired'
 
-  const reminderValue = subscription.reminderValue || 7
-  const reminderUnit = subscription.reminderUnit || 'day'
+  const reminderDays = subscription.reminderMe ?? 7
 
-  const isSoon = reminderUnit === 'hour'
-    ? diffHours >= 0 && diffHours <= reminderValue
-    : diffDays >= 0 && diffDays <= reminderValue
+  const isSoon = diffDays >= 0 && diffDays <= reminderDays
 
   return isSoon ? 'soon' : 'normal'
 }

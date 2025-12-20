@@ -37,44 +37,6 @@ export async function getSubscription(
 // ==================== Helper Functions ====================
 
 /**
- * 解析提醒設定
- * 優先級：reminderValue + reminderUnit > reminderDays/reminderHours > 預設 7 天
- */
-export function resolveReminderSetting(subscription: Partial<Subscription>): {
-  unit: 'day' | 'hour'
-  value: number
-} {
-  // 優先使用明確的 reminderValue + reminderUnit
-  if (subscription.reminderValue && subscription.reminderUnit) {
-    const value = Number(subscription.reminderValue)
-    if (!Number.isNaN(value) && value >= 0) {
-      return {
-        unit: subscription.reminderUnit,
-        value,
-      }
-    }
-  }
-
-  // 回退到舊字段
-  if (subscription.reminderDays) {
-    const value = Number(subscription.reminderDays)
-    if (!Number.isNaN(value) && value >= 0) {
-      return { unit: 'day', value }
-    }
-  }
-
-  if (subscription.reminderHours) {
-    const value = Number(subscription.reminderHours)
-    if (!Number.isNaN(value) && value >= 0) {
-      return { unit: 'hour', value }
-    }
-  }
-
-  // 預設：7 天
-  return { unit: 'day', value: 7 }
-}
-
-/**
  * 判斷是否應觸發提醒
  * @param reminder 提醒設定
  * @param daysDiff 距離到期的天數
@@ -156,9 +118,6 @@ export async function createSubscription(
     // 解析到期日期（創建時不進行自動續期）
     const expiryDate = new Date(data.expiryDate)
 
-    // 解析提醒設定
-    const reminderSetting = resolveReminderSetting(data)
-
     // 構建新訂閱
     const newSubscription: Subscription = {
       id: Date.now().toString(),
@@ -177,10 +136,6 @@ export async function createSubscription(
       isFreeTrial: data.isFreeTrial,
       isReminderSet: data.isReminderSet,
       reminderMe: data.reminderMe,
-      reminderUnit: reminderSetting.unit,
-      reminderValue: reminderSetting.value,
-      reminderDays: reminderSetting.unit === 'day' ? reminderSetting.value : undefined,
-      reminderHours: reminderSetting.unit === 'hour' ? reminderSetting.value : undefined,
       notes: data.notes || '',
       isActive: data.isActive !== false,
       autoRenew: data.autoRenew !== false,
@@ -239,9 +194,6 @@ export async function updateSubscription(
       }
     }
 
-    // 解析提醒設定
-    const reminderSetting = resolveReminderSetting(data)
-
     // 更新訂閱（保留原有字段 + 覆蓋新字段）
     const updatedSubscription: Subscription = {
       ...subscriptions[index],
@@ -260,10 +212,6 @@ export async function updateSubscription(
       isFreeTrial: data.isFreeTrial ?? subscriptions[index].isFreeTrial,
       isReminderSet: data.isReminderSet ?? subscriptions[index].isReminderSet,
       reminderMe: data.reminderMe ?? subscriptions[index].reminderMe,
-      reminderUnit: reminderSetting.unit,
-      reminderValue: reminderSetting.value,
-      reminderDays: reminderSetting.unit === 'day' ? reminderSetting.value : undefined,
-      reminderHours: reminderSetting.unit === 'hour' ? reminderSetting.value : undefined,
       notes: data.notes ?? subscriptions[index].notes,
       isActive: data.isActive ?? subscriptions[index].isActive,
       autoRenew: data.autoRenew ?? subscriptions[index].autoRenew,
