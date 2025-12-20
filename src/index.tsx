@@ -8,6 +8,7 @@ import { createOpenAPIApp } from './openapi'
 import { AdminPage } from './pages/Admin'
 import { ConfigPage } from './pages/Config'
 import { LoginPage } from './pages/Login'
+import { renderer } from './renderer'
 import auth from './routes/auth'
 import config from './routes/config'
 import notify from './routes/notify'
@@ -19,6 +20,7 @@ const app = createOpenAPIApp()
 // 全局 middleware
 app.use(logger())
 app.use(prettyJSON())
+app.use(renderer)
 
 // API 路由使用 CORS，不使用 CSRF（JWT 已提供保護）
 app.use('/api/*', cors())

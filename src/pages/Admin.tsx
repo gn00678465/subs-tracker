@@ -81,42 +81,50 @@ export const AdminPage: FC<AdminPageProps> = ({ username }) => {
         {/* 訂閱列表表格 */}
         <div class="card bg-base-100 shadow-xl">
           <div class="overflow-x-auto">
-            <table class="table table-zebra">
-              <thead>
-                <tr>
-                  <th class="w-1/4">名稱</th>
-                  <th class="w-1/6">類型</th>
-                  <th class="w-1/5">
-                    到期時間
-                    <svg
-                      class="inline w-4 h-4 ml-1 text-primary"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M7 11l5-5m0 0l5 5m-5-5v12"
-                      />
-                    </svg>
-                  </th>
-                  <th class="w-1/6">提醒設置</th>
-                  <th class="w-1/12">狀態</th>
-                  <th class="w-1/6">操作</th>
-                </tr>
-              </thead>
-              <tbody id="subscriptionsBody">
-                {/* 由客戶端 JavaScript 動態填充 */}
-                <tr>
-                  <td colspan={6} class="text-center py-8">
+            <div role="table" aria-label="訂閱列表" class="w-full">
+              {/* 桌面版標題 - 只在 md 以上顯示 */}
+              <div
+                role="rowgroup"
+                class="hidden md:grid md:grid-cols-[1.5fr_1fr_1.2fr_1fr_0.5fr_1fr] gap-4 px-4 py-3 bg-base-100 border-b border-base-content/10 font-semibold text-sm sticky top-0 z-10"
+              >
+                <div role="columnheader">名稱</div>
+                <div role="columnheader">類型</div>
+                <div role="columnheader" class="flex items-center gap-1">
+                  到期時間
+                  <svg
+                    class="inline w-4 h-4 ml-1 text-primary"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M7 11l5-5m0 0l5 5m-5-5v12"
+                    />
+                  </svg>
+                </div>
+                <div role="columnheader">提醒設置</div>
+                <div role="columnheader">狀態</div>
+                <div role="columnheader">操作</div>
+              </div>
+
+              {/* 內容區域 */}
+              <div
+                id="subscriptionsBody"
+                role="rowgroup"
+                class="[&>*:nth-child(even)]:bg-base-200"
+              >
+                {/* 初始 loading 狀態 */}
+                <div role="row" class="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_1.2fr_1fr_0.5fr_1fr]">
+                  <div role="cell" class="md:col-span-6 text-center py-8">
                     <span class="loading loading-spinner loading-lg"></span>
                     <p class="mt-2 text-base-content/70">載入中...</p>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
