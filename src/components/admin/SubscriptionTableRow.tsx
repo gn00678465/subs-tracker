@@ -1,5 +1,6 @@
 /** @jsxImportSource hono/jsx/dom */
-import type { Subscription } from '../../types/index'
+import type { Subscription } from '@/types/index'
+import { reminderOptions } from '@/utils/constants'
 import { calculateRemainingTime, formatDate, formatRemainingTime, getSubscriptionStatus } from './utils'
 
 interface SubscriptionTableRowProps {
@@ -31,6 +32,8 @@ export function SubscriptionTableRow({
     normal: <div class="badge badge-success badge-soft gap-2">正常</div>,
   }
 
+  const reminderStatus = reminderOptions.find(option => option.value === String(subscription.reminderMe))?.label || '無提醒'
+
   // Category badges
   const categoryBadges = subscription.category
     ?.split(/[/,\s]+/)
@@ -41,9 +44,7 @@ export function SubscriptionTableRow({
 
   // Period and reminder text
   const unitText = subscription.periodUnit === 'day' ? '天' : (subscription.periodUnit === 'month' ? '月' : '年')
-  const reminderValue = subscription.reminderValue || 7
-  const reminderUnit = subscription.reminderUnit || 'day'
-  const reminderUnitText = reminderUnit === 'hour' ? '小時' : '天'
+  const reminderValue = subscription.reminderMe
 
   return (
     <div
@@ -95,11 +96,7 @@ export function SubscriptionTableRow({
       <div role="cell" class="flex flex-col">
         <span class="md:hidden text-xs text-base-content/50 mb-1">提醒設置</span>
         <div>
-          提前
-          {' '}
-          {reminderValue}
-          {' '}
-          {reminderUnitText}
+          {reminderStatus}
         </div>
         {reminderValue === 0 && (
           <div class="text-sm text-base-content/70 mt-1">僅到期時提醒</div>
