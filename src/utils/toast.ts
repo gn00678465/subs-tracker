@@ -25,7 +25,7 @@ export function initToastContainer(): void {
   // Create toast container
   toastContainer = document.createElement('div')
   toastContainer.id = 'toast'
-  toastContainer.className = 'toast toast-top toast-end hidden z-50'
+  toastContainer.className = 'toast toast-end hidden z-50'
 
   toastAlert = document.createElement('div')
   toastAlert.id = 'toastAlert'

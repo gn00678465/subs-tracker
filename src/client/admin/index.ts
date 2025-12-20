@@ -244,8 +244,12 @@ async function handleEdit(id: string) {
 }
 
 async function handleDelete(id: string) {
-  // eslint-disable-next-line no-alert
-  if (!confirm('確定要刪除這個訂閱嗎？此操作不可恢復。')) {
+  const confirmed = await window.confirmDialog(
+    '刪除訂閱',
+    '確定要刪除這個訂閱嗎？此操作不可恢復。',
+    { variant: 'danger' },
+  )
+  if (!confirmed) {
     return
   }
 

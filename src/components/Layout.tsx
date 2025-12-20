@@ -27,6 +27,9 @@ export const Layout: FC<PropsWithChildren<LayoutProps>> = ({
 
         {/* 載入 Toast 通知模組 */}
         <script type="module" src="/src/utils/toast.ts"></script>
+
+        {/* 載入 ConfirmDialog 模組 */}
+        <script type="module" src="/src/utils/confirmDialog.ts"></script>
       </head>
       <body>
         <main>{children}</main>
