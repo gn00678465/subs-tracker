@@ -36,19 +36,7 @@ export const AdminPage: FC<AdminPageProps> = ({ username }) => {
                     placeholder="搜索名稱、類型或備註..."
                     class="input input-bordered w-full pl-10"
                   />
-                  <svg
-                    class="absolute left-3 top-3 w-5 h-5 text-base-content/40"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
+                  <i data-lucide="search" class="size-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"></i>
                 </div>
               </div>
 
@@ -64,14 +52,7 @@ export const AdminPage: FC<AdminPageProps> = ({ username }) => {
 
               {/* 添加按鈕 */}
               <button id="addSubscriptionBtn" class="btn btn-primary gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
+                <i data-lucide="plus" class="size-5"></i>
                 添加訂閱
               </button>
             </div>
@@ -87,27 +68,14 @@ export const AdminPage: FC<AdminPageProps> = ({ username }) => {
                 role="rowgroup"
                 class="hidden md:grid md:grid-cols-[1.5fr_1fr_1.2fr_1fr_0.5fr_1fr] gap-4 px-4 py-3 bg-base-100 border-b border-base-content/10 font-semibold text-sm sticky top-0 z-10"
               >
-                <div role="columnheader">名稱</div>
-                <div role="columnheader">類型</div>
+                <div role="columnheader" class="flex items-center gap-1">名稱</div>
+                <div role="columnheader" class="flex items-center gap-1">類型</div>
                 <div role="columnheader" class="flex items-center gap-1">
                   到期時間
-                  <svg
-                    class="inline w-4 h-4 ml-1 text-primary"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M7 11l5-5m0 0l5 5m-5-5v12"
-                    />
-                  </svg>
                 </div>
-                <div role="columnheader">提醒設置</div>
-                <div role="columnheader">狀態</div>
-                <div role="columnheader">操作</div>
+                <div role="columnheader" class="flex items-center gap-1">提醒設置</div>
+                <div role="columnheader" class="flex items-center gap-1">狀態</div>
+                <div role="columnheader" class="flex items-center gap-1">操作</div>
               </div>
 
               {/* 內容區域 */}

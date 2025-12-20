@@ -22,6 +22,7 @@ export const Layout: FC<PropsWithChildren<LayoutProps>> = ({
         <ViteClient />
         <script src="https://unpkg.com/htmx.org@2.0.4"></script>
         <Link href="/src/style.css" rel="stylesheet" />
+        <script type="module" src="/src/client/icons.ts"></script>
         {/* 載入主題切換模組 */}
         <script type="module" src="/src/utils/themeToggle.ts"></script>
 

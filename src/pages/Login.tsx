@@ -72,6 +72,7 @@ export const LoginPage: FC = () => {
                 <button type="submit" class="btn btn-square btn-primary w-full" id="submitBtn">
                   <span id="btnLoading" class="loading loading-spinner loading-sm hidden"></span>
                   <span id="btnText">登入</span>
+                  <i data-lucide="send-horizontal" class="size-4"></i>
                 </button>
               </div>
             </form>
