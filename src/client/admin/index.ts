@@ -1,4 +1,6 @@
 import type { Subscription } from '../../types/index'
+import { toFormFormat } from '../../utils/formAdaptor'
+import { renderErrorState, renderLoadingState, renderSubscriptionTable } from './tableRenderer'
 
 // ===== 表單輔助函數 =====
 
@@ -28,6 +30,14 @@ function setFormValue(
   }
 }
 
+// ===== 事件處理器物件 =====
+const tableHandlers = {
+  onEdit: handleEdit,
+  onDelete: handleDelete,
+  onToggleStatus: handleToggleStatus,
+  onTestNotify: handleTestNotify,
+}
+
 /**
  * 批量設置表單欄位的值
  */
@@ -53,7 +63,7 @@ function updateCacheItem(id: string, updates: Partial<Subscription>): void {
   const index = subscriptionsCache.findIndex(sub => sub.id === id)
   if (index !== -1) {
     subscriptionsCache[index] = { ...subscriptionsCache[index], ...updates }
-    renderSubscriptionTable()
+    renderSubscriptionTable(subscriptionsCache, getSearchKeyword(), getCategoryFilter(), tableHandlers)
   }
 }
 
@@ -61,17 +71,15 @@ function removeCacheItem(id: string): void {
   const index = subscriptionsCache.findIndex(sub => sub.id === id)
   if (index !== -1) {
     subscriptionsCache.splice(index, 1)
-    renderSubscriptionTable()
+    renderSubscriptionTable(subscriptionsCache, getSearchKeyword(), getCategoryFilter(), tableHandlers)
   }
 }
 
 async function loadSubscriptions(showLoading: boolean = true) {
   showLoading = showLoading !== false
   try {
-    const tbody = document.getElementById('subscriptionsBody')
-
-    if (tbody && showLoading) {
-      tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8"><span class="loading loading-spinner loading-lg"></span><p class="mt-2 text-base-content/70">載入中...</p></td></tr>'
+    if (showLoading) {
+      renderLoadingState()
     }
 
     const response = await fetch('/api/subscriptions')
@@ -83,15 +91,12 @@ async function loadSubscriptions(showLoading: boolean = true) {
     subscriptionsCache.splice(0, _data.length, ..._data)
 
     populateCategoryFilter(subscriptionsCache)
-    renderSubscriptionTable()
+    renderSubscriptionTable(subscriptionsCache, getSearchKeyword(), getCategoryFilter(), tableHandlers)
   }
   catch (error) {
     // eslint-disable-next-line no-console
     console.error('載入訂閱失敗:', error)
-    const tbody = document.getElementById('subscriptionsBody')
-    if (tbody) {
-      tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-error"><svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><p>載入失敗，請刷新頁面重試</p></td></tr>'
-    }
+    renderErrorState('載入失敗，請刷新頁面重試')
     window.showToast('載入訂閱列表失敗', 'error')
   }
 }
@@ -131,135 +136,13 @@ function populateCategoryFilter(subscriptions: Subscription[]) {
   }
 }
 
-function formatDate(dateStr: string) {
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('zh-TW', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  })
+// ===== 輔助函數 =====
+function getSearchKeyword(): string {
+  return ((document.getElementById('searchKeyword') as HTMLInputElement)?.value || '').trim().toLowerCase()
 }
 
-function renderSubscriptionTable() {
-  const tbody = document.getElementById('subscriptionsBody')
-  if (!tbody)
-    return
-
-  const searchKeyword = ((document.getElementById('searchKeyword') as HTMLInputElement)?.value || '').trim().toLowerCase()
-  const categoryFilter = ((document.getElementById('categoryFilter') as HTMLInputElement)?.value || '').trim().toLowerCase()
-
-  let filtered = subscriptionsCache.slice()
-
-  if (categoryFilter) {
-    filtered = filtered.filter((sub) => {
-      if (!sub.category)
-        return false
-      const tokens = sub.category.split(/[\\/,s]+/).map((t) => {
-        return t.trim().toLowerCase()
-      })
-      return tokens.includes(categoryFilter)
-    })
-  }
-
-  if (searchKeyword) {
-    filtered = filtered.filter((sub) => {
-      const haystack = [sub.name, sub.customType, sub.notes, sub.category]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-      return haystack.includes(searchKeyword)
-    })
-  }
-
-  if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-base-content/70"><svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg><p>沒有符合條件的訂閱</p></td></tr>'
-    return
-  }
-
-  filtered.sort((a, b) => {
-    return new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime()
-  })
-
-  tbody.innerHTML = ''
-  const currentTime = new Date()
-
-  filtered.forEach((sub) => {
-    const row = document.createElement('tr')
-    row.className = sub.isActive === false ? 'opacity-60' : ''
-
-    const expiryDate = new Date(sub.expiryDate)
-    const diffMs = expiryDate.getTime() - currentTime.getTime()
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
-    const diffHours = Math.ceil(diffMs / (1000 * 60 * 60))
-
-    const reminderValue = sub.reminderValue || 7
-    const reminderUnit = sub.reminderUnit || 'day'
-    const isSoon = reminderUnit === 'hour'
-      ? diffHours >= 0 && diffHours <= reminderValue
-      : diffDays >= 0 && diffDays <= reminderValue
-
-    let statusBadge = ''
-    if (!sub.isActive) {
-      statusBadge = '<div class="badge badge-neutral gap-2">已停用</div>'
-    }
-    else if (diffDays < 0) {
-      statusBadge = '<div class="badge badge-error gap-2">已過期</div>'
-    }
-    else if (isSoon) {
-      statusBadge = '<div class="badge badge-warning gap-2">即將到期</div>'
-    }
-    else {
-      statusBadge = '<div class="badge badge-success gap-2">正常</div>'
-    }
-
-    let daysLeftText = ''
-    if (diffMs < 0) {
-      const absDays = Math.abs(diffDays)
-      daysLeftText = absDays >= 1
-        ? `已過期 ${absDays} 天`
-        : `已過期 ${Math.abs(diffHours)} 小時`
-    }
-    else if (diffDays >= 1) {
-      daysLeftText = `還剩 ${diffDays} 天`
-    }
-    else {
-      daysLeftText = diffHours > 0
-        ? `約 ${diffHours} 小時後到期`
-        : '即將到期'
-    }
-
-    const categoryBadges = sub.category
-      ? sub.category.split(/[\\/,s]+/)
-          .filter((t) => { return t.trim() })
-          .map((cat) => {
-            return `<div class="badge badge-outline badge-sm">${cat.trim()}</div>`
-          })
-          .join(' ')
-      : ''
-
-    const unitText = sub.periodUnit === 'day' ? '天' : (sub.periodUnit === 'month' ? '月' : '年')
-    const reminderUnitText = reminderUnit === 'hour' ? '小時' : '天'
-
-    row.innerHTML = `<td><div class="font-medium">${sub.name}</div>${
-      sub.notes ? `<div class="text-sm text-base-content/70 mt-1">${sub.notes.length > 50 ? `${sub.notes.substring(0, 50)}...` : sub.notes}</div>` : ''
-    }</td><td><div>${sub.customType || '其他'}</div>${
-      sub.periodValue ? `<div class="text-sm text-base-content/70 mt-1">周期: ${sub.periodValue} ${unitText}</div>` : ''
-    }${categoryBadges ? `<div class="flex flex-wrap gap-1 mt-2">${categoryBadges}</div>` : ''
-    }</td><td><div>${formatDate(sub.expiryDate)}</div><div class="text-sm text-base-content/70 mt-1">${daysLeftText}</div>${
-      sub.startDate ? `<div class="text-xs text-base-content/50 mt-1">開始: ${formatDate(sub.startDate)}</div>` : ''
-    }</td><td><div>提前 ${reminderValue} ${reminderUnitText}</div>${
-      reminderValue === 0 ? '<div class="text-sm text-base-content/70 mt-1">僅到期時提醒</div>' : ''
-    }</td><td>${statusBadge
-    }</td><td><div class="flex flex-wrap gap-1"><button class="btn btn-primary btn-xs" data-action="edit" data-subscription-id="${sub.id}" data-testid="edit-btn">編輯</button>`
-    + `<button class="btn btn-info btn-xs" data-action="test-notify" data-subscription-id="${sub.id}" data-testid="test-notify-btn">測試</button>`
-    + `<button class="btn btn-error btn-xs" data-action="delete" data-subscription-id="${sub.id}" data-testid="delete-btn">刪除</button>${
-      sub.isActive
-        ? `<button class="btn btn-warning btn-xs" data-action="toggle-status" data-subscription-id="${sub.id}" data-target-status="false" data-testid="toggle-status-btn">停用</button>`
-        : `<button class="btn btn-success btn-xs" data-action="toggle-status" data-subscription-id="${sub.id}" data-target-status="true" data-testid="toggle-status-btn">啟用</button>`
-    }</div></td>`
-
-    tbody.appendChild(row)
-  })
+function getCategoryFilter(): string {
+  return ((document.getElementById('categoryFilter') as HTMLInputElement)?.value || '').trim().toLowerCase()
 }
 
 const cancelBtn = document.getElementById('cancelBtn')
@@ -334,31 +217,13 @@ async function handleEdit(id: string) {
       throw new Error('表單元素不存在')
     }
 
-    // 處理到期日期：儲存的是實際過期時間（選定日期+1），顯示時需要-1天
-    const expiryDateObj = new Date(sub.expiryDate)
-    expiryDateObj.setDate(expiryDateObj.getDate() - 1)
-    const displayExpiryDate = expiryDateObj.toISOString().split('T')[0]
+    // 使用 adaptor 轉換為表單格式
+    const formValues = toFormFormat(sub)
 
-    // 使用批量設置函數填充表單
+    // 填充表單（需要添加 subscriptionId 字段）
     setFormValues(form, {
       subscriptionId: sub.id,
-      name: sub.name,
-      customType: sub.customType || '',
-      category: sub.category || '',
-      currency: sub.currency || 'TWD',
-      price: sub.price || '',
-      startDate: sub.startDate ? sub.startDate.split('T')[0] : '',
-      expiryDate: displayExpiryDate,
-      periodValue: sub.periodValue || 1,
-      periodUnit: sub.periodUnit || 'month',
-      periodMethod: sub.periodMethod || 'credit',
-      website: sub.website || '',
-      reminderMe: sub.reminderMe || 1,
-      notes: sub.notes || '',
-      isActive: sub.isActive !== false,
-      autoRenew: sub.autoRenew !== false,
-      isFreeTrial: sub.isFreeTrial === true,
-      isReminderSet: sub.isReminderSet !== false,
+      ...formValues,
     })
 
     // 更新標題
@@ -475,7 +340,7 @@ function attachEventListeners() {
         clearTimeout(searchDebounceTimer)
       }
       searchDebounceTimer = setTimeout(() => {
-        renderSubscriptionTable()
+        renderSubscriptionTable(subscriptionsCache, getSearchKeyword(), getCategoryFilter(), tableHandlers)
       }, 300)
     })
   }
@@ -483,7 +348,7 @@ function attachEventListeners() {
   const categorySelect = document.getElementById('categoryFilter')
   if (categorySelect) {
     categorySelect.addEventListener('change', () => {
-      renderSubscriptionTable()
+      renderSubscriptionTable(subscriptionsCache, getSearchKeyword(), getCategoryFilter(), tableHandlers)
     })
   }
 
@@ -495,41 +360,6 @@ function attachEventListeners() {
   const cancelBtn = document.getElementById('cancelBtn')
   if (cancelBtn) {
     cancelBtn.addEventListener('click', closeModal)
-  }
-
-  // ===== 事件委派：處理表格操作按鈕 =====
-  const tbody = document.getElementById('subscriptionsBody')
-  if (tbody) {
-    tbody.addEventListener('click', async (event) => {
-      const target = event.target as HTMLElement
-      const button = target.closest('button[data-action]') as HTMLButtonElement
-
-      if (!button)
-        return
-
-      const action = button.dataset.action
-      const subscriptionId = button.dataset.subscriptionId
-
-      if (!subscriptionId)
-        return
-
-      switch (action) {
-        case 'edit':
-          await handleEdit(subscriptionId)
-          break
-        case 'delete':
-          await handleDelete(subscriptionId)
-          break
-        case 'toggle-status': {
-          const targetStatus = button.dataset.targetStatus === 'true'
-          await handleToggleStatus(subscriptionId, targetStatus)
-          break
-        }
-        case 'test-notify':
-          await handleTestNotify(subscriptionId)
-          break
-      }
-    })
   }
 
   // ===== 自定義事件監聽 =====

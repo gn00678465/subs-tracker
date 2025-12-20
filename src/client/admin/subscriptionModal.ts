@@ -1,3 +1,5 @@
+import { toApiFormat } from '../../utils/formAdaptor'
+
 const subscriptionForm = document.getElementById('subscriptionForm') as HTMLFormElement
 const hasEndDateToggle = document.getElementById('hasEndDate') as HTMLInputElement
 const expiryDateField = document.getElementById('expiryDateField') as HTMLLabelElement
@@ -27,7 +29,7 @@ async function handleFormSubmit(evt: Event) {
   evt.preventDefault()
 
   const hxEvt = evt as HtmxBeforeRequestEvent
-  const formData = Object.fromEntries(hxEvt.detail.requestConfig.formData.entries())
+  const formDataObj = hxEvt.detail.requestConfig.formData
 
   const submitBtn = (evt.target as HTMLFormElement).querySelector('button[type="submit"]') as HTMLButtonElement | null
   const submitText = document.getElementById('submitText')
@@ -39,37 +41,11 @@ async function handleFormSubmit(evt: Event) {
   submitText?.classList.add('hidden')
   submitLoading?.classList.remove('hidden')
 
-  // 使用 formData 而非直接從 DOM 取得資料
-  const id = (formData.id as string) || ''
+  const id = (formDataObj.get('id') as string) || ''
 
   try {
-    // 處理到期日期：選定日期 +1 天作為實際過期時間
-    // 例如：選擇 12/20，表示 12/20 全天有效，過期時間為 12/21 00:00:00
-    const expiryDateInput = formData.expiryDate as string
-    const expiryDate = new Date(expiryDateInput)
-    expiryDate.setDate(expiryDate.getDate() + 1)
-    const expiryDateISO = expiryDate.toISOString()
-
-    const data = {
-      name: (formData.name as string)?.trim(),
-      customType: (formData.customType as string)?.trim() || undefined,
-      category: (formData.category as string)?.trim() || undefined,
-      currency: (formData.currency as string) || undefined,
-      price: (formData.price as string) || undefined,
-      startDate: (formData.startDate as string) || undefined,
-      expiryDate: expiryDateISO,
-      periodValue: Number.parseInt(formData.periodValue as string),
-      periodUnit: formData.periodUnit as string,
-      periodMethod: (formData.periodMethod as string) || undefined,
-      website: (formData.website as string)?.trim() || undefined,
-      reminderMe: formData.reminderMe ? Number.parseInt(formData.reminderMe as string) : undefined,
-      notes: (formData.notes as string)?.trim() || undefined,
-      // Checkbox 欄位：值為 "on" 表示勾選，欄位不存在表示未勾選
-      isActive: formData.isActive === 'on',
-      autoRenew: formData.autoRenew === 'on',
-      isFreeTrial: formData.isFreeTrial === 'on',
-      isReminderSet: formData.isReminderSet === 'on',
-    }
+    // 使用 adaptor 轉換表單數據
+    const data = toApiFormat(formDataObj)
 
     if (!data.name) {
       throw new Error('請輸入訂閱名稱')
@@ -91,7 +67,6 @@ async function handleFormSubmit(evt: Event) {
     })
 
     if (!response.ok) {
-      const error = await response.json()
       throw new Error('保存失敗')
     }
 
