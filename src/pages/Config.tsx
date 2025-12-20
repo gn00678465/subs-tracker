@@ -17,7 +17,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
             <h2 class="card-title text-2xl mb-6">系統配置</h2>
 
             <form id="configForm">
-              <div role="tablist" class="tabs tabs-bordered mb-6">
+              <div role="tablist" class="tabs tabs-border mb-6">
                 {/* Tab 1: 基本設定 */}
                 <input
                   type="radio"
