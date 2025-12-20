@@ -45,12 +45,21 @@ export interface Subscription {
   name: string
   customType?: string
   category?: string
+  currency?: string
+  price?: string
+  startDate?: string
   expiryDate: string
+  hasEndDate?: boolean
   autoRenew: boolean
+  isFreeTrial?: boolean
   periodValue?: number
   periodUnit?: 'day' | 'month' | 'year'
-  reminderUnit: 'day' | 'hour'
-  reminderValue: number
+  periodMethod?: 'credit' | 'apple' | 'google' | 'paypal' | 'other'
+  website?: string
+  isReminderSet?: boolean
+  reminderMe?: number // 提前提醒天數 (1, 3, 7, 14, 21, 30, 60, 90)
+  reminderUnit?: 'day' | 'hour' // 向後兼容字段
+  reminderValue?: number // 向後兼容字段
   reminderDays?: number // 向後兼容字段
   reminderHours?: number // 向後兼容字段
   notes?: string
@@ -92,4 +101,65 @@ export interface JWTPayload {
   iat: number
   exp?: number
   [key: string]: unknown // Hono JWT 要求的索引簽名
+}
+
+// ===== 自定義事件類型 =====
+
+/**
+ * 訂閱保存成功事件詳情
+ */
+export interface SubscriptionSavedEventDetail {
+  subscriptionId: string
+  action: 'create' | 'update'
+}
+
+/**
+ * 訂閱保存失敗事件詳情
+ */
+export interface SubscriptionSaveFailedEventDetail {
+  error: Error | string
+  subscriptionId?: string
+}
+
+/**
+ * 訂閱刪除事件詳情
+ */
+export interface SubscriptionDeletedEventDetail {
+  subscriptionId: string
+}
+
+/**
+ * 訂閱狀態變更事件詳情
+ */
+export interface SubscriptionStatusChangedEventDetail {
+  subscriptionId: string
+  isActive: boolean
+}
+
+/**
+ * 訂閱保存成功事件
+ */
+export interface SubscriptionSavedEvent extends CustomEvent<SubscriptionSavedEventDetail> {
+  type: 'subscription-saved'
+}
+
+/**
+ * 訂閱保存失敗事件
+ */
+export interface SubscriptionSaveFailedEvent extends CustomEvent<SubscriptionSaveFailedEventDetail> {
+  type: 'subscription-save-failed'
+}
+
+/**
+ * 訂閱刪除事件
+ */
+export interface SubscriptionDeletedEvent extends CustomEvent<SubscriptionDeletedEventDetail> {
+  type: 'subscription-deleted'
+}
+
+/**
+ * 訂閱狀態變更事件
+ */
+export interface SubscriptionStatusChangedEvent extends CustomEvent<SubscriptionStatusChangedEventDetail> {
+  type: 'subscription-status-changed'
 }

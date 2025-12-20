@@ -4,8 +4,7 @@
  */
 
 import type { Context } from 'hono'
-import type { ApiErrorResponse, ApiSuccessResponse } from '../types/api'
-import { ErrorCode } from '../types/api'
+import { ErrorCode } from '../types/error'
 
 /**
  * 成功回應 (200)
@@ -14,7 +13,7 @@ import { ErrorCode } from '../types/api'
  * @param message 可選：成功訊息
  */
 export function success<T>(c: Context, data?: T, message?: string): Response {
-  const response: ApiSuccessResponse<T> = { success: true }
+  const response: Api.SuccessResponse<T> = { success: true }
   if (data !== undefined)
     response.data = data
   if (message)
@@ -29,7 +28,7 @@ export function success<T>(c: Context, data?: T, message?: string): Response {
  * @param message 可選：成功訊息
  */
 export function created<T>(c: Context, data: T, message?: string): Response {
-  const response: ApiSuccessResponse<T> = { success: true, data }
+  const response: Api.SuccessResponse<T> = { success: true, data }
   if (message)
     response.message = message
   return c.json(response, 201)
@@ -46,7 +45,7 @@ export function validationError(
   message: string,
   errors?: Array<{ path: string, message: string }>,
 ): Response {
-  const response: ApiErrorResponse = {
+  const response: Api.ErrorResponse = {
     success: false,
     message,
     code: ErrorCode.VALIDATION_ERROR,
@@ -67,7 +66,7 @@ export function unauthorized(c: Context, message: string): Response {
       success: false,
       message,
       code: ErrorCode.UNAUTHORIZED,
-    } as ApiErrorResponse,
+    } as Api.ErrorResponse,
     401,
   )
 }
@@ -83,7 +82,7 @@ export function forbidden(c: Context, message: string): Response {
       success: false,
       message,
       code: ErrorCode.FORBIDDEN,
-    } as ApiErrorResponse,
+    } as Api.ErrorResponse,
     403,
   )
 }
@@ -99,7 +98,7 @@ export function notFound(c: Context, message: string): Response {
       success: false,
       message,
       code: ErrorCode.NOT_FOUND,
-    } as ApiErrorResponse,
+    } as Api.ErrorResponse,
     404,
   )
 }
@@ -115,7 +114,7 @@ export function serverError(c: Context, message: string = '服務器內部錯誤
       success: false,
       message,
       code: ErrorCode.INTERNAL_ERROR,
-    } as ApiErrorResponse,
+    } as Api.ErrorResponse,
     500,
   )
 }
@@ -131,7 +130,7 @@ export function notImplemented(c: Context, message: string): Response {
       success: false,
       message,
       code: ErrorCode.NOT_IMPLEMENTED,
-    } as ApiErrorResponse,
+    } as Api.ErrorResponse,
     501,
   )
 }

@@ -25,6 +25,9 @@ const subscriptionSchema = z.object({
   name: z.string().min(1, '訂閱名稱不能為空'),
   customType: z.string().optional(),
   category: z.string().optional(),
+  currency: z.string().optional(),
+  price: z.string().optional(),
+  startDate: z.string().optional(),
   expiryDate: z.string().refine(
     (date) => {
       const parsed = new Date(date)
@@ -32,11 +35,18 @@ const subscriptionSchema = z.object({
     },
     { message: '無效的日期格式' },
   ),
+  hasEndDate: z.boolean().optional(),
   autoRenew: z.boolean().default(false),
+  isFreeTrial: z.boolean().optional(),
   periodValue: z.number().int().positive().optional(),
   periodUnit: z.enum(['day', 'month', 'year']).optional(),
-  reminderUnit: z.enum(['day', 'hour']),
-  reminderValue: z.number().int().positive(),
+  periodMethod: z.enum(['credit', 'apple', 'google', 'paypal', 'other']).optional(),
+  website: z.string().optional(),
+  isReminderSet: z.boolean().optional(),
+  reminderMe: z.number().int().nonnegative().optional(),
+  // 向後兼容欄位
+  reminderUnit: z.enum(['day', 'hour']).optional(),
+  reminderValue: z.number().int().positive().optional(),
   notes: z.string().optional(),
   isActive: z.boolean().default(true),
 })

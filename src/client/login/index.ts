@@ -1,5 +1,3 @@
-import type { ApiResponse } from '../../types/api'
-
 const form = document.getElementById('loginForm') as HTMLFormElement | null
 const btn = document.getElementById('submitBtn') as HTMLButtonElement | null
 const btnText = document.getElementById('btnText') as HTMLElement | null
@@ -56,7 +54,7 @@ form?.addEventListener('htmx:beforeRequest', async (evt: Event) => {
       }),
     })
 
-    const data = await response.json() as ApiResponse<{ username: string }>
+    const data = await response.json() as Api.Response<{ username: string }>
 
     if (data.success) {
       // 登入成功，重定向到管理頁面
