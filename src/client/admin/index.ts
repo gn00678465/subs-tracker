@@ -334,6 +334,11 @@ async function handleEdit(id: string) {
       throw new Error('表單元素不存在')
     }
 
+    // 處理到期日期：儲存的是實際過期時間（選定日期+1），顯示時需要-1天
+    const expiryDateObj = new Date(sub.expiryDate)
+    expiryDateObj.setDate(expiryDateObj.getDate() - 1)
+    const displayExpiryDate = expiryDateObj.toISOString().split('T')[0]
+
     // 使用批量設置函數填充表單
     setFormValues(form, {
       subscriptionId: sub.id,
@@ -343,7 +348,7 @@ async function handleEdit(id: string) {
       currency: sub.currency || 'TWD',
       price: sub.price || '',
       startDate: sub.startDate ? sub.startDate.split('T')[0] : '',
-      expiryDate: sub.expiryDate.split('T')[0],
+      expiryDate: displayExpiryDate,
       periodValue: sub.periodValue || 1,
       periodUnit: sub.periodUnit || 'month',
       periodMethod: sub.periodMethod || 'credit',

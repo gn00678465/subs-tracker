@@ -153,20 +153,8 @@ export async function createSubscription(
 
     const subscriptions = await getAllSubscriptions(env)
 
-    // 解析到期日期
-    let expiryDate = new Date(data.expiryDate)
-    const currentTime = getCurrentTime()
-
-    // 如果到期且有週期設定，自動續期
-    if (expiryDate < currentTime && data.periodValue && data.periodUnit) {
-      const renewal = applyAutoRenewal(
-        { ...data, expiryDate: data.expiryDate } as Subscription,
-        currentTime,
-      )
-      if (renewal.renewed && renewal.newExpiryDate) {
-        expiryDate = new Date(renewal.newExpiryDate)
-      }
-    }
+    // 解析到期日期（創建時不進行自動續期）
+    const expiryDate = new Date(data.expiryDate)
 
     // 解析提醒設定
     const reminderSetting = resolveReminderSetting(data)

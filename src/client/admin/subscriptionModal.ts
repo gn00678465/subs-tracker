@@ -29,8 +29,6 @@ async function handleFormSubmit(evt: Event) {
   const hxEvt = evt as HtmxBeforeRequestEvent
   const formData = Object.fromEntries(hxEvt.detail.requestConfig.formData.entries())
 
-  console.log('提交表單數據:', formData)
-
   const submitBtn = (evt.target as HTMLFormElement).querySelector('button[type="submit"]') as HTMLButtonElement | null
   const submitText = document.getElementById('submitText')
   const submitLoading = document.getElementById('submitLoading')
@@ -45,6 +43,13 @@ async function handleFormSubmit(evt: Event) {
   const id = (formData.id as string) || ''
 
   try {
+    // 處理到期日期：選定日期 +1 天作為實際過期時間
+    // 例如：選擇 12/20，表示 12/20 全天有效，過期時間為 12/21 00:00:00
+    const expiryDateInput = formData.expiryDate as string
+    const expiryDate = new Date(expiryDateInput)
+    expiryDate.setDate(expiryDate.getDate() + 1)
+    const expiryDateISO = expiryDate.toISOString()
+
     const data = {
       name: (formData.name as string)?.trim(),
       customType: (formData.customType as string)?.trim() || undefined,
@@ -52,7 +57,7 @@ async function handleFormSubmit(evt: Event) {
       currency: (formData.currency as string) || undefined,
       price: (formData.price as string) || undefined,
       startDate: (formData.startDate as string) || undefined,
-      expiryDate: formData.expiryDate as string,
+      expiryDate: expiryDateISO,
       periodValue: Number.parseInt(formData.periodValue as string),
       periodUnit: formData.periodUnit as string,
       periodMethod: (formData.periodMethod as string) || undefined,
