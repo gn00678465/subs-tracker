@@ -1,4 +1,5 @@
 import { toApiFormat } from '../../utils/formAdaptor'
+import { toast } from '../../utils/toast'
 
 const subscriptionForm = document.getElementById('subscriptionForm') as HTMLFormElement
 const hasEndDateToggle = document.getElementById('hasEndDate') as HTMLInputElement
@@ -73,7 +74,7 @@ async function handleFormSubmit(evt: Event) {
     const result = await response.json() as { data?: { id?: string } }
     const savedId = id || result.data?.id
 
-    window.showToast(id ? '更新成功' : '添加成功', 'success')
+    toast.success(id ? '更新成功' : '添加成功')
     const modal = document.getElementById('subscriptionModal') as HTMLDialogElement | null
     modal?.close()
 
@@ -88,7 +89,7 @@ async function handleFormSubmit(evt: Event) {
   catch (error) {
     // eslint-disable-next-line no-console
     console.error('保存失敗:', error)
-    window.showToast('保存失敗，請稍後再試', 'error')
+    toast.error('保存失敗，請稍後再試')
 
     // 派發失敗事件
     document.dispatchEvent(new CustomEvent('subscription-save-failed', {

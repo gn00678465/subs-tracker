@@ -51,7 +51,7 @@ export function formatRemainingTime(
 export function getSubscriptionStatus(
   subscription: Subscription,
   diffDays: number,
-  diffHours: number,
+  _diffHours: number,
 ): 'inactive' | 'expired' | 'soon' | 'normal' {
   if (!subscription.isActive)
     return 'inactive'

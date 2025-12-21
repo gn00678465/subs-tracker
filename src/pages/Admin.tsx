@@ -12,13 +12,6 @@ export const AdminPage: FC<AdminPageProps> = ({ username }) => {
     <Layout title="訂閱列表 - SubsTracker" description="管理訂閱提醒">
       <Navbar currentPage="admin" username={username} />
 
-      {/* Toast 容器 */}
-      <div id="toast" class="toast toast-top toast-end hidden z-50">
-        <div id="toastAlert" class="alert shadow-lg">
-          <span id="toastMessage"></span>
-        </div>
-      </div>
-
       <div class="container mx-auto p-4 max-w-7xl">
         {/* 搜索與篩選區域 */}
         <div class="card bg-base-100 shadow-xl mb-6">

@@ -1,5 +1,6 @@
 import type { Subscription } from '../../types/index'
 import { toFormFormat } from '../../utils/formAdaptor'
+import { toast } from '../../utils/toast'
 import { renderErrorState, renderLoadingState, renderSubscriptionTable } from './tableRenderer'
 
 // ===== 表單輔助函數 =====
@@ -97,7 +98,7 @@ async function loadSubscriptions(showLoading: boolean = true) {
     // eslint-disable-next-line no-console
     console.error('載入訂閱失敗:', error)
     renderErrorState('載入失敗，請刷新頁面重試')
-    window.showToast('載入訂閱列表失敗', 'error')
+    toast.error('載入訂閱列表失敗')
   }
 }
 
@@ -239,7 +240,7 @@ async function handleEdit(id: string) {
   catch (error) {
     // eslint-disable-next-line no-console
     console.error('編輯訂閱失敗:', error)
-    window.showToast('獲取訂閱詳情失敗', 'error')
+    toast.error('獲取訂閱詳情失敗')
   }
 }
 
@@ -263,7 +264,7 @@ async function handleDelete(id: string) {
       throw new Error(error.message || '刪除失敗')
     }
 
-    window.showToast('刪除成功', 'success')
+    toast.success('刪除成功')
 
     // 派發刪除事件
     document.dispatchEvent(new CustomEvent('subscription-deleted', {
@@ -273,7 +274,7 @@ async function handleDelete(id: string) {
   catch (error) {
     // eslint-disable-next-line no-console
     console.error('刪除失敗:', error)
-    window.showToast(error instanceof Error ? error.message : '刪除失敗，請稍後再試', 'error')
+    toast.error(error instanceof Error ? error.message : '刪除失敗，請稍後再試')
     // 失敗時重新載入以確保一致性
     await loadSubscriptions(false)
   }
@@ -292,7 +293,7 @@ async function handleToggleStatus(id: string, targetStatus: boolean) {
       throw new Error(error.message || '操作失敗')
     }
 
-    window.showToast(targetStatus ? '啟用成功' : '停用成功', 'success')
+    toast.success(targetStatus ? '啟用成功' : '停用成功')
 
     // 派發狀態變更事件
     document.dispatchEvent(new CustomEvent('subscription-status-changed', {
@@ -302,7 +303,7 @@ async function handleToggleStatus(id: string, targetStatus: boolean) {
   catch (error) {
     // eslint-disable-next-line no-console
     console.error('切換狀態失敗:', error)
-    window.showToast(error instanceof Error ? error.message : '操作失敗，請稍後再試', 'error')
+    toast.error(error instanceof Error ? error.message : '操作失敗，請稍後再試')
     // 失敗時重新載入以確保一致性
     await loadSubscriptions(false)
   }
@@ -320,12 +321,12 @@ async function handleTestNotify(id: string) {
     }
 
     const result = await response.json() as { message?: string }
-    window.showToast(result.message || '測試通知已發送', 'success')
+    toast.success(result.message || '測試通知已發送')
   }
   catch (error) {
     // eslint-disable-next-line no-console
     console.error('測試通知失敗:', error)
-    window.showToast(error instanceof Error ? error.message : '發送測試通知失敗', 'error')
+    toast.error(error instanceof Error ? error.message : '發送測試通知失敗')
   }
 }
 

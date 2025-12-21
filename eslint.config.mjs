@@ -15,4 +15,5 @@ export default antfu({
 }).overrideRules({
   'no-console': 'warn',
   'unused-imports/no-unused-vars': 'warn',
+  'no-alert': 'off',
 })
