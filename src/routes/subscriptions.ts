@@ -3,6 +3,8 @@ import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { authMiddleware } from '../middleware/auth'
+import { getConfig } from '../services/config'
+import { sendNotificationToAllChannels } from '../services/notifier'
 import {
   createSubscription,
   deleteSubscription,
@@ -12,7 +14,7 @@ import {
   updateSubscription,
 } from '../services/subscription'
 import * as logger from '../utils/logger'
-import { created, notFound, notImplemented, serverError, success, validationError } from '../utils/response'
+import { created, notFound, serverError, success, validationError } from '../utils/response'
 
 // 創建訂閱路由實例
 const subscriptions = new Hono<HonoEnv>()
@@ -247,8 +249,51 @@ subscriptions.post('/:id/test', async (c) => {
 
     logger.info(`測試訂閱通知: ${id} (${user.username})`, { prefix: 'Subscriptions' })
 
-    // TODO: 實現測試通知功能（Phase 6）
-    return notImplemented(c, '測試通知功能尚未實現')
+    // 獲取訂閱
+    const subscription = await getSubscription(id, c.env)
+    if (!subscription) {
+      return notFound(c, '訂閱不存在')
+    }
+
+    // 獲取配置
+    const config = await getConfig(c.env)
+
+    // 構造測試通知
+    const title = `測試通知: ${subscription.name}`
+    const content = `這是一條測試通知\n\n訂閱名稱: ${subscription.name}\n到期日期: ${subscription.expiryDate}\n\n如果您收到此通知，說明通知渠道配置正確。`
+
+    // 發送通知
+    const result = await sendNotificationToAllChannels(
+      {
+        title,
+        content,
+        timestamp: new Date().toISOString(),
+        metadata: { subscriptionId: id, isTest: true },
+      },
+      config,
+    )
+
+    logger.info(`測試通知發送完成: 成功 ${result.successCount}/${result.totalChannels}`, {
+      prefix: 'Subscriptions',
+      data: result,
+    })
+
+    // 返回詳細結果
+    if (result.totalChannels === 0) {
+      return validationError(c, '沒有啟用任何通知渠道，請先在配置頁面啟用並配置通知渠道')
+    }
+
+    if (result.successCount === 0) {
+      const errorDetails = result.results.map(r => `${r.channel}: ${r.error}`).join('; ')
+      return serverError(c, `所有通知渠道發送失敗，詳情: ${errorDetails}`)
+    }
+
+    return success(c, {
+      totalChannels: result.totalChannels,
+      successCount: result.successCount,
+      failureCount: result.failureCount,
+      details: result.results,
+    }, `測試通知發送完成 (成功 ${result.successCount}/${result.totalChannels})`)
   }
   catch (error) {
     logger.error('測試訂閱通知失敗', error, { prefix: 'Subscriptions' })

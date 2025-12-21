@@ -1,22 +1,57 @@
-import type { HonoEnv } from '../types'
-import { zValidator } from '@hono/zod-validator'
-import { Hono } from 'hono'
-import { z } from 'zod'
-import { getConfig } from '../services/config'
-import * as logger from '../utils/logger'
-import { forbidden, serverError, success, unauthorized, validationError } from '../utils/response'
+import type { HonoEnv } from '@/types'
+import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
+import { getConfig } from '@/services/config'
+import { sendNotificationToAllChannels } from '@/services/notifier'
+import * as logger from '@/utils/logger'
 
 // 創建第三方通知路由實例
-const notify = new Hono<HonoEnv>()
+const notify = new OpenAPIHono<HonoEnv>()
 
 // 通知請求的 Schema
-const notifySchema = z.object({
-  title: z.string().optional().default('第三方通知'),
-  content: z.string().min(1, '通知內容不能為空'),
+const NotifyRequestSchema = z.object({
+  title: z.string().optional().default('第三方通知').openapi({
+    example: '系統通知',
+    description: '通知標題',
+  }),
+  content: z.string().min(1, '通知內容不能為空').openapi({
+    example: '這是一條測試通知',
+    description: '通知內容',
+  }),
   tags: z.union([
     z.array(z.string()),
     z.string(),
-  ]).optional(),
+  ]).optional().openapi({
+    example: ['測試', '重要'],
+    description: '標籤列表（可以是陣列或逗號分隔的字符串）',
+  }),
+})
+
+// 成功響應 Schema
+const NotifySuccessResponseSchema = z.object({
+  success: z.boolean().openapi({ example: true }),
+  data: z.object({
+    msgid: z.string().openapi({ example: 'MSGID1703123456789' }),
+    totalChannels: z.number().openapi({ example: 3 }),
+    successCount: z.number().openapi({ example: 2 }),
+  }),
+  message: z.string().optional().openapi({
+    example: '發送成功 (2/3)',
+  }),
+})
+
+// 錯誤響應 Schema
+const NotifyErrorResponseSchema = z.object({
+  success: z.boolean().openapi({ example: false }),
+  message: z.string().openapi({
+    example: '訪問未授權，令牌無效或缺失',
+  }),
+  errors: z.array(z.object({
+    path: z.string(),
+    message: z.string(),
+  })).optional(),
+  code: z.string().optional().openapi({
+    example: 'UNAUTHORIZED',
+  }),
 })
 
 /**
@@ -58,28 +93,100 @@ async function verifyApiToken(c: any): Promise<{ valid: boolean, message?: strin
 }
 
 /**
+ * POST /api/notify/:token 路由定義
+ */
+const notifyRoute = createRoute({
+  method: 'post',
+  path: '/{token}',
+  tags: ['Notify'],
+  summary: '第三方通知觸發',
+  description: '通過第三方 API Token 觸發多渠道通知發送。支援三種 Token 傳遞方式：URL 路徑、Authorization Header、Query 參數。',
+  request: {
+    params: z.object({
+      token: z.string().optional().openapi({
+        param: {
+          name: 'token',
+          in: 'path',
+        },
+        example: 'your-api-token-here',
+        description: 'API Token（可選，也可通過 Header 或 Query 傳遞）',
+      }),
+    }),
+    body: {
+      content: {
+        'application/json': {
+          schema: NotifyRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: NotifySuccessResponseSchema,
+        },
+      },
+      description: '通知發送成功（至少一個渠道成功）',
+    },
+    400: {
+      content: {
+        'application/json': {
+          schema: NotifyErrorResponseSchema,
+        },
+      },
+      description: '請求驗證失敗或未啟用任何通知渠道',
+    },
+    401: {
+      content: {
+        'application/json': {
+          schema: NotifyErrorResponseSchema,
+        },
+      },
+      description: 'Token 無效或缺失',
+    },
+    403: {
+      content: {
+        'application/json': {
+          schema: NotifyErrorResponseSchema,
+        },
+      },
+      description: '第三方 API 已禁用',
+    },
+    500: {
+      content: {
+        'application/json': {
+          schema: NotifyErrorResponseSchema,
+        },
+      },
+      description: '服務器錯誤',
+    },
+  },
+})
+
+/**
  * POST /api/notify/:token
  * 第三方 API 觸發通知
  * 支持通過路徑參數、Header 或 Query 參數傳遞 Token
  */
-notify.post('/:token?', zValidator('json', notifySchema, (result, c) => {
-  if (!result.success) {
-    const errors = result.error.issues.map(issue => ({
-      path: issue.path.join('.'),
-      message: issue.message,
-    }))
-    return validationError(c, '請求數據驗證失敗', errors)
-  }
-}), async (c) => {
+notify.openapi(notifyRoute, async (c) => {
   try {
     // 驗證 API Token
     const tokenValidation = await verifyApiToken(c)
     if (!tokenValidation.valid) {
       logger.warning(`第三方 API Token 驗證失敗: ${tokenValidation.message}`, { prefix: 'Notify' })
       if (tokenValidation.message?.includes('禁用')) {
-        return forbidden(c, tokenValidation.message)
+        return c.json({
+          success: false,
+          message: tokenValidation.message,
+          code: 'FORBIDDEN',
+        }, 403)
       }
-      return unauthorized(c, tokenValidation.message || '訪問未授權')
+      return c.json({
+        success: false,
+        message: tokenValidation.message || '訪問未授權',
+        code: 'UNAUTHORIZED',
+      }, 401)
     }
 
     const { title, content, tags } = c.req.valid('json')
@@ -94,21 +201,57 @@ notify.post('/:token?', zValidator('json', notifySchema, (result, c) => {
       .filter(tag => typeof tag === 'string' && tag.trim().length > 0)
       .map(tag => tag.trim())
 
-    // TODO: Phase 6 - 實現多渠道通知發送
-    // await sendNotificationToAllChannels(title, content, config, '[第三方API]', {
-    //   metadata: { tags: bodyTags }
-    // })
+    // 發送通知到所有渠道
+    const config = await getConfig(c.env)
+    const result = await sendNotificationToAllChannels(
+      {
+        title,
+        content,
+        timestamp: new Date().toISOString(),
+        metadata: { tags: bodyTags, source: '第三方API' },
+      },
+      config,
+    )
 
-    logger.info('第三方通知發送成功（待實現多渠道發送）', {
+    logger.info(`第三方通知發送完成: 成功 ${result.successCount}/${result.totalChannels}`, {
       prefix: 'Notify',
-      data: { title, content, tags: bodyTags },
+      data: result,
     })
 
-    return success(c, { msgid: `MSGID${Date.now()}` }, '發送成功')
+    // 部分成功也返回成功（容錯設計）
+    if (result.successCount > 0) {
+      return c.json({
+        success: true,
+        data: {
+          msgid: `MSGID${Date.now()}`,
+          totalChannels: result.totalChannels,
+          successCount: result.successCount,
+        },
+        message: `發送成功 (${result.successCount}/${result.totalChannels})`,
+      }, 200)
+    }
+    else if (result.totalChannels === 0) {
+      return c.json({
+        success: false,
+        message: '沒有啟用任何通知渠道，請在配置頁面啟用並配置',
+        code: 'NO_CHANNELS',
+      }, 400)
+    }
+    else {
+      return c.json({
+        success: false,
+        message: '所有通知渠道發送失敗',
+        code: 'ALL_FAILED',
+      }, 500)
+    }
   }
   catch (error) {
     logger.error('第三方 API 發送通知失敗', error, { prefix: 'Notify' })
-    return serverError(c, '第三方 API 發送通知失敗')
+    return c.json({
+      success: false,
+      message: '第三方 API 發送通知失敗',
+      code: 'INTERNAL_ERROR',
+    }, 500)
   }
 })
 
