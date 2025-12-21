@@ -3,6 +3,7 @@ import {
   createIcons,
   List,
   LogOut,
+  Menu,
   Moon,
   Plus,
   Search,
@@ -23,6 +24,7 @@ createIcons({
     Archive,
     Plus,
     Search,
+    Menu,
   },
   attrs: {
     'stroke-width': 2,
