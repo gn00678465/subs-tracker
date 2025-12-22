@@ -1,6 +1,8 @@
 import {
   Archive,
+  Check,
   createIcons,
+  Info,
   List,
   LogOut,
   Menu,
@@ -10,6 +12,7 @@ import {
   SendHorizontal,
   Settings,
   Sun,
+  Ticket,
 } from 'lucide'
 
 // 初始化圖示
@@ -25,6 +28,9 @@ createIcons({
     Plus,
     Search,
     Menu,
+    Check,
+    Info,
+    Ticket,
   },
   attrs: {
     'stroke-width': 2,

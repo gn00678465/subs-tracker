@@ -33,10 +33,6 @@ const updateConfigSchema = z.object({
     example: '123456789',
     description: 'Telegram Chat ID',
   }),
-  NOTIFYX_API_KEY: z.string().optional().openapi({
-    example: 'your-notifyx-key',
-    description: 'NotifyX API Key',
-  }),
   WEBHOOK_URL: z.string().url('Webhook URL 格式無效').optional().or(z.literal('')).openapi({
     example: 'https://example.com/webhook',
     description: 'Webhook URL（可為空）',
@@ -81,6 +77,10 @@ const updateConfigSchema = z.object({
     example: '1',
     description: 'Bark 是否保存消息（1=是，0=否）',
   }),
+  BARK_QUERY: z.string().optional().openapi({
+    example: 'sound=alarm&group=訂閱提醒',
+    description: 'Bark URL 查詢參數（不含 ?）',
+  }),
   NOTIFICATION_HOURS: z.union([
     z.array(z.number().int().min(0).max(23)),
     z.string(),
@@ -116,7 +116,6 @@ const ConfigDataSchema = z.object({
   TIMEZONE: z.string(),
   TELEGRAM_BOT_TOKEN: z.string().optional(),
   TELEGRAM_CHAT_ID: z.string().optional(),
-  NOTIFYX_API_KEY: z.string().optional(),
   WEBHOOK_URL: z.string().optional(),
   WEBHOOK_METHOD: z.string().optional(),
   WEBHOOK_HEADERS: z.string().optional(),
@@ -128,6 +127,7 @@ const ConfigDataSchema = z.object({
   BARK_SERVER: z.string().optional(),
   BARK_KEY: z.string().optional(),
   BARK_SAVE: z.string().optional(),
+  BARK_QUERY: z.string().optional(),
   NOTIFICATION_HOURS: z.array(z.number()),
   ENABLED_NOTIFIERS: z.array(z.string()),
 }).openapi({
@@ -137,7 +137,6 @@ const ConfigDataSchema = z.object({
     TIMEZONE: 'Asia/Taipei',
     TELEGRAM_BOT_TOKEN: '',
     TELEGRAM_CHAT_ID: '',
-    NOTIFYX_API_KEY: '',
     WEBHOOK_URL: '',
     WEBHOOK_METHOD: 'POST',
     WEBHOOK_HEADERS: '',
@@ -149,6 +148,7 @@ const ConfigDataSchema = z.object({
     BARK_SERVER: 'https://api.day.app',
     BARK_KEY: '',
     BARK_SAVE: '1',
+    BARK_QUERY: '',
     NOTIFICATION_HOURS: [],
     ENABLED_NOTIFIERS: ['notifyx'],
   },

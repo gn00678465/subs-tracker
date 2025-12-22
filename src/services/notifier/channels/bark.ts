@@ -38,8 +38,11 @@ export const sendBarkNotification: ChannelSender = async (options, config) => {
     const server = (config.BARK_SERVER || 'https://api.day.app').replace(/\/$/, '') // 移除尾部斜線
     const shouldSave = config.BARK_SAVE === 'true' || config.BARK_SAVE === '1'
 
-    // Bark API v2: POST {server}/push
-    const url = `${server}/push`
+    // 構建 URL，如果有 querystring 則添加
+    let url = `${server}/push`
+    if (config.BARK_QUERY && config.BARK_QUERY.trim()) {
+      url += `?${config.BARK_QUERY.trim()}`
+    }
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

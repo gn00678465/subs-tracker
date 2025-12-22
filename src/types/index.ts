@@ -14,7 +14,6 @@ export interface Bindings {
   // 通知渠道配置
   TELEGRAM_BOT_TOKEN?: string
   TELEGRAM_CHAT_ID?: string
-  NOTIFYX_API_KEY?: string
   WEBHOOK_URL?: string
   WEBHOOK_METHOD?: string
   WEBHOOK_HEADERS?: string
@@ -26,6 +25,7 @@ export interface Bindings {
   BARK_SERVER?: string
   BARK_KEY?: string
   BARK_SAVE?: string
+  BARK_QUERY?: string
 
   // 其他配置
   NOTIFICATION_HOURS?: string
@@ -73,7 +73,6 @@ export interface Config {
   TIMEZONE: string
   TELEGRAM_BOT_TOKEN?: string
   TELEGRAM_CHAT_ID?: string
-  NOTIFYX_API_KEY?: string
   WEBHOOK_URL?: string
   WEBHOOK_METHOD?: string
   WEBHOOK_HEADERS?: string
@@ -85,6 +84,7 @@ export interface Config {
   BARK_SERVER?: string
   BARK_KEY?: string
   BARK_SAVE?: string
+  BARK_QUERY?: string
   NOTIFICATION_HOURS: number[]
   ENABLED_NOTIFIERS: string[]
 }

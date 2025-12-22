@@ -33,9 +33,6 @@ async function loadConfig(): Promise<void> {
     ;(document.getElementById('tgBotToken') as HTMLInputElement).value = config.TELEGRAM_BOT_TOKEN || ''
     ;(document.getElementById('tgChatId') as HTMLInputElement).value = config.TELEGRAM_CHAT_ID || ''
 
-    // NotifyX
-    ;(document.getElementById('notifyxApiKey') as HTMLInputElement).value = config.NOTIFYX_API_KEY || ''
-
     // Webhook
     ;(document.getElementById('webhookUrl') as HTMLInputElement).value = config.WEBHOOK_URL || ''
     const webhookMethodEl = document.getElementById('webhookMethod')
@@ -54,6 +51,7 @@ async function loadConfig(): Promise<void> {
     ;(document.getElementById('barkServer') as HTMLInputElement).value = config.BARK_SERVER || 'https://api.day.app'
     ;(document.getElementById('barkKey') as HTMLInputElement).value = config.BARK_KEY || ''
     ;(document.getElementById('barkSave') as HTMLInputElement).checked = config.BARK_SAVE === 'true' || config.BARK_SAVE === true
+    ;(document.getElementById('barkQuery') as HTMLInputElement).value = config.BARK_QUERY || ''
 
     // 更新渠道配置顯示
     toggleChannelConfigs(enabled)
@@ -67,7 +65,6 @@ async function loadConfig(): Promise<void> {
 function toggleChannelConfigs(enabled: string[]): void {
   const map: Record<string, string> = {
     telegram: 'telegramConfig',
-    notifyx: 'notifyxConfig',
     webhook: 'webhookConfig',
     email: 'emailConfig',
     bark: 'barkConfig',
@@ -107,6 +104,34 @@ document.addEventListener('DOMContentLoaded', () => {
   form.addEventListener('submit', async (e) => {
     e.preventDefault()
 
+    // ========== 密碼確認驗證 ==========
+    const password = (document.getElementById('adminPassword') as HTMLInputElement).value.trim()
+    const passwordConfirm = (document.getElementById('adminPasswordConfirm') as HTMLInputElement).value.trim()
+    const errorEl = document.getElementById('passwordMismatchError')
+
+    // 重置錯誤訊息
+    if (errorEl) {
+      errorEl.style.display = 'none'
+    }
+
+    // 驗證邏輯：如果任一欄位有值，兩個必須都一致
+    if (password || passwordConfirm) {
+      if (password !== passwordConfirm) {
+        if (errorEl) {
+          errorEl.style.display = 'block'
+        }
+        toast.error('兩次輸入的密碼不一致，請重新輸入')
+        return // 阻止表單提交
+      }
+
+      // 密碼長度驗證（前端額外檢查）
+      if (password.length < 6) {
+        toast.error('密碼至少需要 6 個字符')
+        return
+      }
+    }
+    // ========== 密碼驗證結束 ==========
+
     // 顯示 loading
     submitBtn.disabled = true
     submitText.classList.add('hidden')
@@ -122,6 +147,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (key === 'ENABLED_NOTIFIERS')
           continue
         if (key === 'ADMIN_PASSWORD' && !value)
+          continue
+        if (key === 'ADMIN_PASSWORD_CONFIRM')
           continue
         if (key === 'BARK_SAVE')
           continue

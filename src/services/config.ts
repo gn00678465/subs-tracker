@@ -21,7 +21,6 @@ export const DEFAULT_CONFIG: Config = {
   TIMEZONE: 'UTC',
   TELEGRAM_BOT_TOKEN: '',
   TELEGRAM_CHAT_ID: '',
-  NOTIFYX_API_KEY: '',
   WEBHOOK_URL: '',
   WEBHOOK_METHOD: 'POST',
   WEBHOOK_HEADERS: '',
@@ -33,8 +32,9 @@ export const DEFAULT_CONFIG: Config = {
   BARK_SERVER: 'https://api.day.app',
   BARK_KEY: '',
   BARK_SAVE: 'false',
+  BARK_QUERY: '',
   NOTIFICATION_HOURS: [], // 空陣列表示允許所有小時
-  ENABLED_NOTIFIERS: ['notifyx'],
+  ENABLED_NOTIFIERS: [],
 }
 
 // ==================== Configuration Operations ====================
@@ -75,7 +75,6 @@ export async function getConfig(env: Bindings): Promise<Config> {
       TIMEZONE: stored.TIMEZONE || DEFAULT_CONFIG.TIMEZONE,
       TELEGRAM_BOT_TOKEN: stored.TELEGRAM_BOT_TOKEN || stored.TG_BOT_TOKEN || DEFAULT_CONFIG.TELEGRAM_BOT_TOKEN,
       TELEGRAM_CHAT_ID: stored.TELEGRAM_CHAT_ID || stored.TG_CHAT_ID || DEFAULT_CONFIG.TELEGRAM_CHAT_ID,
-      NOTIFYX_API_KEY: stored.NOTIFYX_API_KEY || DEFAULT_CONFIG.NOTIFYX_API_KEY,
       WEBHOOK_URL: stored.WEBHOOK_URL || DEFAULT_CONFIG.WEBHOOK_URL,
       WEBHOOK_METHOD: stored.WEBHOOK_METHOD || DEFAULT_CONFIG.WEBHOOK_METHOD,
       WEBHOOK_HEADERS: stored.WEBHOOK_HEADERS || DEFAULT_CONFIG.WEBHOOK_HEADERS,
@@ -87,6 +86,7 @@ export async function getConfig(env: Bindings): Promise<Config> {
       BARK_SERVER: stored.BARK_SERVER || DEFAULT_CONFIG.BARK_SERVER,
       BARK_KEY: stored.BARK_KEY || stored.BARK_DEVICE_KEY || DEFAULT_CONFIG.BARK_KEY,
       BARK_SAVE: stored.BARK_SAVE || stored.BARK_IS_ARCHIVE || DEFAULT_CONFIG.BARK_SAVE,
+      BARK_QUERY: stored.BARK_QUERY || DEFAULT_CONFIG.BARK_QUERY,
       NOTIFICATION_HOURS: normalizeNotificationHours(stored.NOTIFICATION_HOURS),
       ENABLED_NOTIFIERS: Array.isArray(stored.ENABLED_NOTIFIERS)
         ? stored.ENABLED_NOTIFIERS
