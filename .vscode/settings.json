@@ -54,6 +54,7 @@
   },
   "chat.useAgentsMdFile": true,
   "chat.tools.terminal.autoApprove": {
-    "git rev-parse": true
+    "git rev-parse": true,
+    "git commit": true
   },
 }
