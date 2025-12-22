@@ -27,101 +27,117 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                   aria-label="基本設定"
                   checked
                 />
-                <div role="tabpanel" class="tab-content p-6">
-                  {/* 管理員帳號 */}
-                  <div class="form-control mb-6">
-                    <h3 class="text-lg font-semibold mb-4">管理員帳號</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <fieldset class="fieldset col-span-2">
-                        <label class="label" for="adminUsername">
-                          <span class="label-text">用戶名</span>
-                        </label>
-                        <input
-                          type="text"
-                          id="adminUsername"
-                          name="ADMIN_USERNAME"
-                          class="input input-bordered w-full"
-                        />
-                      </fieldset>
-                      <fieldset class="fieldset">
-                        <label class="label" for="adminPassword">
-                          <span class="label-text">新密碼</span>
-                        </label>
-                        <input
-                          type="password"
-                          id="adminPassword"
-                          name="ADMIN_PASSWORD"
-                          placeholder="留空表示不修改"
-                          class="input input-bordered w-full"
-                        />
-                        <label class="label">
-                          <span class="label-text-alt text-base-content/70">
-                            留空表示不修改當前密碼（至少 6 個字符）
-                          </span>
-                        </label>
-                      </fieldset>
-                      <fieldset class="fieldset">
-                        <label class="label" for="adminPasswordConfirm">
-                          <span class="label-text">確認新密碼</span>
-                        </label>
-                        <input
-                          type="password"
-                          id="adminPasswordConfirm"
-                          name="ADMIN_PASSWORD_CONFIRM"
-                          placeholder="留空表示不修改"
-                          class="input input-bordered w-full"
-                        />
-                        <label class="label">
-                          <span class="label-text-alt text-error" id="passwordMismatchError" style="display: none;">
-                            兩次輸入的密碼不一致
-                          </span>
-                        </label>
-                      </fieldset>
-                    </div>
+                <div role="tabpanel" class="tab-content p-6 px-2">
+                  <h3 class="text-lg font-semibold mb-4">管理員帳號</h3>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* 管理員帳號 */}
+                    <fieldset class="fieldset md:col-span-2">
+                      <label class="label" for="adminUsername">
+                        <span class="label-text">用戶名</span>
+                      </label>
+                      <input
+                        type="text"
+                        id="adminUsername"
+                        name="ADMIN_USERNAME"
+                        class="input input-bordered w-full"
+                      />
+                    </fieldset>
+                    <fieldset class="fieldset col-span-1">
+                      <label class="label" for="adminPassword">
+                        <span class="label-text">新密碼</span>
+                      </label>
+                      <input
+                        type="password"
+                        id="adminPassword"
+                        name="ADMIN_PASSWORD"
+                        placeholder="留空表示不修改"
+                        class="input input-bordered w-full"
+                      />
+                      <label class="label">
+                        <span class="label-text-alt text-base-content/70">
+                          留空表示不修改當前密碼（至少 6 個字符）
+                        </span>
+                      </label>
+                    </fieldset>
+
+                    <fieldset class="fieldset col-span-1">
+                      <label class="label" for="adminPasswordConfirm">
+                        <span class="label-text">確認新密碼</span>
+                      </label>
+                      <input
+                        type="password"
+                        id="adminPasswordConfirm"
+                        name="ADMIN_PASSWORD_CONFIRM"
+                        placeholder="留空表示不修改"
+                        class="input input-bordered w-full"
+                      />
+                      <label class="label">
+                        <span class="label-text-alt text-error" id="passwordMismatchError" style="display: none;">
+                          兩次輸入的密碼不一致
+                        </span>
+                      </label>
+                    </fieldset>
+                    {/* 時區設定 */}
+                    <fieldset class="fieldset md:col-span-2">
+                      <label class="label" for="timezone">
+                        <span class="label-text">時區</span>
+                      </label>
+                      <select id="timezone" name="TIMEZONE" class="select select-bordered w-full">
+                        <option value="UTC">世界標準時間（UTC+0）</option>
+                        <option value="Asia/Shanghai">中國標準時間（UTC+8）</option>
+                        <option value="Asia/Hong_Kong">香港時間（UTC+8）</option>
+                        <option value="Asia/Taipei">台北時間（UTC+8）</option>
+                        <option value="Asia/Singapore">新加坡時間（UTC+8）</option>
+                        <option value="Asia/Tokyo">東京時間（UTC+9）</option>
+                        <option value="America/New_York">紐約時間（UTC-5/-4）</option>
+                        <option value="America/Los_Angeles">洛杉磯時間（UTC-8/-7）</option>
+                        <option value="Europe/London">倫敦時間（UTC+0/+1）</option>
+                        <option value="Europe/Paris">巴黎時間（UTC+1/+2）</option>
+                      </select>
+                    </fieldset>
+
+                    {/* 通知時段 */}
+                    <fieldset class="fieldset">
+                      <label class="label" for="notificationHours">
+                        <span class="label-text">通知時段</span>
+                      </label>
+                      <input
+                        type="text"
+                        id="notificationHours"
+                        name="NOTIFICATION_HOURS"
+                        placeholder="例如：08, 12, 20 或輸入 * 表示全天"
+                        class="input input-bordered w-full"
+                      />
+                      <label class="label">
+                        <span class="text-wrap">
+                          可輸入多個小時（0-23），使用逗號或空格分隔，* 表示全天
+                        </span>
+                      </label>
+                    </fieldset>
+
+                    {/* 提醒通知頻率 */}
+                    <fieldset class="fieldset">
+                      <label class="label" for="reminderMode">
+                        <span class="label-text">提醒通知頻率</span>
+                      </label>
+                      <select id="reminderMode" name="REMINDER_MODE" class="select select-bordered w-full">
+                        <option value="ONCE">首次觸發（進入提醒窗口時發送一次）</option>
+                        <option value="DAILY">每日發送（在提醒窗口內每天發送）</option>
+                      </select>
+                      <label class="label">
+                        <span class="text-wrap text-base-content/70">
+                          • 首次觸發：進入提醒窗口時發送一次，直到續期或過期
+                          <br />
+                          • 每日發送：在提醒窗口內每天都發送提醒通知
+                        </span>
+                      </label>
+                    </fieldset>
                   </div>
-
-                  {/* 時區設定 */}
-                  <fieldset class="fieldset mb-6">
-                    <label class="label" for="timezone">
-                      <span class="label-text">時區</span>
-                    </label>
-                    <select id="timezone" name="TIMEZONE" class="select select-bordered w-full">
-                      <option value="UTC">世界標準時間（UTC+0）</option>
-                      <option value="Asia/Shanghai">中國標準時間（UTC+8）</option>
-                      <option value="Asia/Hong_Kong">香港時間（UTC+8）</option>
-                      <option value="Asia/Taipei">台北時間（UTC+8）</option>
-                      <option value="Asia/Singapore">新加坡時間（UTC+8）</option>
-                      <option value="Asia/Tokyo">東京時間（UTC+9）</option>
-                      <option value="America/New_York">紐約時間（UTC-5/-4）</option>
-                      <option value="America/Los_Angeles">洛杉磯時間（UTC-8/-7）</option>
-                      <option value="Europe/London">倫敦時間（UTC+0/+1）</option>
-                      <option value="Europe/Paris">巴黎時間（UTC+1/+2）</option>
-                    </select>
-                  </fieldset>
-
-                  {/* 通知時段 */}
-                  <fieldset class="fieldset">
-                    <label class="label" for="notificationHours">
-                      <span class="label-text">通知時段</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="notificationHours"
-                      name="NOTIFICATION_HOURS"
-                      placeholder="例如：08, 12, 20 或輸入 * 表示全天"
-                      class="input input-bordered w-full"
-                    />
-                    <label class="label">
-                      <span class="label-text-alt">
-                        可輸入多個小時（0-23），使用逗號或空格分隔，* 表示全天
-                      </span>
-                    </label>
-                  </fieldset>
                 </div>
 
                 {/* Tab 2: 通知渠道 */}
                 <input type="radio" name="config_tabs" role="tab" class="tab" aria-label="通知渠道" />
-                <div role="tabpanel" class="tab-content p-6">
+                <div role="tabpanel" class="tab-content p-6 px-2">
                   {/* 渠道選擇 */}
                   <div class="form-control mb-6">
                     <h3 class="text-lg font-semibold mb-4">啟用的通知渠道</h3>
@@ -184,7 +200,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                       </button>
                     </div>
                     <label class="label">
-                      <span class="label-text-alt">
+                      <span class="text-wrap">
                         調用 /api/notify/&#123;token&#125; 接口時需攜帶此令牌
                       </span>
                     </label>
@@ -193,7 +209,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
 
                 {/* Tab 3: 渠道配置 */}
                 <input type="radio" name="config_tabs" role="tab" class="tab" aria-label="渠道配置" />
-                <div role="tabpanel" class="tab-content p-6">
+                <div role="tabpanel" class="tab-content p-6 px-2">
                   {/* Telegram 配置 */}
                   <div id="telegramConfig" class="card bg-base-200 mb-6 hidden">
                     <div class="card-body">

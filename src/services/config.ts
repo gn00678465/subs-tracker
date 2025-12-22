@@ -35,6 +35,7 @@ export const DEFAULT_CONFIG: Config = {
   BARK_QUERY: '',
   NOTIFICATION_HOURS: [], // 空陣列表示允許所有小時
   ENABLED_NOTIFIERS: [],
+  REMINDER_MODE: 'ONCE', // 默認為首次觸發模式
 }
 
 // ==================== Configuration Operations ====================
@@ -91,6 +92,9 @@ export async function getConfig(env: Bindings): Promise<Config> {
       ENABLED_NOTIFIERS: Array.isArray(stored.ENABLED_NOTIFIERS)
         ? stored.ENABLED_NOTIFIERS
         : DEFAULT_CONFIG.ENABLED_NOTIFIERS,
+      REMINDER_MODE: (stored.REMINDER_MODE === 'ONCE' || stored.REMINDER_MODE === 'DAILY')
+        ? stored.REMINDER_MODE
+        : DEFAULT_CONFIG.REMINDER_MODE,
     }
 
     // 檢測並強制升級明文密碼

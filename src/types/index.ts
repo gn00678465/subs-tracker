@@ -62,6 +62,8 @@ export interface Subscription {
   isActive: boolean
   createdAt: string
   updatedAt: string
+  lastReminderSentAt?: string
+  lastCheckedExpiryDate?: string
 }
 
 // 配置數據結構
@@ -87,6 +89,7 @@ export interface Config {
   BARK_QUERY?: string
   NOTIFICATION_HOURS: number[]
   ENABLED_NOTIFIERS: string[]
+  REMINDER_MODE?: 'ONCE' | 'DAILY'
 }
 
 /**

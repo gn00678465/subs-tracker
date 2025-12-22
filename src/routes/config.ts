@@ -92,6 +92,10 @@ const updateConfigSchema = z.object({
     example: ['telegram', 'email', 'notifyx'],
     description: '啟用的通知渠道',
   }),
+  REMINDER_MODE: z.enum(['ONCE', 'DAILY']).optional().openapi({
+    example: 'ONCE',
+    description: '提醒頻率模式：ONCE=首次觸發，DAILY=每日發送',
+  }),
 })
 
 /**

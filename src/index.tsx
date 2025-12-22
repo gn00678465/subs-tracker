@@ -13,6 +13,11 @@ import auth from './routes/auth'
 import config from './routes/config'
 import notify from './routes/notify'
 import subscriptions from './routes/subscriptions'
+import { getConfig, isNotificationAllowedAtHour } from './services/config'
+import { getAllSubscriptions } from './services/subscription'
+import { processSubscriptionReminder } from './services/subscription_cron'
+import * as loggerUtil from './utils/logger'
+import { getCurrentTime } from './utils/time'
 
 // 使用支持 OpenAPI 的 Hono 實例
 const app = createOpenAPIApp()
@@ -68,7 +73,83 @@ app.get('/admin', pageAuthMiddleware, (c) => {
 export default {
   fetch: app.fetch,
   async scheduled(event: ScheduledEvent, env: Bindings, ctx: ExecutionContext) {
-    // TODO: Phase 7 - 實現定時任務邏輯
-    console.log('[Cron] Scheduled task triggered at:', new Date().toISOString())
+    loggerUtil.info('[Cron] 定時任務開始', {
+      prefix: 'Cron',
+      data: { triggerTime: new Date().toISOString() },
+    })
+
+    try {
+      // 1. 獲取配置
+      const config = await getConfig(env)
+
+      // 2. 檢查通知時段（UTC）
+      const currentHour = new Date().getUTCHours()
+      if (!isNotificationAllowedAtHour(config, currentHour)) {
+        loggerUtil.info(`[Cron] 當前時段 UTC ${currentHour}時 不在允許範圍，跳過`, {
+          prefix: 'Cron',
+          data: { allowedHours: config.NOTIFICATION_HOURS },
+        })
+        return
+      }
+
+      // 3. 獲取所有訂閱
+      const subscriptions = await getAllSubscriptions(env)
+      loggerUtil.info(`[Cron] 獲取到 ${subscriptions.length} 個訂閱`, { prefix: 'Cron' })
+
+      if (subscriptions.length === 0) {
+        loggerUtil.info('[Cron] 沒有訂閱需要檢查', { prefix: 'Cron' })
+        return
+      }
+
+      // 4. 並行處理所有訂閱
+      const currentTime = getCurrentTime()
+      const processPromises = subscriptions.map(sub =>
+        processSubscriptionReminder(sub, currentTime, config, env),
+      )
+
+      const results = await Promise.allSettled(processPromises)
+
+      // 5. 統計結果
+      const stats = {
+        total: subscriptions.length,
+        processed: 0,
+        reminded: 0,
+        renewed: 0,
+        skipped: 0,
+        failed: 0,
+      }
+
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          const { action, success } = result.value
+          if (success) {
+            stats.processed++
+            if (action === 'reminded')
+              stats.reminded++
+            else if (action === 'renewed')
+              stats.renewed++
+            else if (action === 'skipped')
+              stats.skipped++
+          }
+          else {
+            stats.failed++
+          }
+        }
+        else {
+          stats.failed++
+          loggerUtil.error(`[Cron] 處理失敗: ${subscriptions[index].name}`, result.reason, {
+            prefix: 'Cron',
+          })
+        }
+      })
+
+      loggerUtil.info('[Cron] 定時任務執行完成', {
+        prefix: 'Cron',
+        data: stats,
+      })
+    }
+    catch (error) {
+      loggerUtil.error('[Cron] 定時任務執行失敗', error, { prefix: 'Cron' })
+    }
   },
 }

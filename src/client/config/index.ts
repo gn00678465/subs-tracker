@@ -20,6 +20,11 @@ async function loadConfig(): Promise<void> {
     const hours = config.NOTIFICATION_HOURS || []
     ;(document.getElementById('notificationHours') as HTMLInputElement).value = hours.length === 0 ? '*' : hours.join(', ')
 
+    // 提醒通知頻率
+    const reminderModeEl = document.getElementById('reminderMode')
+    if (reminderModeEl)
+      (reminderModeEl as unknown as HTMLSelectElement).value = config.REMINDER_MODE || 'ONCE'
+
     // 第三方 API Token
     ;(document.getElementById('apiToken') as HTMLInputElement).value = config.API_TOKEN || ''
 
