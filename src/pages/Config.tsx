@@ -40,6 +40,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                         id="adminUsername"
                         name="ADMIN_USERNAME"
                         class="input input-bordered w-full"
+                        autocomplete="username"
                       />
                     </fieldset>
                     <fieldset class="fieldset col-span-1">
@@ -52,6 +53,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                         name="ADMIN_PASSWORD"
                         placeholder="留空表示不修改"
                         class="input input-bordered w-full"
+                        autocomplete="new-password"
                       />
                       <label class="label">
                         <span class="label-text-alt text-base-content/70">
@@ -70,6 +72,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                         name="ADMIN_PASSWORD_CONFIRM"
                         placeholder="留空表示不修改"
                         class="input input-bordered w-full"
+                        autocomplete="new-password"
                       />
                       <label class="label">
                         <span class="label-text-alt text-error" id="passwordMismatchError" style="display: none;">
@@ -209,10 +212,10 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
 
                 {/* Tab 3: 渠道配置 */}
                 <input type="radio" name="config_tabs" role="tab" class="tab" aria-label="渠道配置" />
-                <div role="tabpanel" class="tab-content p-6 px-2">
+                <div role="tabpanel" class="tab-content p-6 px-0 md:px-2">
                   {/* Telegram 配置 */}
                   <div id="telegramConfig" class="card bg-base-200 mb-6 hidden">
-                    <div class="card-body">
+                    <div class="card-body px-3 md:px-6">
                       <h3 class="card-title">Telegram 配置</h3>
                       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <fieldset class="fieldset">
@@ -245,10 +248,10 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
 
                   {/* Webhook 配置 */}
                   <div id="webhookConfig" class="card bg-base-200 mb-6 hidden">
-                    <div class="card-body">
+                    <div class="card-body px-3 md:px-6">
                       <h3 class="card-title">Webhook 配置</h3>
                       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <fieldset class="fieldset">
+                        <fieldset class="fieldset col-span-2 md:col-span-1">
                           <label class="label" for="webhookUrl">
                             <span class="label-text">Webhook URL</span>
                           </label>
@@ -260,7 +263,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                             class="input input-bordered w-full"
                           />
                         </fieldset>
-                        <fieldset class="fieldset">
+                        <fieldset class="fieldset col-span-2 md:col-span-1">
                           <label class="label" for="webhookMethod">
                             <span class="label-text">HTTP 方法</span>
                           </label>
@@ -310,7 +313,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
 
                   {/* Email 配置 */}
                   <div id="emailConfig" class="card bg-base-200 mb-6 hidden">
-                    <div class="card-body">
+                    <div class="card-body px-3 md:px-6">
                       <h3 class="card-title">郵件通知配置（Resend）</h3>
                       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <fieldset class="fieldset">
@@ -367,10 +370,10 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
 
                   {/* Bark 配置 */}
                   <div id="barkConfig" class="card bg-base-200 mb-6 hidden">
-                    <div class="card-body">
+                    <div class="card-body px-3 md:px-6">
                       <h3 class="card-title">Bark 配置</h3>
                       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <fieldset class="fieldset">
+                        <fieldset class="fieldset col-span-2 md:col-span-1">
                           <label class="label" for="barkServer">
                             <span class="label-text">Bark 服務器地址</span>
                           </label>
@@ -382,7 +385,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                             class="input input-bordered w-full"
                           />
                         </fieldset>
-                        <fieldset class="fieldset">
+                        <fieldset class="fieldset col-span-2 md:col-span-1">
                           <label class="label" for="barkKey">
                             <span class="label-text">設備 Key</span>
                           </label>
@@ -405,6 +408,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                             <span class="label-text">保存推送消息到歷史記錄</span>
                           </label>
                         </fieldset>
+
                         <fieldset class="fieldset col-span-2">
                           <label class="label" for="barkQuery">
                             <span class="label-text">URL 查詢參數（可選）</span>
@@ -417,7 +421,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                             class="input input-bordered w-full"
                           />
                           <label class="label">
-                            <span class="label-text-alt text-base-content/70">
+                            <span class="text-wrap text-base-content/70">
                               可添加 Bark 支持的 URL 參數，如 sound、group、icon、level 等，不需要加 ?
                             </span>
                           </label>

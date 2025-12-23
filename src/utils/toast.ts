@@ -26,7 +26,7 @@ class Toast {
   private message: HTMLElement | null = null
   private hideTimeout: NodeJS.Timeout | null = null
   private readonly defaultPosition: ToastOptions['position'] = 'bottom-end'
-  private readonly defaultDuration: number = 100000
+  private readonly defaultDuration: number = 3000
   private showIcon: boolean = true
 
   private constructor() {
