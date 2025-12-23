@@ -1,4 +1,5 @@
-import type { HonoEnv } from '../types'
+import type { Config, HonoEnv } from '../types'
+
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
 import { authMiddleware } from '../middleware/auth'
 import { getConfig, updateConfig } from '../services/config'
@@ -322,12 +323,12 @@ config.openapi(updateConfigRoute, async (c) => {
 
   try {
     const user = c.get('user')
-    const newConfig = c.req.valid('json')
+    const newConfig = c.req.valid('json') as Partial<Config>
 
     logger.info(`更新配置: ${user.username}`, { prefix: 'Config', data: Object.keys(newConfig) })
 
     // 類型斷言，因為 updateConfig 會在內部處理 NOTIFICATION_HOURS 的規範化
-    const result = await updateConfig(newConfig as any, c.env)
+    const result = await updateConfig(newConfig, c.env)
 
     if (!result.success) {
       return c.json({

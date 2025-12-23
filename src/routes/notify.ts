@@ -1,3 +1,4 @@
+import type { Context } from 'hono'
 import type { HonoEnv } from '@/types'
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
 import { getConfig } from '@/services/config'
@@ -61,7 +62,7 @@ const NotifyErrorResponseSchema = z.object({
  * 2. Authorization Header：Bearer <token>
  * 3. Query 參數：?token=xxx
  */
-async function verifyApiToken(c: any): Promise<{ valid: boolean, message?: string }> {
+async function verifyApiToken(c: Context<HonoEnv>): Promise<{ valid: boolean, message?: string }> {
   const config = await getConfig(c.env)
   const expectedToken = config.API_TOKEN || ''
 
