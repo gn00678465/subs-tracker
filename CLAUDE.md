@@ -173,3 +173,4 @@ KV namespace ID is shared across environments (configured in `wrangler.toml`).
 - Use Hono JSX for components (not React)
 - Prefer functional components and arrow functions
 - Import from `hono/jsx` for JSX types (e.g., `FC`, `PropsWithChildren`)
+- TypeScript 一律不使用 any 型別
