@@ -1,4 +1,5 @@
 import type { FC } from 'hono/jsx'
+import { Script } from 'vite-ssr-components/hono'
 import { Layout } from '../components/Layout'
 import { Navbar } from '../components/Navbar'
 
@@ -457,7 +458,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
       </div>
 
       {/* 客戶端邏輯 */}
-      <script type="module" src="/src/client/config/index.ts"></script>
+      <Script src="/src/client/config/index.ts" type="module" />
     </Layout>
   )
 }

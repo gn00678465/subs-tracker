@@ -1,4 +1,5 @@
 import type { FC } from 'hono/jsx'
+import { Script } from 'vite-ssr-components/hono'
 import { SubscriptionModal } from '../components/admin/SubscriptionModal'
 import { Layout } from '../components/Layout'
 import { Navbar } from '../components/Navbar'
@@ -92,8 +93,8 @@ export const AdminPage: FC<AdminPageProps> = ({ username }) => {
 
       <SubscriptionModal />
 
-      <script type="module" src="/src/client/admin/index.ts"></script>
-      <script type="module" src="/src/client/admin/subscriptionModal.ts"></script>
+      <Script src="/src/client/admin/index.ts" type="module" />
+      <Script src="/src/client/admin/subscriptionModal.ts" type="module" />
     </Layout>
   )
 }

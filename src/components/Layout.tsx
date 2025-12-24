@@ -1,5 +1,5 @@
 import type { FC, PropsWithChildren } from 'hono/jsx'
-import { Link, ViteClient } from 'vite-ssr-components/hono'
+import { Link, Script, ViteClient } from 'vite-ssr-components/hono'
 
 interface LayoutProps {
   title?: string
@@ -22,15 +22,15 @@ export const Layout: FC<PropsWithChildren<LayoutProps>> = ({
         <ViteClient />
         <script src="https://unpkg.com/htmx.org@2.0.4"></script>
         <Link href="/src/style.css" rel="stylesheet" />
-        <script type="module" src="/src/client/icons.ts"></script>
+        <Script src="/src/client/icons.ts" type="module" />
         {/* 載入主題切換模組 */}
-        <script type="module" src="/src/utils/themeToggle.ts"></script>
+        <Script src="/src/utils/themeToggle.ts" type="module" />
 
         {/* 載入 Toast 通知模組 */}
-        <script type="module" src="/src/utils/toast.ts"></script>
+        <Script src="/src/utils/toast.ts" type="module" />
 
         {/* 載入 ConfirmDialog 模組 */}
-        <script type="module" src="/src/utils/confirmDialog.ts"></script>
+        <Script src="/src/utils/confirmDialog.ts" type="module" />
       </head>
       <body>
         <main>{children}</main>

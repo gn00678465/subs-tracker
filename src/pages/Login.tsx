@@ -1,4 +1,5 @@
 import type { FC } from 'hono/jsx'
+import { Script } from 'vite-ssr-components/hono'
 import { Layout } from '../components/Layout'
 import ThemeToggle from '../components/ToggleTheme'
 
@@ -80,7 +81,7 @@ export const LoginPage: FC = () => {
         </div>
       </div>
 
-      <script type="module" src="/src/client/login/index.ts"></script>
+      <Script src="/src/client/login/index.ts" type="module" />
     </Layout>
   )
 }
