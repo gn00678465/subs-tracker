@@ -89,7 +89,8 @@ async function loadSubscriptions(showLoading: boolean = true) {
 
     const data = await response.json() as Api.SuccessResponse<Subscription[]>
     const _data = data.data && Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : [])
-    subscriptionsCache.splice(0, _data.length, ..._data)
+    subscriptionsCache.length = 0
+    subscriptionsCache.push(..._data)
 
     populateCategoryFilter(subscriptionsCache)
     renderSubscriptionTable(subscriptionsCache, getSearchKeyword(), getCategoryFilter(), tableHandlers)
