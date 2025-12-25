@@ -1,7 +1,6 @@
+import type { Context } from 'hono'
 import type { HonoEnv } from '../types'
-import { zValidator } from '@hono/zod-validator'
-import { Hono } from 'hono'
-import { z } from 'zod'
+import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
 import { authMiddleware } from '../middleware/auth'
 import { getConfig } from '../services/config'
 import { sendNotificationToAllChannels } from '../services/notifier'
@@ -17,10 +16,32 @@ import * as logger from '../utils/logger'
 import { created, notFound, serverError, success, validationError } from '../utils/response'
 
 // 創建訂閱路由實例
-const subscriptions = new Hono<HonoEnv>()
+const subscriptions = new OpenAPIHono<HonoEnv>()
 
 // 所有訂閱路由都需要認證
 subscriptions.use('*', authMiddleware)
+
+// ID 路徑參數驗證 Schema
+const idParamSchema = z.object({
+  id: z.string()
+    .regex(/^\d+$/, 'ID 必須為數字字串')
+    .refine(
+      (id) => {
+        const timestamp = Number.parseInt(id, 10)
+        // 驗證範圍：2020-01-01 到 2100-01-01
+        return timestamp >= 1577836800000 && timestamp <= 4102444800000
+      },
+      { message: 'ID 格式無效' },
+    )
+    .openapi({
+      param: {
+        name: 'id',
+        in: 'path',
+      },
+      example: '1703123456789',
+      description: '訂閱 ID（時間戳格式）',
+    }),
+})
 
 // 訂閱數據驗證 Schema
 const subscriptionSchema = z.object({
@@ -58,11 +79,88 @@ const toggleStatusSchema = z.object({
   isActive: z.boolean(),
 })
 
+// 訂閱響應 Schema
+const SubscriptionResponseSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  expiryDate: z.string(),
+  autoRenew: z.boolean(),
+  isActive: z.boolean(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  customType: z.string().optional(),
+  category: z.string().optional(),
+  currency: z.string().optional(),
+  price: z.string().optional(),
+  startDate: z.string().optional(),
+  hasEndDate: z.boolean().optional(),
+  isFreeTrial: z.boolean().optional(),
+  periodValue: z.number().optional(),
+  periodUnit: z.enum(['day', 'month', 'year']).optional(),
+  periodMethod: z.enum(['credit', 'apple', 'google', 'paypal', 'other']).optional(),
+  website: z.string().optional(),
+  isReminderSet: z.boolean().optional(),
+  reminderMe: z.number().optional(),
+  notes: z.string().optional(),
+  lastReminderSentAt: z.string().optional(),
+  lastCheckedExpiryDate: z.string().optional(),
+}).openapi('Subscription')
+
+// 成功響應 Schema
+const SuccessResponseSchema = z.object({
+  success: z.boolean().openapi({ example: true }),
+  data: z.unknown().optional(),
+  message: z.string().optional(),
+})
+
+// 錯誤響應 Schema
+const ErrorResponseSchema = z.object({
+  success: z.boolean().openapi({ example: false }),
+  message: z.string(),
+  errors: z.array(z.object({
+    path: z.string(),
+    message: z.string(),
+  })).optional(),
+  code: z.string().optional(),
+})
+
+/**
+ * GET /api/subscriptions 路由定義
+ */
+const listSubscriptionsRoute = createRoute({
+  method: 'get',
+  path: '/',
+  tags: ['Subscriptions'],
+  summary: '獲取訂閱列表',
+  description: '獲取所有訂閱列表',
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: SuccessResponseSchema.extend({
+            data: z.array(SubscriptionResponseSchema),
+          }),
+        },
+      },
+      description: '成功獲取訂閱列表',
+    },
+    500: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema,
+        },
+      },
+      description: '服務器錯誤',
+    },
+  },
+})
+
 /**
  * GET /api/subscriptions
  * 獲取所有訂閱列表
  */
-subscriptions.get('/', async (c) => {
+// @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
+subscriptions.openapi(listSubscriptionsRoute, async (c) => {
   try {
     const user = c.get('user')
     logger.info(`獲取訂閱列表: ${user.username}`, { prefix: 'Subscriptions' })
@@ -78,18 +176,59 @@ subscriptions.get('/', async (c) => {
 })
 
 /**
+ * POST /api/subscriptions 路由定義
+ */
+const createSubscriptionRoute = createRoute({
+  method: 'post',
+  path: '/',
+  tags: ['Subscriptions'],
+  summary: '創建訂閱',
+  description: '創建新訂閱',
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: subscriptionSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      content: {
+        'application/json': {
+          schema: SuccessResponseSchema.extend({
+            data: SubscriptionResponseSchema,
+          }),
+        },
+      },
+      description: '訂閱創建成功',
+    },
+    400: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema,
+        },
+      },
+      description: '請求驗證失敗',
+    },
+    500: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema,
+        },
+      },
+      description: '服務器錯誤',
+    },
+  },
+})
+
+/**
  * POST /api/subscriptions
  * 創建新訂閱
  */
-subscriptions.post('/', zValidator('json', subscriptionSchema, (result, c) => {
-  if (!result.success) {
-    const errors = result.error.issues.map(issue => ({
-      path: issue.path.join('.'),
-      message: issue.message,
-    }))
-    return validationError(c, '訂閱數據驗證失敗', errors)
-  }
-}), async (c) => {
+// @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
+subscriptions.openapi(createSubscriptionRoute, async (c) => {
   try {
     const user = c.get('user')
     const data = c.req.valid('json')
@@ -111,12 +250,55 @@ subscriptions.post('/', zValidator('json', subscriptionSchema, (result, c) => {
 })
 
 /**
+ * GET /api/subscriptions/:id 路由定義
+ */
+const getSubscriptionRoute = createRoute({
+  method: 'get',
+  path: '/{id}',
+  tags: ['Subscriptions'],
+  summary: '獲取訂閱詳情',
+  description: '根據 ID 獲取單個訂閱的詳細信息',
+  request: {
+    params: idParamSchema,
+  },
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: SuccessResponseSchema.extend({
+            data: SubscriptionResponseSchema,
+          }),
+        },
+      },
+      description: '成功獲取訂閱詳情',
+    },
+    404: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema,
+        },
+      },
+      description: '訂閱不存在',
+    },
+    500: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema,
+        },
+      },
+      description: '服務器錯誤',
+    },
+  },
+})
+
+/**
  * GET /api/subscriptions/:id
  * 獲取單個訂閱詳情
  */
-subscriptions.get('/:id', async (c) => {
+// @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
+subscriptions.openapi(getSubscriptionRoute, async (c) => {
   try {
-    const id = c.req.param('id')
+    const { id } = c.req.valid('param')
     const user = c.get('user')
 
     logger.info(`獲取訂閱詳情: ${id} (${user.username})`, { prefix: 'Subscriptions' })
@@ -136,20 +318,70 @@ subscriptions.get('/:id', async (c) => {
 })
 
 /**
+ * PUT /api/subscriptions/:id 路由定義
+ */
+const updateSubscriptionRoute = createRoute({
+  method: 'put',
+  path: '/{id}',
+  tags: ['Subscriptions'],
+  summary: '更新訂閱',
+  description: '更新指定訂閱的信息',
+  request: {
+    params: idParamSchema,
+    body: {
+      content: {
+        'application/json': {
+          schema: updateSubscriptionSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: SuccessResponseSchema.extend({
+            data: SubscriptionResponseSchema,
+          }),
+        },
+      },
+      description: '訂閱更新成功',
+    },
+    400: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema,
+        },
+      },
+      description: '請求驗證失敗',
+    },
+    404: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema,
+        },
+      },
+      description: '訂閱不存在',
+    },
+    500: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema,
+        },
+      },
+      description: '服務器錯誤',
+    },
+  },
+})
+
+/**
  * PUT /api/subscriptions/:id
  * 更新訂閱
  */
-subscriptions.put('/:id', zValidator('json', updateSubscriptionSchema, (result, c) => {
-  if (!result.success) {
-    const errors = result.error.issues.map(issue => ({
-      path: issue.path.join('.'),
-      message: issue.message,
-    }))
-    return validationError(c, '訂閱數據驗證失敗', errors)
-  }
-}), async (c) => {
+// @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
+subscriptions.openapi(updateSubscriptionRoute, async (c) => {
   try {
-    const id = c.req.param('id')
+    const { id } = c.req.valid('param')
     const user = c.get('user')
     const data = c.req.valid('json')
 
@@ -174,12 +406,53 @@ subscriptions.put('/:id', zValidator('json', updateSubscriptionSchema, (result, 
 })
 
 /**
+ * DELETE /api/subscriptions/:id 路由定義
+ */
+const deleteSubscriptionRoute = createRoute({
+  method: 'delete',
+  path: '/{id}',
+  tags: ['Subscriptions'],
+  summary: '刪除訂閱',
+  description: '刪除指定的訂閱',
+  request: {
+    params: idParamSchema,
+  },
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: SuccessResponseSchema,
+        },
+      },
+      description: '訂閱刪除成功',
+    },
+    404: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema,
+        },
+      },
+      description: '訂閱不存在',
+    },
+    500: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema,
+        },
+      },
+      description: '服務器錯誤',
+    },
+  },
+})
+
+/**
  * DELETE /api/subscriptions/:id
  * 刪除訂閱
  */
-subscriptions.delete('/:id', async (c) => {
+// @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
+subscriptions.openapi(deleteSubscriptionRoute, async (c) => {
   try {
-    const id = c.req.param('id')
+    const { id } = c.req.valid('param')
     const user = c.get('user')
 
     logger.info(`刪除訂閱: ${id} (${user.username})`, { prefix: 'Subscriptions' })
@@ -202,20 +475,70 @@ subscriptions.delete('/:id', async (c) => {
 })
 
 /**
+ * PUT /api/subscriptions/:id/toggle 路由定義
+ */
+const toggleSubscriptionRoute = createRoute({
+  method: 'put',
+  path: '/{id}/toggle',
+  tags: ['Subscriptions'],
+  summary: '切換訂閱狀態',
+  description: '切換訂閱的啟用/停用狀態',
+  request: {
+    params: idParamSchema,
+    body: {
+      content: {
+        'application/json': {
+          schema: toggleStatusSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: SuccessResponseSchema.extend({
+            data: SubscriptionResponseSchema,
+          }),
+        },
+      },
+      description: '狀態切換成功',
+    },
+    400: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema,
+        },
+      },
+      description: '請求驗證失敗',
+    },
+    404: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema,
+        },
+      },
+      description: '訂閱不存在',
+    },
+    500: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema,
+        },
+      },
+      description: '服務器錯誤',
+    },
+  },
+})
+
+/**
  * PUT /api/subscriptions/:id/toggle
  * 切換訂閱啟用/停用狀態
  */
-subscriptions.put('/:id/toggle', zValidator('json', toggleStatusSchema, (result, c) => {
-  if (!result.success) {
-    const errors = result.error.issues.map(issue => ({
-      path: issue.path.join('.'),
-      message: issue.message,
-    }))
-    return validationError(c, '請求數據驗證失敗', errors)
-  }
-}), async (c) => {
+// @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
+subscriptions.openapi(toggleSubscriptionRoute, async (c) => {
   try {
-    const id = c.req.param('id')
+    const { id } = c.req.valid('param')
     const user = c.get('user')
     const { isActive } = c.req.valid('json')
 
@@ -239,12 +562,68 @@ subscriptions.put('/:id/toggle', zValidator('json', toggleStatusSchema, (result,
 })
 
 /**
+ * POST /api/subscriptions/:id/test 路由定義
+ */
+const testNotificationRoute = createRoute({
+  method: 'post',
+  path: '/{id}/test',
+  tags: ['Subscriptions'],
+  summary: '測試通知',
+  description: '測試指定訂閱的通知發送',
+  request: {
+    params: idParamSchema,
+  },
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: SuccessResponseSchema.extend({
+            data: z.object({
+              totalChannels: z.number(),
+              successCount: z.number(),
+              failureCount: z.number(),
+              details: z.array(z.unknown()),
+            }),
+          }),
+        },
+      },
+      description: '測試通知發送完成',
+    },
+    400: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema,
+        },
+      },
+      description: '沒有啟用任何通知渠道',
+    },
+    404: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema,
+        },
+      },
+      description: '訂閱不存在',
+    },
+    500: {
+      content: {
+        'application/json': {
+          schema: ErrorResponseSchema,
+        },
+      },
+      description: '服務器錯誤',
+    },
+  },
+})
+
+/**
  * POST /api/subscriptions/:id/test
  * 測試單個訂閱的通知
  */
-subscriptions.post('/:id/test', async (c) => {
+// @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
+subscriptions.openapi(testNotificationRoute, async (c) => {
   try {
-    const id = c.req.param('id')
+    const { id } = c.req.valid('param')
     const user = c.get('user')
 
     logger.info(`測試訂閱通知: ${id} (${user.username})`, { prefix: 'Subscriptions' })
