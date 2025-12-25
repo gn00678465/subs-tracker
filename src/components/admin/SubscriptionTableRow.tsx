@@ -36,7 +36,7 @@ export function SubscriptionTableRow({
 
   // Category badges
   const categoryBadges = subscription.category
-    ?.split(/[/,\s]+/)
+    ?.split(/[\\/,\s]+/)
     .filter(t => t.trim())
     .map(cat => (
       <div class="badge badge-outline badge-sm" key={cat}>{cat.trim()}</div>
