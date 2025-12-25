@@ -1,4 +1,4 @@
-import type { Bindings } from './types'
+import type { Bindings, Subscription } from './types'
 import { cors } from 'hono/cors'
 import { csrf } from 'hono/csrf'
 import { logger } from 'hono/logger'
@@ -14,7 +14,7 @@ import config from './routes/config'
 import notify from './routes/notify'
 import subscriptions from './routes/subscriptions'
 import { getConfig, isNotificationAllowedAtHour } from './services/config'
-import { getAllSubscriptions } from './services/subscription'
+import { batchUpdateSubscriptions, getAllSubscriptions } from './services/subscription'
 import { processSubscriptionReminder } from './services/subscription_cron'
 import * as loggerUtil from './utils/logger'
 import { getCurrentTime } from './utils/time'
@@ -101,15 +101,38 @@ export default {
         return
       }
 
-      // 4. 並行處理所有訂閱
+      // 4. 並行處理所有訂閱（僅讀取和計算，不寫入 KV）
       const currentTime = getCurrentTime()
       const processPromises = subscriptions.map(sub =>
-        processSubscriptionReminder(sub, currentTime, config, env),
+        processSubscriptionReminder(sub, currentTime, config),
       )
 
       const results = await Promise.allSettled(processPromises)
 
-      // 5. 統計結果
+      // 5. 收集需要更新的訂閱
+      const subscriptionUpdates = new Map<string, Subscription>()
+
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled' && result.value.updatedSubscription) {
+          const { updatedSubscription } = result.value
+          subscriptionUpdates.set(updatedSubscription.id, updatedSubscription)
+        }
+      })
+
+      // 6. 原子批量更新（單次 KV 寫入，消除競爭條件）
+      if (subscriptionUpdates.size > 0) {
+        const updateResult = await batchUpdateSubscriptions(subscriptionUpdates, env)
+        if (!updateResult.success) {
+          loggerUtil.error('[Cron] 批量更新訂閱失敗', new Error(updateResult.message || '未知錯誤'), {
+            prefix: 'Cron',
+          })
+        }
+        else {
+          loggerUtil.info(`[Cron] 成功更新 ${updateResult.updatedCount} 個訂閱`, { prefix: 'Cron' })
+        }
+      }
+
+      // 7. 統計結果
       const stats = {
         total: subscriptions.length,
         processed: 0,

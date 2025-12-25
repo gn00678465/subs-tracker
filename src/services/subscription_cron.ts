@@ -1,30 +1,12 @@
-import type { Bindings, Config, Subscription } from '../types'
+import type { Config, Subscription } from '../types'
 import * as logger from '../utils/logger'
 import { getDaysDifference, getMidnightTimestamp } from '../utils/time'
 import { sendSubscriptionReminder } from './notifier'
-import { applyAutoRenewal, getAllSubscriptions } from './subscription'
+import { applyAutoRenewal } from './subscription'
 
 /**
  * Cron 任務相關函數
  */
-
-/**
- * 更新訂閱到 KV
- */
-async function updateSubscriptionInKV(
-  subscription: Subscription,
-  env: Bindings,
-): Promise<void> {
-  const subscriptions = await getAllSubscriptions(env)
-  const index = subscriptions.findIndex(s => s.id === subscription.id)
-
-  if (index === -1) {
-    throw new Error(`訂閱不存在: ${subscription.id}`)
-  }
-
-  subscriptions[index] = subscription
-  await env.SUBSCRIPTIONS_KV.put('subscriptions', JSON.stringify(subscriptions))
-}
 
 /**
  * 判斷是否應該發送提醒（考慮通知頻率模式）
@@ -61,13 +43,13 @@ function shouldSendReminder(
 
 /**
  * 處理單個訂閱的提醒邏輯
+ * 注意：此函數為純函數，不直接寫入 KV，而是返回更新後的訂閱對象
  */
 export async function processSubscriptionReminder(
   subscription: Subscription,
   currentTime: Date,
   config: Config,
-  env: Bindings,
-): Promise<{ action: 'reminded' | 'renewed' | 'skipped', success: boolean }> {
+): Promise<{ action: 'reminded' | 'renewed' | 'skipped', success: boolean, updatedSubscription?: Subscription }> {
   try {
     // 1. 前置檢查
     if (!subscription.isActive || !subscription.isReminderSet || !subscription.reminderMe || !subscription.expiryDate) {
@@ -97,8 +79,7 @@ export async function processSubscriptionReminder(
 
     if (!isInReminderWindow) {
       if (needsUpdate) {
-        await updateSubscriptionInKV(subscription, env)
-        return { action: 'renewed', success: true }
+        return { action: 'renewed', success: true, updatedSubscription: subscription }
       }
       return { action: 'skipped', success: true }
     }
@@ -106,7 +87,7 @@ export async function processSubscriptionReminder(
     // 4. 判斷是否需要發送提醒
     if (!shouldSendReminder(subscription, currentTime, config)) {
       if (needsUpdate) {
-        await updateSubscriptionInKV(subscription, env)
+        return { action: 'skipped', success: true, updatedSubscription: subscription }
       }
       return { action: 'skipped', success: true }
     }
@@ -123,12 +104,11 @@ export async function processSubscriptionReminder(
       subscription.lastReminderSentAt = currentTime.toISOString()
       subscription.lastCheckedExpiryDate = subscription.expiryDate
       subscription.updatedAt = currentTime.toISOString()
-      await updateSubscriptionInKV(subscription, env)
-      return { action: 'reminded', success: true }
+      return { action: 'reminded', success: true, updatedSubscription: subscription }
     }
     else {
       if (needsUpdate) {
-        await updateSubscriptionInKV(subscription, env)
+        return { action: 'reminded', success: false, updatedSubscription: subscription }
       }
       return { action: 'reminded', success: false }
     }

@@ -34,6 +34,51 @@ export async function getSubscription(
   return subscriptions.find(s => s.id === id)
 }
 
+/**
+ * 批量更新多個訂閱（原子操作）
+ * 用於 cron 任務中消除競爭條件
+ * @param updates 要更新的訂閱映射 (id -> Subscription)
+ * @param env KV 環境綁定
+ * @returns 更新結果統計
+ */
+export async function batchUpdateSubscriptions(
+  updates: Map<string, Subscription>,
+  env: Bindings,
+): Promise<{ success: boolean, updatedCount: number, message?: string }> {
+  try {
+    if (updates.size === 0) {
+      return { success: true, updatedCount: 0 }
+    }
+
+    // 讀取當前所有訂閱
+    const subscriptions = await getAllSubscriptions(env)
+    let updatedCount = 0
+
+    // 應用所有更新
+    for (let i = 0; i < subscriptions.length; i++) {
+      const updated = updates.get(subscriptions[i].id)
+      if (updated) {
+        subscriptions[i] = updated
+        updatedCount++
+      }
+    }
+
+    // 單次原子寫入
+    await env.SUBSCRIPTIONS_KV.put('subscriptions', JSON.stringify(subscriptions))
+
+    logger.info(`批量更新 ${updatedCount} 個訂閱`, { prefix: 'Subscription' })
+    return { success: true, updatedCount }
+  }
+  catch (error) {
+    logger.error('批量更新訂閱失敗', error, { prefix: 'Subscription' })
+    return {
+      success: false,
+      updatedCount: 0,
+      message: error instanceof Error ? error.message : '批量更新失敗',
+    }
+  }
+}
+
 // ==================== Helper Functions ====================
 
 /**
