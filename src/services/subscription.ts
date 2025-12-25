@@ -34,45 +34,52 @@ export async function getSubscription(
   return subscriptions.find(s => s.id === id)
 }
 
-// ==================== Helper Functions ====================
-
 /**
- * 解析提醒設定
- * 優先級：reminderValue + reminderUnit > reminderDays/reminderHours > 預設 7 天
+ * 批量更新多個訂閱（原子操作）
+ * 用於 cron 任務中消除競爭條件
+ * @param updates 要更新的訂閱映射 (id -> Subscription)
+ * @param env KV 環境綁定
+ * @returns 更新結果統計
  */
-export function resolveReminderSetting(subscription: Partial<Subscription>): {
-  unit: 'day' | 'hour'
-  value: number
-} {
-  // 優先使用明確的 reminderValue + reminderUnit
-  if (subscription.reminderValue && subscription.reminderUnit) {
-    const value = Number(subscription.reminderValue)
-    if (!Number.isNaN(value) && value >= 0) {
-      return {
-        unit: subscription.reminderUnit,
-        value,
+export async function batchUpdateSubscriptions(
+  updates: Map<string, Subscription>,
+  env: Bindings,
+): Promise<{ success: boolean, updatedCount: number, message?: string }> {
+  try {
+    if (updates.size === 0) {
+      return { success: true, updatedCount: 0 }
+    }
+
+    // 讀取當前所有訂閱
+    const subscriptions = await getAllSubscriptions(env)
+    let updatedCount = 0
+
+    // 應用所有更新
+    for (let i = 0; i < subscriptions.length; i++) {
+      const updated = updates.get(subscriptions[i].id)
+      if (updated) {
+        subscriptions[i] = updated
+        updatedCount++
       }
     }
-  }
 
-  // 回退到舊字段
-  if (subscription.reminderDays) {
-    const value = Number(subscription.reminderDays)
-    if (!Number.isNaN(value) && value >= 0) {
-      return { unit: 'day', value }
+    // 單次原子寫入
+    await env.SUBSCRIPTIONS_KV.put('subscriptions', JSON.stringify(subscriptions))
+
+    logger.info(`批量更新 ${updatedCount} 個訂閱`, { prefix: 'Subscription' })
+    return { success: true, updatedCount }
+  }
+  catch (error) {
+    logger.error('批量更新訂閱失敗', error, { prefix: 'Subscription' })
+    return {
+      success: false,
+      updatedCount: 0,
+      message: error instanceof Error ? error.message : '批量更新失敗',
     }
   }
-
-  if (subscription.reminderHours) {
-    const value = Number(subscription.reminderHours)
-    if (!Number.isNaN(value) && value >= 0) {
-      return { unit: 'hour', value }
-    }
-  }
-
-  // 預設：7 天
-  return { unit: 'day', value: 7 }
 }
+
+// ==================== Helper Functions ====================
 
 /**
  * 判斷是否應觸發提醒
@@ -153,23 +160,8 @@ export async function createSubscription(
 
     const subscriptions = await getAllSubscriptions(env)
 
-    // 解析到期日期
-    let expiryDate = new Date(data.expiryDate)
-    const currentTime = getCurrentTime()
-
-    // 如果到期且有週期設定，自動續期
-    if (expiryDate < currentTime && data.periodValue && data.periodUnit) {
-      const renewal = applyAutoRenewal(
-        { ...data, expiryDate: data.expiryDate } as Subscription,
-        currentTime,
-      )
-      if (renewal.renewed && renewal.newExpiryDate) {
-        expiryDate = new Date(renewal.newExpiryDate)
-      }
-    }
-
-    // 解析提醒設定
-    const reminderSetting = resolveReminderSetting(data)
+    // 解析到期日期（創建時不進行自動續期）
+    const expiryDate = new Date(data.expiryDate)
 
     // 構建新訂閱
     const newSubscription: Subscription = {
@@ -177,13 +169,18 @@ export async function createSubscription(
       name: data.name,
       customType: data.customType || '',
       category: data.category ? data.category.trim() : '',
+      currency: data.currency,
+      price: data.price,
+      startDate: data.startDate,
       expiryDate: expiryDate.toISOString(),
+      hasEndDate: data.hasEndDate,
       periodValue: data.periodValue || 1,
       periodUnit: data.periodUnit || 'month',
-      reminderUnit: reminderSetting.unit,
-      reminderValue: reminderSetting.value,
-      reminderDays: reminderSetting.unit === 'day' ? reminderSetting.value : undefined,
-      reminderHours: reminderSetting.unit === 'hour' ? reminderSetting.value : undefined,
+      periodMethod: data.periodMethod,
+      website: data.website,
+      isFreeTrial: data.isFreeTrial,
+      isReminderSet: data.isReminderSet,
+      reminderMe: data.reminderMe,
       notes: data.notes || '',
       isActive: data.isActive !== false,
       autoRenew: data.autoRenew !== false,
@@ -242,22 +239,24 @@ export async function updateSubscription(
       }
     }
 
-    // 解析提醒設定
-    const reminderSetting = resolveReminderSetting(data)
-
     // 更新訂閱（保留原有字段 + 覆蓋新字段）
     const updatedSubscription: Subscription = {
       ...subscriptions[index],
       name: data.name,
       customType: data.customType || '',
       category: data.category ? data.category.trim() : '',
+      currency: data.currency ?? subscriptions[index].currency,
+      price: data.price ?? subscriptions[index].price,
+      startDate: data.startDate ?? subscriptions[index].startDate,
       expiryDate: expiryDate.toISOString(),
+      hasEndDate: data.hasEndDate ?? subscriptions[index].hasEndDate,
       periodValue: data.periodValue ?? subscriptions[index].periodValue,
       periodUnit: data.periodUnit ?? subscriptions[index].periodUnit,
-      reminderUnit: reminderSetting.unit,
-      reminderValue: reminderSetting.value,
-      reminderDays: reminderSetting.unit === 'day' ? reminderSetting.value : undefined,
-      reminderHours: reminderSetting.unit === 'hour' ? reminderSetting.value : undefined,
+      periodMethod: data.periodMethod ?? subscriptions[index].periodMethod,
+      website: data.website ?? subscriptions[index].website,
+      isFreeTrial: data.isFreeTrial ?? subscriptions[index].isFreeTrial,
+      isReminderSet: data.isReminderSet ?? subscriptions[index].isReminderSet,
+      reminderMe: data.reminderMe ?? subscriptions[index].reminderMe,
       notes: data.notes ?? subscriptions[index].notes,
       isActive: data.isActive ?? subscriptions[index].isActive,
       autoRenew: data.autoRenew ?? subscriptions[index].autoRenew,

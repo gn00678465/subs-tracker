@@ -123,6 +123,7 @@ export function setTokenCookie(c: Context, token: string, maxAge = COOKIE_MAX_AG
     path: '/',
     httpOnly: true,
     sameSite: 'Strict',
+    secure: true,
     maxAge,
   })
 }
@@ -136,6 +137,7 @@ export function clearTokenCookie(c: Context): void {
     path: '/',
     httpOnly: true,
     sameSite: 'Strict',
+    secure: true,
   })
 }
 
@@ -149,7 +151,6 @@ export async function hashPassword(password: string, secret: string): Promise<st
   const keyData = encoder.encode(secret)
   const messageData = encoder.encode(password)
 
-  // @ts-expect-error - Bun 類型與 Web Crypto API 的兼容性問題
   const cryptoKey = await crypto.subtle.importKey(
     'raw',
     keyData,
@@ -158,7 +159,6 @@ export async function hashPassword(password: string, secret: string): Promise<st
     ['sign'],
   )
 
-  // @ts-expect-error - Bun 類型與 Web Crypto API 的兼容性問題
   const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData)
   const hashArray = Array.from(new Uint8Array(signature))
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')

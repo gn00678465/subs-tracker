@@ -12,8 +12,10 @@
 
 **Key Directories**:
 - `src/` - Application source code
+  - `client/` - Client Script
   - `components/` - UI components
   - `routes/` - Hono route handlers
+  - `pages/` - Frontend page
   - `services/` - Business logic (KV operations, scheduling)
   - `types/` - TypeScript type definitions
   - `utils/` - Helper functions (crypto, time)
@@ -76,7 +78,7 @@ Run this after installing/removing dependencies that interact with Workers bindi
 
 ### Full Check Suite (Run Before PR)
 ```bash
-bun run lint && bun run type-check && bun run test && bun run build
+bun run lint && bun run typecheck && bun run test && bun run build
 ```
 
 ### Individual Checks
@@ -90,7 +92,7 @@ Uses `@antfu/eslint-config` (opinionated rules for TS/Hono projects).
 
 **Type Checking**:
 ```bash
-bun run type-check
+bun run typecheck
 ```
 Runs `tsc --noEmit` to validate TypeScript without emitting files.
 
@@ -116,6 +118,10 @@ Builds and starts local preview server (tests production build locally).
 
 ---
 
+## Code style
+- TypeScript strict mode
+- TypeScript 一律不使用 any 型別
+
 ## Testing Instructions
 
 ### Test Structure Expectations
@@ -140,7 +146,7 @@ const mockKV = {
 
 ### Pre-Commit Checklist
 1. Run `bun run lint:fix` - Auto-fix linting issues
-2. Run `bun run type-check` - Ensure no type errors
+2. Run `bun run typecheck` - Ensure no type errors
 3. Run `bun run test` - All tests pass
 4. Run `bun run build` - Build succeeds without warnings
 5. Verify changes in `bun run preview` (if UI changes)
@@ -184,7 +190,7 @@ Closes #42
 ### PR Checklist
 - [ ] All commits follow Angular convention
 - [ ] `bun run lint` passes
-- [ ] `bun run type-check` passes
+- [ ] `bun run typecheck` passes
 - [ ] `bun run test` passes (coverage ≥80% for new code)
 - [ ] `bun run build` succeeds
 - [ ] Updated types after schema changes (`bun run cf-typegen`)
@@ -290,7 +296,7 @@ wrangler tail --env production
 3. **Implement service logic**: In `src/services/`
 4. **Add route handler**: In `src/routes/`
 5. **Write tests**: Co-located `*.test.ts` files
-6. **Verify**: Run full check suite (`lint + type-check + test + build`)
+6. **Verify**: Run full check suite (`lint + typecheck + test + build`)
 7. **Preview**: `bun run preview` to test production build
 8. **Commit**: Follow Angular convention
 9. **Deploy**: Push to trigger CI, or manual `bun run deploy`
@@ -304,7 +310,7 @@ wrangler tail --env production
 # Expected stages:
 1. Install dependencies (bun install --frozen-lockfile)
 2. Lint (bun run lint)
-3. Type check (bun run type-check)
+3. Type check (bun run typecheck)
 4. Test (bun run test)
 5. Build (bun run build)
 6. Deploy (on main branch merge)

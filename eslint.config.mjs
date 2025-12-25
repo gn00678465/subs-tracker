@@ -7,10 +7,13 @@ export default antfu({
   jsonc: false,
   yaml: false,
   markdown: false,
+  toml: false,
 }, {
   ignores: [
     'index.js',
   ],
 }).overrideRules({
   'no-console': 'warn',
+  'unused-imports/no-unused-vars': 'warn',
+  'no-alert': 'off',
 })

@@ -1,5 +1,32 @@
 @import "tailwindcss";
+@plugin "daisyui";
 
-h1 {
-  font-family: Arial, Helvetica, sans-serif;
+/* 基礎 View Transition 設定 */
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+}
+
+/* 預設層級設定（淺色模式） */
+::view-transition-old(root) {
+    z-index: 1;
+}
+
+::view-transition-new(root) {
+    z-index: 2147483646;
+}
+
+/* 深色模式時反轉層級 */
+[data-theme="dark"]::view-transition-old(root) {
+    z-index: 2147483646;
+}
+
+[data-theme="dark"]::view-transition-new(root) {
+    z-index: 1;
+}
+
+/* 確保 root 元素有轉場名稱 */
+:root {
+    view-transition-name: root;
 }

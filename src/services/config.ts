@@ -1,5 +1,5 @@
 import type { Bindings, Config } from '../types'
-import { generateRandomSecret } from '../utils/crypto'
+import { generateRandomSecret, hashPassword } from '../utils/crypto'
 import * as logger from '../utils/logger'
 
 /**
@@ -21,7 +21,6 @@ export const DEFAULT_CONFIG: Config = {
   TIMEZONE: 'UTC',
   TELEGRAM_BOT_TOKEN: '',
   TELEGRAM_CHAT_ID: '',
-  NOTIFYX_API_KEY: '',
   WEBHOOK_URL: '',
   WEBHOOK_METHOD: 'POST',
   WEBHOOK_HEADERS: '',
@@ -33,8 +32,10 @@ export const DEFAULT_CONFIG: Config = {
   BARK_SERVER: 'https://api.day.app',
   BARK_KEY: '',
   BARK_SAVE: 'false',
+  BARK_QUERY: '',
   NOTIFICATION_HOURS: [], // 空陣列表示允許所有小時
-  ENABLED_NOTIFIERS: ['notifyx'],
+  ENABLED_NOTIFIERS: [],
+  REMINDER_MODE: 'ONCE', // 默認為首次觸發模式
 }
 
 // ==================== Configuration Operations ====================
@@ -75,7 +76,6 @@ export async function getConfig(env: Bindings): Promise<Config> {
       TIMEZONE: stored.TIMEZONE || DEFAULT_CONFIG.TIMEZONE,
       TELEGRAM_BOT_TOKEN: stored.TELEGRAM_BOT_TOKEN || stored.TG_BOT_TOKEN || DEFAULT_CONFIG.TELEGRAM_BOT_TOKEN,
       TELEGRAM_CHAT_ID: stored.TELEGRAM_CHAT_ID || stored.TG_CHAT_ID || DEFAULT_CONFIG.TELEGRAM_CHAT_ID,
-      NOTIFYX_API_KEY: stored.NOTIFYX_API_KEY || DEFAULT_CONFIG.NOTIFYX_API_KEY,
       WEBHOOK_URL: stored.WEBHOOK_URL || DEFAULT_CONFIG.WEBHOOK_URL,
       WEBHOOK_METHOD: stored.WEBHOOK_METHOD || DEFAULT_CONFIG.WEBHOOK_METHOD,
       WEBHOOK_HEADERS: stored.WEBHOOK_HEADERS || DEFAULT_CONFIG.WEBHOOK_HEADERS,
@@ -87,10 +87,32 @@ export async function getConfig(env: Bindings): Promise<Config> {
       BARK_SERVER: stored.BARK_SERVER || DEFAULT_CONFIG.BARK_SERVER,
       BARK_KEY: stored.BARK_KEY || stored.BARK_DEVICE_KEY || DEFAULT_CONFIG.BARK_KEY,
       BARK_SAVE: stored.BARK_SAVE || stored.BARK_IS_ARCHIVE || DEFAULT_CONFIG.BARK_SAVE,
+      BARK_QUERY: stored.BARK_QUERY || DEFAULT_CONFIG.BARK_QUERY,
       NOTIFICATION_HOURS: normalizeNotificationHours(stored.NOTIFICATION_HOURS),
       ENABLED_NOTIFIERS: Array.isArray(stored.ENABLED_NOTIFIERS)
         ? stored.ENABLED_NOTIFIERS
         : DEFAULT_CONFIG.ENABLED_NOTIFIERS,
+      REMINDER_MODE: (stored.REMINDER_MODE === 'ONCE' || stored.REMINDER_MODE === 'DAILY')
+        ? stored.REMINDER_MODE
+        : DEFAULT_CONFIG.REMINDER_MODE,
+    }
+
+    // 檢測並強制升級明文密碼
+    if (isPlainTextPassword(config.ADMIN_PASSWORD)) {
+      logger.config('偵測到明文密碼，強制升級為 Hash')
+      const hashedPassword = await hashPassword(config.ADMIN_PASSWORD, jwtSecret)
+
+      // 更新配置並保存（確保包含 JWT_SECRET）
+      const updatedStoredConfig = {
+        ...stored,
+        JWT_SECRET: jwtSecret,
+        ADMIN_PASSWORD: hashedPassword,
+      }
+      await env.SUBSCRIPTIONS_KV.put('config', JSON.stringify(updatedStoredConfig))
+
+      // 更新返回的 config 對象
+      config.ADMIN_PASSWORD = hashedPassword
+      logger.config('密碼已自動升級為 Hash 並保存')
     }
 
     logger.config(`配置加載完成，用戶名: ${config.ADMIN_USERNAME}`)
@@ -122,6 +144,16 @@ export async function updateConfig(
     const updatedConfig: Config = {
       ...currentConfig,
       ...newConfig,
+    }
+
+    // 特殊處理：ADMIN_PASSWORD 需要加密
+    if (newConfig.ADMIN_PASSWORD) {
+      logger.config('開始加密管理員密碼')
+      updatedConfig.ADMIN_PASSWORD = await hashPassword(
+        newConfig.ADMIN_PASSWORD,
+        currentConfig.JWT_SECRET,
+      )
+      logger.config('管理員密碼已成功加密並更新')
     }
 
     // 特殊處理：NOTIFICATION_HOURS 需要規範化
@@ -201,4 +233,25 @@ export function isNotificationAllowedAtHour(config: Config, currentHour: number)
 
   // 檢查當前小時是否在允許列表中
   return NOTIFICATION_HOURS.includes(currentHour)
+}
+
+/**
+ * 檢測密碼是否為明文
+ * Hash 值為固定長度的 hex 字串（64 字元）
+ * HMAC-SHA256 會產生 32 字節 = 64 個 hex 字符
+ */
+function isPlainTextPassword(password: string): boolean {
+  // Hash 值的特徵：64 字符的純 hex 字串
+  // 如果不符合這個特徵，視為明文
+  if (password.length !== 64) {
+    return true
+  }
+
+  // 檢查是否為純 hex 字串（0-9, a-f）
+  if (!/^[0-9a-f]{64}$/i.test(password)) {
+    return true
+  }
+
+  // 符合 Hash 格式
+  return false
 }
