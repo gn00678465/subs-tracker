@@ -112,7 +112,7 @@ function populateCategoryFilter(subscriptions: Subscription[]) {
 
   subscriptions.forEach((sub) => {
     if (sub.category) {
-      sub.category.split(/[\\/,s]+/).forEach((token) => {
+      sub.category.split(/[\\/,\s]+/).forEach((token) => {
         const trimmed = token.trim()
         if (trimmed)
           categories.add(trimmed)
