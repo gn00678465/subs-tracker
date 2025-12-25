@@ -137,6 +137,7 @@ export function clearTokenCookie(c: Context): void {
     path: '/',
     httpOnly: true,
     sameSite: 'Strict',
+    secure: true,
   })
 }
 
