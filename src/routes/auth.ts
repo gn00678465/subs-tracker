@@ -39,13 +39,19 @@ const ErrorResponseSchema = z.object({
 
 /**
  * POST /api/login 路由定義
+ *
+ * 注意：除了 application/json，此端點也支援以下 Content-Type：
+ * - application/x-www-form-urlencoded（標準 HTML 表單提交）
+ * - multipart/form-data（表單資料，通常用於檔案上傳但也可用於一般表單）
+ *
+ * 這些額外的 Content-Type 未在 OpenAPI schema 中宣告，但在程式碼層級有實作支援。
  */
 const loginRoute = createRoute({
   method: 'post',
   path: '/login',
   tags: ['Auth'],
   summary: '用戶登入',
-  description: '使用用戶名和密碼進行身份驗證，成功後返回 JWT Token',
+  description: '使用用戶名和密碼進行身份驗證，成功後返回 JWT Token。支援 JSON 和 Form Data 格式。',
   request: {
     body: {
       content: {
@@ -97,11 +103,39 @@ const loginRoute = createRoute({
  */
 auth.openapi(loginRoute, async (c) => {
   try {
-    const { username, password } = c.req.valid('json')
+    const contentType = c.req.header('Content-Type') || ''
+    let username: string
+    let password: string
+
+    // 支援 Form Data (application/x-www-form-urlencoded 或 multipart/form-data)
+    if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
+      // Form Data: manual parsing + validation
+      const body = await c.req.parseBody()
+      username = typeof body.username === 'string' ? body.username : ''
+      password = typeof body.password === 'string' ? body.password : ''
+
+      const validationResult = LoginSchema.safeParse({ username, password })
+      if (!validationResult.success) {
+        return c.json({
+          success: false,
+          message: '請求驗證失敗',
+          errors: validationResult.error.issues.map(err => ({
+            path: err.path.join('.'),
+            message: err.message,
+          })),
+        }, 400)
+      }
+    }
+    else {
+      // JSON: existing OpenAPI validation (default)
+      const credentials = c.req.valid('json')
+      username = credentials.username
+      password = credentials.password
+    }
+
     const config = await getConfig(c.env)
 
     logger.info(`登入嘗試: ${username}`, { prefix: 'Auth' })
-
     // 驗證用戶名
     if (username !== config.ADMIN_USERNAME) {
       logger.warning(`登入失敗: 用戶名錯誤 (${username})`, { prefix: 'Auth' })
