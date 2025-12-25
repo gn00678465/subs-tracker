@@ -165,11 +165,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll<HTMLInputElement>('[name="ENABLED_NOTIFIERS"]:checked'),
       ).map(el => el.value)
 
-      // 驗證至少選擇一個渠道
-      if (data.ENABLED_NOTIFIERS.length === 0) {
-        throw new Error('請至少選擇一種通知渠道')
-      }
-
       // 處理通知時段
       const hoursInput = (document.getElementById('notificationHours') as HTMLInputElement).value.trim()
       if (hoursInput === '*' || !hoursInput) {
