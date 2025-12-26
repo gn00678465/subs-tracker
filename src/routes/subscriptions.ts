@@ -1,4 +1,3 @@
-import type { Context } from 'hono'
 import type { HonoEnv } from '../types'
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
 import { authMiddleware } from '../middleware/auth'
