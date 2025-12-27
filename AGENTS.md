@@ -225,6 +225,126 @@ bun run build && wrangler deploy --env staging
 wrangler deploy --env production --var VERSION:$(git rev-parse --short HEAD)
 ```
 
+---
+
+## Release Management
+
+### Version Management System
+This project uses **bumpp** for automated version bumping and **conventional-changelog** for changelog generation, following semantic versioning (semver) and Conventional Commits.
+
+### Local Release Commands
+
+**Patch Release** (bug fixes - 1.0.0 → 1.0.1):
+```bash
+bun run release
+```
+This command:
+1. Prompts for version confirmation (default: patch)
+2. Updates version in `package.json`
+3. Creates git commit with `chore(release): bump version to vX.X.X`
+4. Generates/updates `CHANGELOG.md` from commit history
+5. Amends the commit to include changelog
+6. Creates git tag `vX.X.X`
+7. Pushes commit and tags to remote
+
+**Minor Release** (new features - 1.0.0 → 1.1.0):
+```bash
+bun run release:minor
+```
+
+**Major Release** (breaking changes - 1.0.0 → 2.0.0):
+```bash
+bun run release:major
+```
+
+**Dry Run** (preview version bump without committing):
+```bash
+bun run release:dry
+```
+
+### CI/CD Release Workflow
+
+**GitHub Actions Release** (recommended for team projects):
+1. Navigate to GitHub → Actions → "Release" workflow
+2. Click "Run workflow"
+3. Select version type: `patch`, `minor`, or `major`
+4. Workflow automatically:
+   - Bumps version
+   - Generates changelog
+   - Commits and pushes changes
+   - Creates GitHub Release with release notes
+
+**Automatic Deployment**: Pushing tags to `main` branch triggers the deploy workflow, which:
+- Extracts version from `package.json`
+- Injects version into Workers via `--var VERSION:X.X.X`
+- Deploys to production with version metadata
+
+### Version Access in Code
+
+Version is available in Workers runtime via environment variables:
+
+```typescript
+// In Hono route handler
+app.get('/version', (c) => {
+  return c.json({ version: c.env.VERSION })
+})
+
+// Access in service
+const version = env.VERSION // e.g., "1.2.3"
+```
+
+### Changelog Generation
+
+Changelog is auto-generated from Conventional Commits:
+- `feat:` commits → Listed under "Features"
+- `fix:` commits → Listed under "Bug Fixes"
+- `perf:` commits → Listed under "Performance Improvements"
+- `BREAKING CHANGE:` footer → Listed under "BREAKING CHANGES"
+
+**Manual changelog generation**:
+```bash
+bun run changelog
+```
+
+### Release Best Practices
+
+1. **Before releasing**:
+   - Ensure all tests pass (`bun run typecheck && bun run lint`)
+   - Verify build succeeds (`bun run build`)
+   - Update documentation if needed
+
+2. **Commit message discipline**:
+   - Follow Conventional Commits strictly
+   - Use `feat:` for user-facing features
+   - Use `fix:` for bug fixes
+   - Add `BREAKING CHANGE:` footer for API changes
+
+3. **Version selection guide**:
+   - `patch` - Bug fixes, dependency updates, internal refactors
+   - `minor` - New features, non-breaking API additions
+   - `major` - Breaking changes, major refactors, API removals
+
+4. **After releasing**:
+   - Verify deployment in production
+   - Check version endpoint: `https://subscription-manager.workers.dev/version`
+   - Monitor logs for issues: `wrangler tail --env production`
+
+### Troubleshooting Releases
+
+**Error: "fatal: tag already exists"**
+- Delete local tag: `git tag -d vX.X.X`
+- Force push: `git push origin :refs/tags/vX.X.X`
+- Re-run release command
+
+**Error: "Permission denied (publickey)"**
+- Check GitHub SSH keys or use HTTPS
+- For CI: ensure `GITHUB_TOKEN` has write permissions
+
+**Changelog not updating**
+- Verify commits follow Conventional Commits format
+- Check commit history: `git log --oneline`
+- Manually generate: `bun run changelog`
+
 ### KV Operations (Development)
 
 **List all keys in local KV**:
@@ -367,17 +487,22 @@ wrangler secret put API_KEY --env production
 |------|---------|
 | Start dev server | `bun run dev` |
 | Run tests | `bun run test` |
-| Type check | `bun run type-check` |
+| Type check | `bun run typecheck` |
 | Lint & fix | `bun run lint:fix` |
 | Build | `bun run build` |
 | Preview production | `bun run preview` |
 | Deploy to prod | `bun run deploy` |
 | Generate types | `bun run cf-typegen` |
+| **Release patch** | `bun run release` |
+| **Release minor** | `bun run release:minor` |
+| **Release major** | `bun run release:major` |
+| **Preview version bump** | `bun run release:dry` |
+| **Generate changelog** | `bun run changelog` |
 | Tail logs | `wrangler tail --env production` |
-| Full pre-commit check | `bun run lint && bun run type-check && bun run test && bun run build` |
+| Full pre-commit check | `bun run lint && bun run typecheck && bun run test && bun run build` |
 
 ---
 
-**Last Updated**: 2025-12-14  
+**Last Updated**: 2025-12-27  
 **Maintainer**: AI Coding Agent  
 **Related Docs**: [Cloudflare Workers](https://developers.cloudflare.com/workers/), [Hono](https://hono.dev/), [Vite](https://vite.dev/)
