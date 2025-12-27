@@ -49,13 +49,17 @@ jobs:
       - name: Build
         run: bun run build
 
+      - name: Get version
+        id: version
+        run: echo "version=$(jq -r .version package.json)" >> $GITHUB_OUTPUT
+
       - name: Deploy to Cloudflare Workers (Production)
         if: github.ref == 'refs/heads/main'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --env production
+          command: deploy --env production --var VERSION:${{ steps.version.outputs.version }}
 
       - name: Deploy to Cloudflare Workers (Staging)
         if: github.ref == 'refs/heads/staging'
@@ -63,4 +67,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --env staging
+          command: deploy --env staging --var VERSION:${{ steps.version.outputs.version }}
