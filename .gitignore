@@ -33,3 +33,5 @@ lerna-debug.log*
 
 # misc
 .DS_Store
+.claude/settings.local.json
+.claude/*.local.json
