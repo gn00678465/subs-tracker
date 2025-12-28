@@ -19,6 +19,17 @@ export const Layout: FC<PropsWithChildren<LayoutProps>> = ({
         <meta name="description" content={description} />
         <title>{title}</title>
 
+        {/* PWA Meta Tags */}
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <meta name="theme-color" content="#36A45D" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+        {/* iOS Meta Tags */}
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="SubsTracker" />
+
         <ViteClient />
         <script src="https://unpkg.com/htmx.org@2.0.4"></script>
         <Link href="/src/style.css" rel="stylesheet" />
@@ -31,6 +42,9 @@ export const Layout: FC<PropsWithChildren<LayoutProps>> = ({
 
         {/* 載入 ConfirmDialog 模組 */}
         <Script src="/src/utils/confirmDialog.ts" type="module" />
+
+        {/* 載入 Service Worker 註冊 */}
+        <Script src="/src/client/registerSW.ts" type="module" />
       </head>
       <body>
         <main>{children}</main>

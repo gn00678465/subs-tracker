@@ -1,5 +1,19 @@
 @import "tailwindcss";
-@plugin "daisyui";
+@plugin "daisyui" {
+    themes: light --default, dark --prefersdark;
+    --color-primary: #36A45D;
+}
+
+@plugin "daisyui/theme" {
+    name: "light";
+    default: true;
+    --color-primary: #36A45D;
+}
+
+@plugin "daisyui/theme" {
+    name: "dark";
+    --color-primary: #36A45D;
+}
 
 /* 基礎 View Transition 設定 */
 ::view-transition-old(root),

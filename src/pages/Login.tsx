@@ -12,6 +12,13 @@ export const LoginPage: FC = () => {
           <div class="card-body">
             {/* 標題 */}
             <div class="text-center mb-6">
+              <div class="flex justify-center mb-4">
+                <img
+                  src="/icon.svg"
+                  alt="SubsTracker Logo"
+                  class="w-16 h-16"
+                />
+              </div>
               <h1 class="text-3xl font-bold text-base-content">SubsTracker</h1>
               <p class="text-base-content/70 mt-2">登入管理您的訂閱提醒</p>
             </div>
