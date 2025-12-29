@@ -21,7 +21,7 @@ export const AdminPage: FC<AdminPageProps> = ({ username }) => {
               {/* 搜索框 */}
               <div class="flex-1">
                 <label class="label">
-                  <span class="">搜索訂閱</span>
+                  <span>搜索訂閱</span>
                 </label>
                 <div class="relative">
                   <input
@@ -37,7 +37,7 @@ export const AdminPage: FC<AdminPageProps> = ({ username }) => {
               {/* 分類篩選 */}
               <div class="flex-1 md:flex-[unset] md:w-48">
                 <label class="label">
-                  <span class="">分類篩選</span>
+                  <span>分類篩選</span>
                 </label>
                 <select id="categoryFilter" class="select select-bordered w-full">
                   <option value="">全部分類</option>

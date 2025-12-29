@@ -21,7 +21,7 @@ export function SubscriptionTableRow({
   const expiryDate = new Date(subscription.expiryDate)
   const currentTime = new Date()
   const status = getSubscriptionStatus(subscription, expiryDate, currentTime)
-  const daysLeftText = formatRemainingTime(expiryDate, currentTime)
+  const daysLeft = formatRemainingTime(expiryDate, currentTime)
 
   // Status badge rendering
   const statusBadges = {
@@ -61,9 +61,9 @@ export function SubscriptionTableRow({
                 : subscription.notes}
             </div>
           )}
-          <div class="text-sm text-base-content/70 flex items-center gap-1 text-primary">
+          <div class={`text-sm text-base-content/70 flex items-center gap-1 ${daysLeft.class}`}>
             <i data-lucide="triangle-alert" class="w-4 h-4" />
-            {daysLeftText}
+            {daysLeft.text}
           </div>
         </div>
       </div>

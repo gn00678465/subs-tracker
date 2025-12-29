@@ -21,33 +21,51 @@ export function formatDate(dateStr: string): string {
 export function formatRemainingTime(
   expiryDate: Date,
   currentTime: Date = new Date(),
-): string {
+): {
+  class: string
+  text: string
+} {
   const diffWeeks = differenceInWeeks(expiryDate, currentTime)
 
   // >= 1 週：顯示週數
   if (Math.abs(diffWeeks) >= 1) {
     return diffWeeks < 0
-      ? `已過期 ${Math.abs(diffWeeks)} 週`
-      : `還剩 ${diffWeeks} 週`
+      ? { class: 'text-error', text: `已過期 ${Math.abs(diffWeeks)} 週` }
+      : { class: 'text-primary', text: `還剩 ${diffWeeks} 週` }
   }
 
   // < 1 週：檢查天數
   const diffDays = differenceInDays(expiryDate, currentTime)
 
-  if (Math.abs(diffDays) >= 1) {
-    return diffDays < 0
-      ? `已過期 ${Math.abs(diffDays)} 天`
-      : `還剩 ${diffDays} 天`
+  // 剩餘時間 >= 1 天：顯示天數
+  if (diffDays >= 1) {
+    return { class: 'text-primary', text: `還剩 ${diffDays} 天` }
   }
 
-  // < 1 天：檢查小時數（使用 ceiling）
+  // 檢查小時數（使用 ceiling）
   const diffHours = differenceInHours(expiryDate, currentTime)
 
+  // 已過期：檢查是否過期 >= 24 小時（1 天）
   if (diffHours < 0) {
-    return `已過期 ${Math.ceil(Math.abs(diffHours))} 小時`
+    const absHours = Math.abs(diffHours)
+    const expiredDays = Math.floor(absHours / 24)
+
+    if (expiredDays >= 1) {
+      return { class: 'text-error', text: `已過期 ${expiredDays} 天` }
+    }
+
+    return { class: 'text-error', text: `已過期 ${Math.ceil(absHours)} 小時` }
   }
 
-  return diffHours > 0 ? `約 ${Math.ceil(diffHours)} 小時後到期` : '即將到期'
+  return diffHours > 0
+    ? {
+        class: 'text-warning',
+        text: `還剩 ${Math.ceil(diffHours)} 小時`,
+      }
+    : {
+        class: 'text-warning',
+        text: '即將到期',
+      }
 }
 
 /**
