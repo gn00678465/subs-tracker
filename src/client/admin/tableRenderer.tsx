@@ -1,6 +1,7 @@
 import type { Subscription } from '../../types/index'
 /** @jsxImportSource hono/jsx/dom */
 import { render } from 'hono/jsx/dom'
+import { createIcons, TriangleAlert } from 'lucide'
 import { SubscriptionTable } from '../../components/admin/SubscriptionTable'
 import { ErrorState, LoadingState } from '../../components/admin/SubscriptionTableStates'
 
@@ -29,6 +30,13 @@ export function renderSubscriptionTable(
     />,
     tbody,
   )
+
+  // 重新掃描並渲染新添加的 lucide icons
+  createIcons({
+    icons: { TriangleAlert },
+    attrs: { 'stroke-width': 2, 'class': 'lucide-icon' },
+    nameAttr: 'data-lucide',
+  })
 }
 
 export function renderLoadingState() {

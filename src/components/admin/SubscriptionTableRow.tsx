@@ -1,7 +1,7 @@
 /** @jsxImportSource hono/jsx/dom */
 import type { Subscription } from '@/types/index'
 import { reminderOptions } from '@/utils/constants'
-import { calculateRemainingTime, formatDate, formatRemainingTime, getSubscriptionStatus } from './utils'
+import { formatDate, formatRemainingTime, getSubscriptionStatus } from './utils'
 
 interface SubscriptionTableRowProps {
   subscription: Subscription
@@ -18,11 +18,10 @@ export function SubscriptionTableRow({
   onToggleStatus,
   onTestNotify,
 }: SubscriptionTableRowProps) {
-  const currentTime = new Date()
   const expiryDate = new Date(subscription.expiryDate)
-  const { diffMs, diffDays, diffHours } = calculateRemainingTime(expiryDate, currentTime)
-  const status = getSubscriptionStatus(subscription, diffDays, diffHours)
-  const daysLeftText = formatRemainingTime(diffMs, diffDays, diffHours)
+  const currentTime = new Date()
+  const status = getSubscriptionStatus(subscription, expiryDate, currentTime)
+  const daysLeftText = formatRemainingTime(expiryDate, currentTime)
 
   // Status badge rendering
   const statusBadges = {
@@ -53,21 +52,27 @@ export function SubscriptionTableRow({
     >
       <div role="cell" class="flex flex-col">
         <span class="md:hidden text-xs text-base-content/50 mb-1">名稱</span>
-        <div class="font-medium">{subscription.name}</div>
-        {subscription.notes && (
-          <div class="text-sm text-base-content/70 mt-1">
-            {subscription.notes.length > 50
-              ? `${subscription.notes.substring(0, 50)}...`
-              : subscription.notes}
+        <div class="space-y-1">
+          <div class="font-medium">{subscription.name}</div>
+          {subscription.notes && (
+            <div class="text-sm text-base-content/70">
+              {subscription.notes.length > 50
+                ? `${subscription.notes.substring(0, 50)}...`
+                : subscription.notes}
+            </div>
+          )}
+          <div class="text-sm text-base-content/70 flex items-center gap-1 text-primary">
+            <i data-lucide="triangle-alert" class="w-4 h-4" />
+            {daysLeftText}
           </div>
-        )}
+        </div>
       </div>
 
       <div role="cell" class="flex flex-col gap-1">
         <span class="md:hidden text-xs text-base-content/50 mb-1">類型</span>
         <div>{subscription.customType || '其他'}</div>
         {subscription.periodValue && (
-          <div class="text-sm text-base-content/70 mt-1">
+          <div class="text-sm text-base-content/70">
             周期:
             {' '}
             {subscription.periodValue}
@@ -82,15 +87,16 @@ export function SubscriptionTableRow({
 
       <div role="cell" class="flex flex-col">
         <span class="md:hidden text-xs text-base-content/50 mb-1">到期時間</span>
-        <div>{formatDate(subscription.expiryDate)}</div>
-        <div class="text-sm text-base-content/70 mt-1">{daysLeftText}</div>
-        {subscription.startDate && (
-          <div class="text-xs text-base-content/50 mt-1">
-            開始:
-            {' '}
-            {formatDate(subscription.startDate)}
-          </div>
-        )}
+        <div class="space-y-1">
+          <div>{formatDate(subscription.expiryDate)}</div>
+          {subscription.startDate && (
+            <div class="text-xs text-base-content/50">
+              開始:
+              {' '}
+              {formatDate(subscription.startDate)}
+            </div>
+          )}
+        </div>
       </div>
 
       <div role="cell" class="flex flex-col">
