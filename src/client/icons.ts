@@ -13,6 +13,7 @@ import {
   Settings,
   Sun,
   Ticket,
+  TriangleAlert,
 } from 'lucide'
 
 // 初始化圖示
@@ -31,6 +32,7 @@ createIcons({
     Check,
     Info,
     Ticket,
+    TriangleAlert,
   },
   attrs: {
     'stroke-width': 2,

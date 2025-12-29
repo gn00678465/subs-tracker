@@ -17,11 +17,11 @@ export const AdminPage: FC<AdminPageProps> = ({ username }) => {
         {/* 搜索與篩選區域 */}
         <div class="card bg-base-100 shadow-xl mb-6">
           <div class="card-body">
-            <div class="flex flex-col md:flex-row gap-4 items-end">
+            <div class="flex flex-col md:flex-row gap-4 items-stretch md:items-end">
               {/* 搜索框 */}
-              <div class="form-control flex-1">
+              <div class="flex-1">
                 <label class="label">
-                  <span class="label-text">搜索訂閱</span>
+                  <span>搜索訂閱</span>
                 </label>
                 <div class="relative">
                   <input
@@ -35,17 +35,17 @@ export const AdminPage: FC<AdminPageProps> = ({ username }) => {
               </div>
 
               {/* 分類篩選 */}
-              <div class="form-control w-full md:w-48">
+              <div class="flex-1 md:flex-[unset] md:w-48">
                 <label class="label">
-                  <span class="label-text">分類篩選</span>
+                  <span>分類篩選</span>
                 </label>
-                <select id="categoryFilter" class="select select-bordered">
+                <select id="categoryFilter" class="select select-bordered w-full">
                   <option value="">全部分類</option>
                 </select>
               </div>
 
               {/* 添加按鈕 */}
-              <button id="addSubscriptionBtn" class="btn btn-primary gap-2">
+              <button id="addSubscriptionBtn" class="btn btn-primary gap-2 w-full md:w-auto">
                 <i data-lucide="plus" class="size-5"></i>
                 添加訂閱
               </button>

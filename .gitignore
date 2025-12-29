@@ -35,3 +35,5 @@ lerna-debug.log*
 .DS_Store
 .claude/settings.local.json
 .claude/*.local.json
+.claude/skills/ui-ux-pro-max/
+.shared/ui-ux-pro-max/
