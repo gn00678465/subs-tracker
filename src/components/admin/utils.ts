@@ -31,7 +31,7 @@ export function formatRemainingTime(
   if (Math.abs(diffWeeks) >= 1) {
     return diffWeeks < 0
       ? { class: 'text-error', text: `已過期 ${Math.abs(diffWeeks)} 週` }
-      : { class: 'text-primary', text: `還剩 ${diffWeeks} 週` }
+      : { class: 'text-primary', text: `剩餘 ${diffWeeks} 週` }
   }
 
   // < 1 週：檢查天數
@@ -39,7 +39,7 @@ export function formatRemainingTime(
 
   // 剩餘時間 >= 1 天：顯示天數
   if (diffDays >= 1) {
-    return { class: 'text-primary', text: `還剩 ${diffDays} 天` }
+    return { class: 'text-primary', text: `剩餘 ${diffDays} 天` }
   }
 
   // 檢查小時數（使用 ceiling）
@@ -60,7 +60,7 @@ export function formatRemainingTime(
   return diffHours > 0
     ? {
         class: 'text-warning',
-        text: `還剩 ${Math.ceil(diffHours)} 小時`,
+        text: `剩餘 ${Math.ceil(diffHours)} 小時`,
       }
     : {
         class: 'text-warning',
