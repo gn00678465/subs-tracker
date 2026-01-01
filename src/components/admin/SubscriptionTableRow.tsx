@@ -42,7 +42,7 @@ export function SubscriptionTableRow({
     ))
 
   // Period and reminder text
-  const unitText = subscription.periodUnit === 'day' ? '天' : (subscription.periodUnit === 'month' ? '月' : '年')
+  const unitText = subscription.periodUnit === 'day' ? '每天' : (subscription.periodUnit === 'month' ? '每月' : '每年')
   const reminderValue = subscription.reminderMe
 
   return (
@@ -53,7 +53,12 @@ export function SubscriptionTableRow({
       <div role="cell" class="flex flex-col">
         <span class="md:hidden text-xs text-base-content/50 mb-1">名稱</span>
         <div class="space-y-1">
-          <div class="font-medium">{subscription.name}</div>
+          <div class="flex gap-2 items-center">
+            <div class="text-base font-semibold">{subscription.name}</div>
+            {categoryBadges && categoryBadges.length > 0 && (
+              <div class="flex flex-wrap gap-1">{categoryBadges}</div>
+            )}
+          </div>
           {subscription.notes && (
             <div class="text-sm text-base-content/70">
               {subscription.notes.length > 50
@@ -61,6 +66,7 @@ export function SubscriptionTableRow({
                 : subscription.notes}
             </div>
           )}
+
           <div class={`text-sm text-base-content/70 flex items-center gap-1 ${daysLeft.class}`}>
             <i data-lucide="triangle-alert" class="w-4 h-4" />
             {daysLeft.text}
@@ -75,13 +81,8 @@ export function SubscriptionTableRow({
           <div class="text-sm text-base-content/70">
             周期:
             {' '}
-            {subscription.periodValue}
-            {' '}
             {unitText}
           </div>
-        )}
-        {categoryBadges && categoryBadges.length > 0 && (
-          <div class="flex flex-wrap gap-1 mt-2">{categoryBadges}</div>
         )}
       </div>
 
