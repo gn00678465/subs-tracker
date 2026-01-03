@@ -90,6 +90,18 @@ export interface Config {
   NOTIFICATION_HOURS: number[]
   ENABLED_NOTIFIERS: string[]
   REMINDER_MODE?: 'ONCE' | 'DAILY'
+
+  // WebAuthn 配置
+  WEBAUTHN_ENABLED?: boolean
+  WEBAUTHN_RP_NAME?: string
+  WEBAUTHN_RP_ID?: string
+  WEBAUTHN_RP_ORIGINS?: string[]
+  WEBAUTHN_ATTESTATION?: 'none' | 'direct' | 'enterprise'
+  WEBAUTHN_AUTHENTICATOR_ATTACHMENT?: 'platform' | 'cross-platform'
+  WEBAUTHN_RESIDENT_KEY?: 'required' | 'preferred' | 'discouraged'
+  WEBAUTHN_USER_VERIFICATION?: 'required' | 'preferred' | 'discouraged'
+  WEBAUTHN_TIMEOUT?: number
+  WEBAUTHN_HINTS?: string[]
 }
 
 /**

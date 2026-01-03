@@ -36,6 +36,18 @@ export const DEFAULT_CONFIG: Config = {
   NOTIFICATION_HOURS: [], // 空陣列表示允許所有小時
   ENABLED_NOTIFIERS: [],
   REMINDER_MODE: 'ONCE', // 默認為首次觸發模式
+
+  // WebAuthn 預設值
+  WEBAUTHN_ENABLED: false,
+  WEBAUTHN_RP_NAME: 'SubsTracker',
+  WEBAUTHN_RP_ID: '',
+  WEBAUTHN_RP_ORIGINS: [],
+  WEBAUTHN_ATTESTATION: 'none',
+  WEBAUTHN_AUTHENTICATOR_ATTACHMENT: undefined,
+  WEBAUTHN_RESIDENT_KEY: 'preferred',
+  WEBAUTHN_USER_VERIFICATION: 'preferred',
+  WEBAUTHN_TIMEOUT: 60000,
+  WEBAUTHN_HINTS: [],
 }
 
 // ==================== Configuration Operations ====================
@@ -95,6 +107,22 @@ export async function getConfig(env: Bindings): Promise<Config> {
       REMINDER_MODE: (stored.REMINDER_MODE === 'ONCE' || stored.REMINDER_MODE === 'DAILY')
         ? stored.REMINDER_MODE
         : DEFAULT_CONFIG.REMINDER_MODE,
+
+      // WebAuthn 配置
+      WEBAUTHN_ENABLED: stored.WEBAUTHN_ENABLED ?? DEFAULT_CONFIG.WEBAUTHN_ENABLED,
+      WEBAUTHN_RP_NAME: stored.WEBAUTHN_RP_NAME || DEFAULT_CONFIG.WEBAUTHN_RP_NAME,
+      WEBAUTHN_RP_ID: stored.WEBAUTHN_RP_ID || DEFAULT_CONFIG.WEBAUTHN_RP_ID,
+      WEBAUTHN_RP_ORIGINS: Array.isArray(stored.WEBAUTHN_RP_ORIGINS)
+        ? stored.WEBAUTHN_RP_ORIGINS
+        : DEFAULT_CONFIG.WEBAUTHN_RP_ORIGINS,
+      WEBAUTHN_ATTESTATION: stored.WEBAUTHN_ATTESTATION || DEFAULT_CONFIG.WEBAUTHN_ATTESTATION,
+      WEBAUTHN_AUTHENTICATOR_ATTACHMENT: stored.WEBAUTHN_AUTHENTICATOR_ATTACHMENT || DEFAULT_CONFIG.WEBAUTHN_AUTHENTICATOR_ATTACHMENT,
+      WEBAUTHN_RESIDENT_KEY: stored.WEBAUTHN_RESIDENT_KEY || DEFAULT_CONFIG.WEBAUTHN_RESIDENT_KEY,
+      WEBAUTHN_USER_VERIFICATION: stored.WEBAUTHN_USER_VERIFICATION || DEFAULT_CONFIG.WEBAUTHN_USER_VERIFICATION,
+      WEBAUTHN_TIMEOUT: stored.WEBAUTHN_TIMEOUT || DEFAULT_CONFIG.WEBAUTHN_TIMEOUT,
+      WEBAUTHN_HINTS: Array.isArray(stored.WEBAUTHN_HINTS)
+        ? stored.WEBAUTHN_HINTS
+        : DEFAULT_CONFIG.WEBAUTHN_HINTS,
     }
 
     // 檢測並強制升級明文密碼
@@ -159,6 +187,14 @@ export async function updateConfig(
     // 特殊處理：NOTIFICATION_HOURS 需要規範化
     if (newConfig.NOTIFICATION_HOURS !== undefined) {
       updatedConfig.NOTIFICATION_HOURS = normalizeNotificationHours(newConfig.NOTIFICATION_HOURS)
+    }
+
+    // 特殊處理：WEBAUTHN_RP_ORIGINS（textarea 轉陣列）
+    if (newConfig.WEBAUTHN_RP_ORIGINS !== undefined) {
+      const origins = Array.isArray(newConfig.WEBAUTHN_RP_ORIGINS)
+        ? newConfig.WEBAUTHN_RP_ORIGINS
+        : String(newConfig.WEBAUTHN_RP_ORIGINS).split('\n').filter(line => line.trim())
+      updatedConfig.WEBAUTHN_RP_ORIGINS = origins
     }
 
     // 保存到 KV

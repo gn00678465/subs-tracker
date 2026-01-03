@@ -1,4 +1,15 @@
+import type { PublicKeyCredentialCreationOptionsJSON } from '@simplewebauthn/browser'
+import { startRegistration } from '@simplewebauthn/browser'
 import { toast } from '../../utils/toast'
+
+// TypeScript declaration for Lucide icons
+declare global {
+  interface Window {
+    lucide?: {
+      createIcons: () => void
+    }
+  }
+}
 
 // 載入配置
 async function loadConfig(): Promise<void> {
@@ -58,8 +69,31 @@ async function loadConfig(): Promise<void> {
     ;(document.getElementById('barkSave') as HTMLInputElement).checked = config.BARK_SAVE === 'true' || config.BARK_SAVE === true
     ;(document.getElementById('barkQuery') as HTMLInputElement).value = config.BARK_QUERY || ''
 
+    // WebAuthn 配置
+    ;(document.getElementById('webauthnEnabled') as HTMLInputElement).checked = config.WEBAUTHN_ENABLED || false
+    ;(document.getElementById('webauthnRpName') as HTMLInputElement).value = config.WEBAUTHN_RP_NAME || 'SubsTracker'
+    ;(document.getElementById('webauthnRpId') as HTMLInputElement).value = config.WEBAUTHN_RP_ID || ''
+    const origins = config.WEBAUTHN_RP_ORIGINS || []
+    ;(document.getElementById('webauthnRpOrigins') as HTMLTextAreaElement).value = origins.join('\n')
+    const attestationEl = document.getElementById('webauthnAttestation')
+    if (attestationEl)
+      (attestationEl as unknown as HTMLSelectElement).value = config.WEBAUTHN_ATTESTATION || 'none'
+    const authAttachmentEl = document.getElementById('webauthnAuthAttachment')
+    if (authAttachmentEl)
+      (authAttachmentEl as unknown as HTMLSelectElement).value = config.WEBAUTHN_AUTHENTICATOR_ATTACHMENT || ''
+    const residentKeyEl = document.getElementById('webauthnResidentKey')
+    if (residentKeyEl)
+      (residentKeyEl as unknown as HTMLSelectElement).value = config.WEBAUTHN_RESIDENT_KEY || 'preferred'
+    const userVerificationEl = document.getElementById('webauthnUserVerification')
+    if (userVerificationEl)
+      (userVerificationEl as unknown as HTMLSelectElement).value = config.WEBAUTHN_USER_VERIFICATION || 'preferred'
+    ;(document.getElementById('webauthnTimeout') as HTMLInputElement).value = String(config.WEBAUTHN_TIMEOUT || 60000)
+
     // 更新渠道配置顯示
     toggleChannelConfigs(enabled)
+
+    // 載入 Passkey 列表
+    loadPasskeys()
   }
   catch (error) {
     toast.error(`載入配置失敗：${(error as Error).message}`)
@@ -157,6 +191,25 @@ document.addEventListener('DOMContentLoaded', () => {
           continue
         if (key === 'BARK_SAVE')
           continue
+
+        // WebAuthn 特殊處理
+        if (key === 'WEBAUTHN_AUTHENTICATOR_ATTACHMENT') {
+          // 空字串表示"不限制"，不送出此欄位（使用後端預設 undefined）
+          if (value === '')
+            continue
+          data[key] = value
+          continue
+        }
+
+        if (key === 'WEBAUTHN_TIMEOUT') {
+          // 將字串轉為數字
+          const numValue = Number.parseInt(value as string, 10)
+          if (!Number.isNaN(numValue) && numValue >= 10000 && numValue <= 600000) {
+            data[key] = numValue
+          }
+          continue
+        }
+
         data[key] = value
       }
 
@@ -179,6 +232,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // 處理 Bark Save checkbox
       data.BARK_SAVE = (document.getElementById('barkSave') as HTMLInputElement).checked ? 'true' : 'false'
+
+      // 處理 WebAuthn Enabled checkbox
+      data.WEBAUTHN_ENABLED = (document.getElementById('webauthnEnabled') as HTMLInputElement).checked
+
+      // 處理 WebAuthn RP Origins（textarea 轉陣列）
+      const originsInput = (document.getElementById('webauthnRpOrigins') as HTMLTextAreaElement).value.trim()
+      data.WEBAUTHN_RP_ORIGINS = originsInput
+        ? originsInput.split('\n').filter(line => line.trim())
+        : []
 
       // 發送請求
       const res = await fetch('/api/config', {
@@ -229,4 +291,210 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 初始化
   loadConfig()
+
+  // 註冊 Passkey 按鈕
+  document.getElementById('registerPasskeyBtn')?.addEventListener('click', registerPasskey)
 })
+
+/**
+ * 載入 Passkey 列表
+ */
+async function loadPasskeys(): Promise<void> {
+  const passkeyList = document.getElementById('passkeyList')
+  if (!passkeyList)
+    return
+
+  try {
+    const res = await fetch('/api/webauthn/credentials')
+    const data = await res.json() as Api.SuccessResponse<string[]>
+
+    if (!data.success) {
+      passkeyList.innerHTML = '<div class="text-center text-base-content/70 py-8">載入失敗</div>'
+      return
+    }
+
+    const credentials = data.data || []
+
+    if (credentials.length === 0) {
+      passkeyList.innerHTML = '<div class="text-center text-base-content/70 py-8">尚未註冊任何 Passkey</div>'
+      return
+    }
+
+    // 渲染列表
+    passkeyList.innerHTML = credentials.map((cred: any) => `
+      <div class="card bg-base-200">
+        <div class="card-body p-4">
+          <div class="flex justify-between items-start">
+            <div class="flex-1">
+              <h5 class="font-semibold text-base">
+                ${cred.nickname || '未命名 Passkey'}
+              </h5>
+              <div class="text-sm text-base-content/70 mt-1">
+                <div>建立於：${new Date(cred.createdAt).toLocaleString('zh-TW')}</div>
+                ${cred.lastUsedAt ? `<div>最後使用：${new Date(cred.lastUsedAt).toLocaleString('zh-TW')}</div>` : ''}
+                ${cred.transports ? `<div>傳輸方式：${cred.transports.join(', ')}</div>` : ''}
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="btn btn-ghost btn-sm"
+                onclick="editPasskeyNickname('${cred.credentialID}')"
+              >
+                <i data-lucide="edit-3" class="size-4"></i>
+              </button>
+              <button
+                type="button"
+                class="btn btn-error btn-sm"
+                onclick="deletePasskey('${cred.credentialID}')"
+              >
+                <i data-lucide="trash-2" class="size-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `).join('')
+
+    // 重新初始化 Lucide icons
+    if (window.lucide) {
+      window.lucide.createIcons()
+    }
+  }
+  catch (error) {
+    passkeyList.innerHTML = '<div class="text-center text-error py-8">載入失敗</div>'
+  }
+}
+
+/**
+ * 註冊新 Passkey
+ */
+async function registerPasskey(): Promise<void> {
+  try {
+    const registerBtn = document.getElementById('registerPasskeyBtn') as HTMLButtonElement
+    if (registerBtn) {
+      registerBtn.classList.add('loading')
+      registerBtn.setAttribute('disabled', 'true')
+    }
+
+    // Step 1: 取得註冊選項
+    const optionsRes = await fetch('/api/webauthn/register/options', {
+      method: 'POST',
+      credentials: 'include',
+    })
+
+    const optionsData = await optionsRes.json() as Api.SuccessResponse<PublicKeyCredentialCreationOptionsJSON>
+
+    if (!optionsData.success) {
+      toast.error(optionsData.message || '無法開始註冊')
+      return
+    }
+
+    // Step 2: 啟動註冊（必須在點擊處理器內）
+    const credential = await startRegistration({
+      optionsJSON: optionsData.data!,
+    })
+
+    // Step 3: 驗證註冊
+    const verifyRes = await fetch('/api/webauthn/register/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(credential),
+    })
+
+    const verifyData = await verifyRes.json() as Api.SuccessResponse<null>
+
+    if (verifyData.success) {
+      toast.success('Passkey 註冊成功！')
+      // 重新載入列表
+      loadPasskeys()
+    }
+    else {
+      toast.error(verifyData.message || '註冊失敗')
+    }
+  }
+  catch (error: any) {
+    if (error.name === 'NotAllowedError') {
+      toast.error('註冊已取消')
+    }
+    else if (error.name === 'NotSupportedError') {
+      toast.error('您的瀏覽器不支援 WebAuthn')
+    }
+    else {
+      toast.error(`註冊失敗: ${error.message || '未知錯誤'}`)
+    }
+  }
+  finally {
+    const registerBtn = document.getElementById('registerPasskeyBtn') as HTMLButtonElement
+    if (registerBtn) {
+      registerBtn.classList.remove('loading')
+      registerBtn.removeAttribute('disabled')
+    }
+  }
+}
+
+/**
+ * 刪除 Passkey
+ */
+async function deletePasskey(credentialID: string): Promise<void> {
+  if (!confirm('確定要刪除此 Passkey 嗎？此操作無法復原。')) {
+    return
+  }
+
+  try {
+    const res = await fetch(`/api/webauthn/credentials/${credentialID}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    })
+
+    const data = await res.json() as Api.SuccessResponse<null>
+
+    if (data.success) {
+      toast.success('Passkey 已刪除')
+      loadPasskeys()
+    }
+    else {
+      toast.error(data.message || '刪除失敗')
+    }
+  }
+  catch (error) {
+    toast.error(`刪除失敗：${(error as Error).message}`)
+  }
+}
+
+/**
+ * 編輯 Passkey 暱稱
+ */
+async function editPasskeyNickname(credentialID: string): Promise<void> {
+  const nickname = prompt('請輸入新的暱稱：')
+
+  if (!nickname)
+    return
+
+  try {
+    const res = await fetch(`/api/webauthn/credentials/${credentialID}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ nickname }),
+    })
+
+    const data = await res.json() as Api.SuccessResponse<null>
+
+    if (data.success) {
+      toast.success('暱稱更新成功')
+      loadPasskeys()
+    }
+    else {
+      toast.error(data.message || '更新失敗')
+    }
+  }
+  catch (error) {
+    toast.error(`更新失敗：${(error as Error).message}`)
+  }
+}
+
+// 暴露到全域（供 onclick 使用）
+;(window as any).deletePasskey = deletePasskey
+;(window as any).editPasskeyNickname = editPasskeyNickname

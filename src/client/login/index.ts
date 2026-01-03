@@ -1,3 +1,6 @@
+// 導入 WebAuthn 登入功能
+import './webauthn'
+
 const form = document.getElementById('loginForm') as HTMLFormElement | null
 const btn = document.getElementById('submitBtn') as HTMLButtonElement | null
 const btnText = document.getElementById('btnText') as HTMLElement | null

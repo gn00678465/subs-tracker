@@ -439,6 +439,207 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                     </span>
                   </div>
                 </div>
+
+                {/* Tab 4: WebAuthn 設定 */}
+                <input type="radio" name="config_tabs" role="tab" class="tab" aria-label="WebAuthn 設定" />
+                <div role="tabpanel" class="tab-content p-6 px-2">
+                  <h3 class="text-lg font-semibold mb-4">WebAuthn / Passkey 設定</h3>
+
+                  {/* 啟用 WebAuthn */}
+                  <fieldset class="fieldset mb-6">
+                    <label class="label cursor-pointer justify-start gap-3">
+                      <input
+                        type="checkbox"
+                        id="webauthnEnabled"
+                        name="WEBAUTHN_ENABLED"
+                        class="checkbox checkbox-primary"
+                      />
+                      <div>
+                        <span class="label-text font-semibold">啟用 WebAuthn 認證</span>
+                        <p class="text-sm text-base-content/70 mt-1">
+                          允許使用者使用 Passkey（生物辨識或安全金鑰）登入
+                        </p>
+                      </div>
+                    </label>
+                  </fieldset>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* RP 名稱 */}
+                    <fieldset class="fieldset md:col-span-2">
+                      <label class="label" for="webauthnRpName">
+                        <span class="label-text">Relying Party 名稱</span>
+                      </label>
+                      <input
+                        type="text"
+                        id="webauthnRpName"
+                        name="WEBAUTHN_RP_NAME"
+                        placeholder="SubsTracker"
+                        class="input input-bordered w-full"
+                      />
+                      <label class="label">
+                        <span class="text-wrap text-base-content/70 text-sm">
+                          用戶在認證時看到的應用程式名稱
+                        </span>
+                      </label>
+                    </fieldset>
+
+                    {/* RP ID */}
+                    <fieldset class="fieldset md:col-span-2">
+                      <label class="label" for="webauthnRpId">
+                        <span class="label-text">Relying Party ID</span>
+                      </label>
+                      <input
+                        type="text"
+                        id="webauthnRpId"
+                        name="WEBAUTHN_RP_ID"
+                        placeholder="example.com"
+                        class="input input-bordered w-full"
+                      />
+                      <label class="label">
+                        <span class="text-wrap text-base-content/70 text-sm">
+                          主網域（不含子域名和協議，例如 example.com）
+                        </span>
+                      </label>
+                    </fieldset>
+
+                    {/* RP Origins（ROR） */}
+                    <fieldset class="fieldset md:col-span-2">
+                      <label class="label" for="webauthnRpOrigins">
+                        <span class="label-text">允許的來源（Related Origins）</span>
+                      </label>
+                      <textarea
+                        id="webauthnRpOrigins"
+                        name="WEBAUTHN_RP_ORIGINS"
+                        placeholder="https://app.example.com&#10;https://admin.example.com&#10;https://example.com"
+                        class="textarea textarea-bordered h-32 w-full font-mono text-sm"
+                      >
+                      </textarea>
+                      <label class="label">
+                        <span class="text-wrap text-base-content/70 text-sm">
+                          支援的完整來源 URL，每行一個（用於 Related Origin Requests，允許多網域共享 Passkey）
+                        </span>
+                      </label>
+                    </fieldset>
+
+                    {/* Attestation */}
+                    <fieldset class="fieldset">
+                      <label class="label" for="webauthnAttestation">
+                        <span class="label-text">認證類型（Attestation）</span>
+                      </label>
+                      <select
+                        id="webauthnAttestation"
+                        name="WEBAUTHN_ATTESTATION"
+                        class="select select-bordered w-full"
+                      >
+                        <option value="none">None（不驗證設備，推薦）</option>
+                        <option value="indirect">Indirect（匿名驗證）</option>
+                        <option value="direct">Direct（完整驗證）</option>
+                        <option value="enterprise">Enterprise（企業驗證）</option>
+                      </select>
+                    </fieldset>
+
+                    {/* Authenticator Attachment */}
+                    <fieldset class="fieldset">
+                      <label class="label" for="webauthnAuthAttachment">
+                        <span class="label-text">驗證器類型偏好</span>
+                      </label>
+                      <select
+                        id="webauthnAuthAttachment"
+                        name="WEBAUTHN_AUTHENTICATOR_ATTACHMENT"
+                        class="select select-bordered w-full"
+                      >
+                        <option value="">不限制（推薦）</option>
+                        <option value="platform">Platform（Touch ID、Face ID、Windows Hello）</option>
+                        <option value="cross-platform">Cross-platform（USB 安全金鑰）</option>
+                      </select>
+                    </fieldset>
+
+                    {/* Resident Key */}
+                    <fieldset class="fieldset">
+                      <label class="label" for="webauthnResidentKey">
+                        <span class="label-text">駐留金鑰要求</span>
+                      </label>
+                      <select
+                        id="webauthnResidentKey"
+                        name="WEBAUTHN_RESIDENT_KEY"
+                        class="select select-bordered w-full"
+                      >
+                        <option value="discouraged">Discouraged</option>
+                        <option value="preferred">Preferred（推薦）</option>
+                        <option value="required">Required</option>
+                      </select>
+                      <label class="label">
+                        <span class="text-wrap text-base-content/70 text-sm">
+                          駐留金鑰允許無用戶名登入（Passkey 體驗）
+                        </span>
+                      </label>
+                    </fieldset>
+
+                    {/* User Verification */}
+                    <fieldset class="fieldset">
+                      <label class="label" for="webauthnUserVerification">
+                        <span class="label-text">使用者驗證要求</span>
+                      </label>
+                      <select
+                        id="webauthnUserVerification"
+                        name="WEBAUTHN_USER_VERIFICATION"
+                        class="select select-bordered w-full"
+                      >
+                        <option value="discouraged">Discouraged</option>
+                        <option value="preferred">Preferred（推薦）</option>
+                        <option value="required">Required</option>
+                      </select>
+                      <label class="label">
+                        <span class="text-wrap text-base-content/70 text-sm">
+                          要求生物識別或 PIN 碼驗證
+                        </span>
+                      </label>
+                    </fieldset>
+
+                    {/* Timeout */}
+                    <fieldset class="fieldset md:col-span-2">
+                      <label class="label" for="webauthnTimeout">
+                        <span class="label-text">超時時間（毫秒）</span>
+                      </label>
+                      <input
+                        type="number"
+                        id="webauthnTimeout"
+                        name="WEBAUTHN_TIMEOUT"
+                        placeholder="60000"
+                        min="10000"
+                        max="600000"
+                        class="input input-bordered w-full"
+                      />
+                      <label class="label">
+                        <span class="text-wrap text-base-content/70 text-sm">
+                          用戶完成認證的時限（預設 60 秒，範圍 10-600 秒）
+                        </span>
+                      </label>
+                    </fieldset>
+                  </div>
+
+                  {/* Passkey 管理區塊 */}
+                  <div class="divider my-8">Passkey 管理</div>
+
+                  <div class="mb-4 flex justify-between items-center">
+                    <h4 class="text-base font-semibold">已註冊的 Passkey</h4>
+                    <button
+                      type="button"
+                      id="registerPasskeyBtn"
+                      class="btn btn-primary btn-sm"
+                    >
+                      <i data-lucide="plus" class="size-4"></i>
+                      註冊新 Passkey
+                    </button>
+                  </div>
+
+                  {/* Passkey 列表 */}
+                  <div id="passkeyList" class="space-y-2">
+                    <div class="text-center text-base-content/70 py-8">
+                      載入中...
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* 提交按鈕 */}

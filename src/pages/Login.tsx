@@ -84,6 +84,19 @@ export const LoginPage: FC = () => {
                 </button>
               </div>
             </form>
+
+            {/* 分隔線 */}
+            <div class="divider">或</div>
+
+            {/* WebAuthn 登入按鈕 */}
+            <button
+              type="button"
+              id="webauthnLoginBtn"
+              class="btn btn-outline w-full"
+            >
+              <i data-lucide="fingerprint" class="size-5"></i>
+              使用 Passkey 登入
+            </button>
           </div>
         </div>
       </div>
