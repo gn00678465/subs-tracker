@@ -69,9 +69,14 @@ webauthnLoginBtn?.addEventListener('click', async (e) => {
       return
     }
 
+    if (!optionsData.data) {
+      showWebAuthnError('伺服器回傳資料格式錯誤')
+      return
+    }
+
     // Step 2: 啟動 WebAuthn 認證（必須在點擊處理器內）
     const credential = await startAuthentication({
-      optionsJSON: optionsData.data!,
+      optionsJSON: optionsData.data,
     })
 
     // Step 3: 驗證認證回應
@@ -84,8 +89,9 @@ webauthnLoginBtn?.addEventListener('click', async (e) => {
     const verifyData = await verifyRes.json() as Api.SuccessResponse<null>
 
     if (verifyData.success) {
-      // 認證成功，重定向到管理頁面
-      window.location.href = '/admin'
+      // 認證成功，重定向到管理頁面（支援 redirect_to 參數）
+      const redirectTo = new URLSearchParams(window.location.search).get('redirect_to') || '/admin'
+      window.location.href = redirectTo
     }
     else {
       showWebAuthnError(verifyData.message || '認證失敗')
@@ -93,7 +99,8 @@ webauthnLoginBtn?.addEventListener('click', async (e) => {
   }
   catch (error: any) {
     if (error.name === 'NotAllowedError') {
-      showWebAuthnError('認證已取消')
+      // 使用者主動取消，靜默處理（不顯示錯誤）
+      hideWebAuthnError()
     }
     else if (error.name === 'NotSupportedError') {
       showWebAuthnError('您的瀏覽器不支援此功能')

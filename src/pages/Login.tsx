@@ -37,7 +37,7 @@ export const LoginPage: FC = () => {
                   placeholder="請輸入用戶名"
                   class="input input-bordered w-full"
                   required
-                  autocomplete="username"
+                  autocomplete="username webauthn"
                 />
               </div>
 

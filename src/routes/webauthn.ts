@@ -160,7 +160,14 @@ webauthn.openapi(registerVerifyRoute, async (c) => {
     }
 
     const rpID = config.WEBAUTHN_RP_ID || extractRPID(c.req.header('origin'))
-    const expectedOrigin = config.WEBAUTHN_RP_ORIGINS || [c.req.header('origin') || '']
+    let expectedOrigin = config.WEBAUTHN_RP_ORIGINS
+    if (!expectedOrigin || expectedOrigin.length === 0) {
+      logger.warning('WEBAUTHN_RP_ORIGINS not configured, using request origin as fallback', {
+        prefix: 'WebAuthn',
+        data: { origin: c.req.header('origin') },
+      })
+      expectedOrigin = [c.req.header('origin') || '']
+    }
 
     const verification = await verifyRegistrationResponse({
       response: body,
@@ -328,7 +335,14 @@ webauthn.openapi(authenticateVerifyRoute, async (c) => {
     }
 
     const rpID = config.WEBAUTHN_RP_ID || extractRPID(c.req.header('origin'))
-    const expectedOrigin = config.WEBAUTHN_RP_ORIGINS || [c.req.header('origin') || '']
+    let expectedOrigin = config.WEBAUTHN_RP_ORIGINS
+    if (!expectedOrigin || expectedOrigin.length === 0) {
+      logger.warning('WEBAUTHN_RP_ORIGINS not configured, using request origin as fallback', {
+        prefix: 'WebAuthn',
+        data: { origin: c.req.header('origin') },
+      })
+      expectedOrigin = [c.req.header('origin') || '']
+    }
 
     const verification = await verifyAuthenticationResponse({
       response: body,
