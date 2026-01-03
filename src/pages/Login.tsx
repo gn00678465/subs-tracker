@@ -94,8 +94,9 @@ export const LoginPage: FC = () => {
               id="webauthnLoginBtn"
               class="btn btn-outline w-full"
             >
-              <i data-lucide="fingerprint" class="size-5"></i>
-              使用 Passkey 登入
+              <i data-lucide="fingerprint" class="size-5" id="webauthnLoginIcon"></i>
+              <span class="loading loading-spinner loading-sm hidden" id="webauthnLoginLoading"></span>
+              <span id="webauthnLoginText">使用 Passkey 登入</span>
             </button>
           </div>
         </div>

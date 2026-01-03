@@ -118,9 +118,9 @@ const updateConfigSchema = z.object({
     example: ['https://example.com', 'https://app.example.com'],
     description: '允許的來源 Origins（支援 Related Origin Requests）',
   }),
-  WEBAUTHN_ATTESTATION: z.enum(['none', 'indirect', 'direct', 'enterprise']).optional().openapi({
+  WEBAUTHN_ATTESTATION: z.enum(['none', 'direct', 'enterprise']).optional().openapi({
     example: 'none',
-    description: '認證類型（none=不驗證, indirect=間接驗證, direct=直接驗證, enterprise=企業驗證）',
+    description: '認證類型（none=不驗證, direct=直接驗證, enterprise=企業驗證）',
   }),
   WEBAUTHN_AUTHENTICATOR_ATTACHMENT: z.enum(['platform', 'cross-platform', '']).optional().openapi({
     example: 'platform',
@@ -138,7 +138,7 @@ const updateConfigSchema = z.object({
     example: 60000,
     description: '認證超時時間（毫秒，範圍：10000-600000）',
   }),
-  WEBAUTHN_HINTS: z.array(z.string()).optional().openapi({
+  WEBAUTHN_HINTS: z.array(z.enum(['security-key', 'client-device', 'hybrid'])).optional().openapi({
     example: ['security-key', 'client-device'],
     description: 'WebAuthn 提示（引導使用者選擇驗證器類型）',
   }),

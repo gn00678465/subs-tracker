@@ -486,7 +486,10 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                     {/* RP ID */}
                     <fieldset class="fieldset md:col-span-2">
                       <label class="label" for="webauthnRpId">
-                        <span class="label-text">Relying Party ID</span>
+                        <span class="label-text font-semibold">
+                          主網域（RP ID）
+                          <span class="badge badge-error badge-sm ml-2">必填</span>
+                        </span>
                       </label>
                       <input
                         type="text"
@@ -497,7 +500,8 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                       />
                       <label class="label">
                         <span class="text-wrap text-base-content/70 text-sm">
-                          主網域（不含子域名和協議，例如 example.com）
+                          <i data-lucide="info" class="size-3 inline mr-1"></i>
+                          範例：如果網站是 https://app.example.com，請填入 example.com（不含 https:// 和子網域）
                         </span>
                       </label>
                     </fieldset>
@@ -532,7 +536,6 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                         class="select select-bordered w-full"
                       >
                         <option value="none">None（不驗證設備，推薦）</option>
-                        <option value="indirect">Indirect（匿名驗證）</option>
                         <option value="direct">Direct（完整驗證）</option>
                         <option value="enterprise">Enterprise（企業驗證）</option>
                       </select>
@@ -597,7 +600,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                     </fieldset>
 
                     {/* Timeout */}
-                    <fieldset class="fieldset md:col-span-2">
+                    <fieldset class="fieldset">
                       <label class="label" for="webauthnTimeout">
                         <span class="label-text">超時時間（毫秒）</span>
                       </label>
@@ -616,6 +619,56 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                         </span>
                       </label>
                     </fieldset>
+
+                    {/* Hints */}
+                    <fieldset class="fieldset">
+                      <label class="label">
+                        <span class="label-text">驗證器提示（Hints）</span>
+                      </label>
+                      <div class="flex flex-wrap gap-3">
+                        <label class="label cursor-pointer gap-2 bg-base-200 px-4 py-2 rounded-lg hover:bg-base-300 transition-colors">
+                          <input
+                            type="checkbox"
+                            name="WEBAUTHN_HINTS"
+                            value="security-key"
+                            class="checkbox checkbox-sm checkbox-primary"
+                          />
+                          <span class="label-text flex items-center gap-1.5">
+                            <i data-lucide="key" class="size-4"></i>
+                            安全金鑰
+                          </span>
+                        </label>
+                        <label class="label cursor-pointer gap-2 bg-base-200 px-4 py-2 rounded-lg hover:bg-base-300 transition-colors">
+                          <input
+                            type="checkbox"
+                            name="WEBAUTHN_HINTS"
+                            value="client-device"
+                            class="checkbox checkbox-sm checkbox-primary"
+                          />
+                          <span class="label-text flex items-center gap-1.5">
+                            <i data-lucide="laptop" class="size-4"></i>
+                            本機裝置
+                          </span>
+                        </label>
+                        <label class="label cursor-pointer gap-2 bg-base-200 px-4 py-2 rounded-lg hover:bg-base-300 transition-colors">
+                          <input
+                            type="checkbox"
+                            name="WEBAUTHN_HINTS"
+                            value="hybrid"
+                            class="checkbox checkbox-sm checkbox-primary"
+                          />
+                          <span class="label-text flex items-center gap-1.5">
+                            <i data-lucide="smartphone" class="size-4"></i>
+                            混合裝置
+                          </span>
+                        </label>
+                      </div>
+                      <label class="label">
+                        <span class="text-wrap text-base-content/70 text-sm">
+                          提示瀏覽器優先顯示哪種類型的驗證器（可多選）
+                        </span>
+                      </label>
+                    </fieldset>
                   </div>
 
                   {/* Passkey 管理區塊 */}
@@ -628,8 +681,9 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                       id="registerPasskeyBtn"
                       class="btn btn-primary btn-sm"
                     >
-                      <i data-lucide="plus" class="size-4"></i>
-                      註冊新 Passkey
+                      <i data-lucide="plus" class="size-4" id="registerPasskeyIcon"></i>
+                      <span class="loading loading-spinner loading-sm hidden" id="registerPasskeyLoading"></span>
+                      <span id="registerPasskeyText">註冊新 Passkey</span>
                     </button>
                   </div>
 

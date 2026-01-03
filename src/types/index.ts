@@ -101,7 +101,7 @@ export interface Config {
   WEBAUTHN_RESIDENT_KEY?: 'required' | 'preferred' | 'discouraged'
   WEBAUTHN_USER_VERIFICATION?: 'required' | 'preferred' | 'discouraged'
   WEBAUTHN_TIMEOUT?: number
-  WEBAUTHN_HINTS?: string[]
+  WEBAUTHN_HINTS?: ('client-device' | 'security-key' | 'hybrid')[]
 }
 
 /**

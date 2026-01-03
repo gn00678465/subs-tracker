@@ -89,6 +89,14 @@ async function loadConfig(): Promise<void> {
       (userVerificationEl as unknown as HTMLSelectElement).value = config.WEBAUTHN_USER_VERIFICATION || 'preferred'
     ;(document.getElementById('webauthnTimeout') as HTMLInputElement).value = String(config.WEBAUTHN_TIMEOUT || 60000)
 
+    // 載入 WEBAUTHN_HINTS（checkbox 組）
+    if (config.WEBAUTHN_HINTS) {
+      const hints = config.WEBAUTHN_HINTS
+      document.querySelectorAll<HTMLInputElement>('[name="WEBAUTHN_HINTS"]').forEach((checkbox) => {
+        checkbox.checked = hints.includes(checkbox.value as any)
+      })
+    }
+
     // 更新渠道配置顯示
     toggleChannelConfigs(enabled)
 
@@ -191,6 +199,8 @@ document.addEventListener('DOMContentLoaded', () => {
           continue
         if (key === 'BARK_SAVE')
           continue
+        if (key === 'WEBAUTHN_HINTS')
+          continue // 多選 select 特殊處理（在後面處理）
 
         // WebAuthn 特殊處理
         if (key === 'WEBAUTHN_AUTHENTICATOR_ATTACHMENT') {
@@ -241,6 +251,11 @@ document.addEventListener('DOMContentLoaded', () => {
       data.WEBAUTHN_RP_ORIGINS = originsInput
         ? originsInput.split('\n').filter(line => line.trim())
         : []
+
+      // 處理 WebAuthn Hints（checkbox 組轉陣列）
+      data.WEBAUTHN_HINTS = Array.from(
+        document.querySelectorAll<HTMLInputElement>('[name="WEBAUTHN_HINTS"]:checked'),
+      ).map(el => el.value)
 
       // 發送請求
       const res = await fetch('/api/config', {
@@ -293,7 +308,14 @@ document.addEventListener('DOMContentLoaded', () => {
   loadConfig()
 
   // 註冊 Passkey 按鈕
-  document.getElementById('registerPasskeyBtn')?.addEventListener('click', registerPasskey)
+  document.getElementById('registerPasskeyBtn')?.addEventListener('click', (e) => {
+    registerPasskey(e.currentTarget as HTMLButtonElement)
+  })
+
+  // 暴露函數到全域作用域（供 HTML onclick 使用）
+  ;(window as any).registerPasskey = registerPasskey
+  ;(window as any).deletePasskey = deletePasskey
+  ;(window as any).editPasskeyNickname = editPasskeyNickname
 })
 
 /**
@@ -316,7 +338,27 @@ async function loadPasskeys(): Promise<void> {
     const credentials = data.data || []
 
     if (credentials.length === 0) {
-      passkeyList.innerHTML = '<div class="text-center text-base-content/70 py-8">尚未註冊任何 Passkey</div>'
+      passkeyList.innerHTML = `
+        <div class="card bg-base-200 border-2 border-dashed border-base-300">
+          <div class="card-body items-center text-center py-12">
+            <div class="bg-primary/10 rounded-full p-4 mb-4">
+              <i data-lucide="fingerprint" class="size-12 text-primary"></i>
+            </div>
+            <h5 class="font-semibold text-lg">尚未註冊 Passkey</h5>
+            <p class="text-sm text-base-content/70 max-w-md mt-2">
+              Passkey 讓您可以使用指紋、臉部辨識或安全金鑰快速登入，無需記憶密碼
+            </p>
+            <button type="button" class="btn btn-primary btn-sm mt-4" onclick="registerPasskey(this)">
+              <i data-lucide="plus" class="size-4"></i>
+              註冊第一個 Passkey
+            </button>
+          </div>
+        </div>
+      `
+      // 重新初始化 Lucide icons
+      if (window.lucide) {
+        window.lucide.createIcons()
+      }
       return
     }
 
@@ -368,13 +410,29 @@ async function loadPasskeys(): Promise<void> {
 
 /**
  * 註冊新 Passkey
+ * @param clickedButton 被點擊的按鈕元素（可選，用於禁用該按鈕）
  */
-async function registerPasskey(): Promise<void> {
+async function registerPasskey(clickedButton?: HTMLButtonElement): Promise<void> {
   try {
+    // 頂部按鈕（用於顯示 loading 狀態）
     const registerBtn = document.getElementById('registerPasskeyBtn') as HTMLButtonElement
+    const registerIcon = document.getElementById('registerPasskeyIcon')
+    const registerLoading = document.getElementById('registerPasskeyLoading')
+
+    // 禁用頂部按鈕
     if (registerBtn) {
-      registerBtn.classList.add('loading')
       registerBtn.setAttribute('disabled', 'true')
+    }
+    // 禁用被點擊的按鈕（如果是空狀態按鈕）
+    if (clickedButton && clickedButton !== registerBtn) {
+      clickedButton.setAttribute('disabled', 'true')
+    }
+    // 顯示 loading 狀態
+    if (registerIcon) {
+      registerIcon.classList.add('hidden')
+    }
+    if (registerLoading) {
+      registerLoading.classList.remove('hidden')
     }
 
     // Step 1: 取得註冊選項
@@ -427,9 +485,22 @@ async function registerPasskey(): Promise<void> {
   }
   finally {
     const registerBtn = document.getElementById('registerPasskeyBtn') as HTMLButtonElement
+    const registerIcon = document.getElementById('registerPasskeyIcon')
+    const registerLoading = document.getElementById('registerPasskeyLoading')
+
+    // 恢復頂部按鈕狀態
     if (registerBtn) {
-      registerBtn.classList.remove('loading')
       registerBtn.removeAttribute('disabled')
+    }
+    // 恢復被點擊按鈕狀態（如果是空狀態按鈕）
+    if (clickedButton && clickedButton !== registerBtn) {
+      clickedButton.removeAttribute('disabled')
+    }
+    if (registerIcon) {
+      registerIcon.classList.remove('hidden')
+    }
+    if (registerLoading) {
+      registerLoading.classList.add('hidden')
     }
   }
 }

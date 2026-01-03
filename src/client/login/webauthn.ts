@@ -42,9 +42,17 @@ webauthnLoginBtn?.addEventListener('click', async (e) => {
 
   try {
     // 顯示 loading 狀態
+    const webauthnIcon = document.getElementById('webauthnLoginIcon')
+    const webauthnLoading = document.getElementById('webauthnLoginLoading')
+
     if (webauthnLoginBtn) {
-      webauthnLoginBtn.classList.add('loading')
       webauthnLoginBtn.setAttribute('disabled', 'true')
+    }
+    if (webauthnIcon) {
+      webauthnIcon.classList.add('hidden')
+    }
+    if (webauthnLoading) {
+      webauthnLoading.classList.remove('hidden')
     }
 
     // Step 1: 取得認證選項
@@ -96,9 +104,17 @@ webauthnLoginBtn?.addEventListener('click', async (e) => {
   }
   finally {
     // 恢復按鈕狀態
+    const webauthnIcon = document.getElementById('webauthnLoginIcon')
+    const webauthnLoading = document.getElementById('webauthnLoginLoading')
+
     if (webauthnLoginBtn) {
-      webauthnLoginBtn.classList.remove('loading')
       webauthnLoginBtn.removeAttribute('disabled')
+    }
+    if (webauthnIcon) {
+      webauthnIcon.classList.remove('hidden')
+    }
+    if (webauthnLoading) {
+      webauthnLoading.classList.add('hidden')
     }
   }
 })
