@@ -21,6 +21,8 @@
     "@hono/swagger-ui": "^0.5.2",
     "@hono/zod-openapi": "^1.1.5",
     "@hono/zod-validator": "^0.7.5",
+    "@simplewebauthn/browser": "^13.2.2",
+    "@simplewebauthn/server": "^13.2.2",
     "@tailwindcss/vite": "^4.1.18",
     "date-fns": "^4.1.0",
     "hono": "^4.11.0",
