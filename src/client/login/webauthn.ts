@@ -1,5 +1,6 @@
 import type { PublicKeyCredentialRequestOptionsJSON } from '@simplewebauthn/browser'
 import { startAuthentication } from '@simplewebauthn/browser'
+import { getSafeRedirectUrl } from '../../utils/url'
 
 /**
  * WebAuthn 登入流程
@@ -65,7 +66,7 @@ webauthnLoginBtn?.addEventListener('click', async (e) => {
     const optionsData = await optionsRes.json() as Api.SuccessResponse<PublicKeyCredentialRequestOptionsJSON>
 
     if (!optionsData.success) {
-      showWebAuthnError(optionsData.message || '此使用者尚未註冊 Passkey')
+      showWebAuthnError(optionsData.message || '認證初始化失敗')
       return
     }
 
@@ -89,8 +90,9 @@ webauthnLoginBtn?.addEventListener('click', async (e) => {
     const verifyData = await verifyRes.json() as Api.SuccessResponse<null>
 
     if (verifyData.success) {
-      // 認證成功，重定向到管理頁面（支援 redirect_to 參數）
-      const redirectTo = new URLSearchParams(window.location.search).get('redirect_to') || '/admin'
+      // 認證成功，重定向到管理頁面（支援 redirect_to 參數，並進行安全驗證）
+      const params = new URLSearchParams(window.location.search)
+      const redirectTo = getSafeRedirectUrl(params.get('redirect_to'))
       window.location.href = redirectTo
     }
     else {

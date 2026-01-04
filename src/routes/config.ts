@@ -122,9 +122,9 @@ const updateConfigSchema = z.object({
     example: 'none',
     description: '認證類型（none=不驗證, direct=直接驗證, enterprise=企業驗證）',
   }),
-  WEBAUTHN_AUTHENTICATOR_ATTACHMENT: z.enum(['platform', 'cross-platform', '']).optional().openapi({
+  WEBAUTHN_AUTHENTICATOR_ATTACHMENT: z.enum(['platform', 'cross-platform']).optional().openapi({
     example: 'platform',
-    description: '驗證器類型偏好（platform=內建如 Touch ID, cross-platform=外部如 USB 金鑰，空值表示不限制）',
+    description: '驗證器類型偏好（platform=內建如 Touch ID, cross-platform=外部如 USB 金鑰，未設定表示不限制）',
   }),
   WEBAUTHN_RESIDENT_KEY: z.enum(['required', 'preferred', 'discouraged']).optional().openapi({
     example: 'preferred',

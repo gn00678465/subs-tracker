@@ -27,6 +27,7 @@
     "date-fns": "^4.1.0",
     "hono": "^4.11.0",
     "lucide": "^0.562.0",
+    "psl": "^1.15.0",
     "resend": "^6.6.0",
     "tailwindcss": "^4.1.18",
     "zod": "^4.1.13"
@@ -43,6 +44,7 @@
     "simple-git-hooks": "^2.13.1",
     "vite": "^6.3.5",
     "vite-ssr-components": "^0.5.1",
-    "wrangler": "^4.54.0"
+    "wrangler": "^4.54.0",
+    "@types/psl": "1.1.3"
   }
 }

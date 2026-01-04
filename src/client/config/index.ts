@@ -538,10 +538,18 @@ async function deletePasskey(credentialID: string): Promise<void> {
  * 編輯 Passkey 暱稱
  */
 async function editPasskeyNickname(credentialID: string): Promise<void> {
-  const nickname = prompt('請輸入新的暱稱：')
-
-  if (!nickname)
+  const input = prompt('請輸入新的暱稱：')
+  // 使用者取消輸入
+  if (input === null) {
+    toast.info('已取消更新暱稱')
     return
+  }
+  const nickname = input.trim()
+  // 暱稱不得為空白
+  if (!nickname) {
+    toast.error('暱稱不能為空')
+    return
+  }
 
   try {
     const res = await fetch(`/api/webauthn/credentials/${credentialID}`, {
@@ -565,7 +573,3 @@ async function editPasskeyNickname(credentialID: string): Promise<void> {
     toast.error(`更新失敗：${(error as Error).message}`)
   }
 }
-
-// 暴露到全域（供 onclick 使用）
-;(window as any).deletePasskey = deletePasskey
-;(window as any).editPasskeyNickname = editPasskeyNickname

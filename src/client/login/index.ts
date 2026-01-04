@@ -1,3 +1,4 @@
+import { getSafeRedirectUrl } from '../../utils/url'
 // 導入 WebAuthn 登入功能
 import './webauthn'
 
@@ -56,7 +57,9 @@ form?.addEventListener('submit', async (evt: Event) => {
     const data = await response.json() as Api.Response<{ username: string }>
 
     if (data.success) {
-      window.location.href = '/admin'
+      const params = new URLSearchParams(window.location.search)
+      const redirectTo = getSafeRedirectUrl(params.get('redirect_to'))
+      window.location.href = redirectTo
     }
     else {
       showError(data.message || '登入失敗，請檢查用戶名和密碼')

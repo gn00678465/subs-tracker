@@ -1,6 +1,8 @@
 import type { Base64URLString } from '@simplewebauthn/server'
 import type { Bindings, Config } from '../types'
 import type { StoredChallenge, StoredCredential, UserCredentialsIndex } from '../types/webauthn'
+import { Buffer } from 'node:buffer'
+import psl from 'psl'
 import * as logger from '../utils/logger'
 
 /**
@@ -141,13 +143,12 @@ export async function updateCredentialCounter(
 
     const credential: StoredCredential = JSON.parse(data)
 
-    // 安全檢查：counter 必須遞增
-    if (newCounter <= credential.counter) {
-      logger.warning('Counter did not increase - possible replay attack', {
+    if (newCounter > 0 && newCounter <= credential.counter) {
+      logger.warning('Counter decreased - possible replay attack', {
         prefix: 'WebAuthn',
         data: { credentialID, oldCounter: credential.counter, newCounter },
       })
-      throw new Error('Counter did not increase - possible replay attack')
+      throw new Error('Counter decreased - possible replay attack')
     }
 
     credential.counter = newCounter
@@ -261,12 +262,18 @@ export function extractRPID(origin: string | undefined): string {
     throw new Error('Origin is required')
 
   const url = new URL(origin)
-  // 提取根網域（例如 app.example.com -> example.com）
-  const parts = url.hostname.split('.')
+  const hostname = url.hostname
+
+  const pslDomain = psl.get(hostname)
+  if (pslDomain) {
+    return pslDomain
+  }
+
+  const parts = hostname.split('.')
   if (parts.length >= 2) {
     return parts.slice(-2).join('.')
   }
-  return url.hostname
+  return hostname
 }
 
 /**
@@ -305,4 +312,34 @@ export function validateOrigin(
   }
 
   return false
+}
+
+/**
+ * 從 WebAuthn 回應中安全地提取 Challenge
+ */
+export function extractChallenge(body: any): string | undefined {
+  try {
+    // 優先從 clientDataJSON 提取（標準做法）
+    const clientDataJSON = body?.response?.clientDataJSON
+    if (typeof clientDataJSON === 'string' && clientDataJSON.length > 0) {
+      const decoded = Buffer.from(clientDataJSON, 'base64')
+      const parsed = JSON.parse(decoded.toString('utf8'))
+      if (parsed && typeof parsed.challenge === 'string') {
+        return parsed.challenge
+      }
+    }
+  }
+  catch (e) {
+    logger.warning('Failed to parse clientDataJSON when extracting challenge', {
+      prefix: 'WebAuthn',
+      data: { error: e instanceof Error ? e.message : String(e) },
+    })
+  }
+
+  // 備選：直接從 body 取得（某些自定義實作或測試可能用到）
+  if (typeof body?.challenge === 'string' && body.challenge.length > 0) {
+    return body.challenge
+  }
+
+  return undefined
 }

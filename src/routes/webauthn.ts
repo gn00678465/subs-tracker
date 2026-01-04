@@ -12,6 +12,7 @@ import { authMiddleware } from '../middleware/auth'
 import { getConfig } from '../services/config'
 import {
   deleteCredential,
+  extractChallenge,
   extractRPID,
   getChallenge,
   getCredential,
@@ -153,7 +154,12 @@ webauthn.openapi(registerVerifyRoute, async (c) => {
     const config = await getConfig(c.env)
 
     // 取得 challenge
-    const storedChallenge = await getChallenge(body.response.clientDataJSON ? JSON.parse(Buffer.from(body.response.clientDataJSON, 'base64').toString()).challenge : body.challenge, c.env)
+    const challengeId = extractChallenge(body)
+    if (!challengeId) {
+      return validationError(c, '無效的 challenge')
+    }
+
+    const storedChallenge = await getChallenge(challengeId, c.env)
 
     if (!storedChallenge) {
       return validationError(c, 'Challenge 已過期或無效')
@@ -250,8 +256,9 @@ webauthn.openapi(authenticateOptionsRoute, async (c) => {
 
     const userCredentials = await getUserCredentials(username, c.env)
 
-    if (userCredentials.length === 0) {
-      return notFound(c, '此使用者尚未註冊 Passkey')
+    if (userCredentials.length === 0 || username !== config.ADMIN_USERNAME) {
+      logger.warning(`Authentication options requested for invalid user or user without passkey: ${username}`, { prefix: 'WebAuthn' })
+      return validationError(c, '認證初始化失敗')
     }
 
     const rpID = config.WEBAUTHN_RP_ID || extractRPID(c.req.header('origin'))
@@ -319,10 +326,12 @@ webauthn.openapi(authenticateVerifyRoute, async (c) => {
     const config = await getConfig(c.env)
 
     // 從 response 中提取 challenge
-    const clientDataJSON = JSON.parse(
-      Buffer.from(body.response.clientDataJSON, 'base64').toString(),
-    )
-    const storedChallenge = await getChallenge(clientDataJSON.challenge, c.env)
+    const challengeId = extractChallenge(body)
+    if (!challengeId) {
+      return validationError(c, '無效的 challenge')
+    }
+
+    const storedChallenge = await getChallenge(challengeId, c.env)
 
     if (!storedChallenge || !storedChallenge.username) {
       return validationError(c, 'Challenge 已過期或無效')
