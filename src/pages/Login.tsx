@@ -92,7 +92,7 @@ export const LoginPage: FC = () => {
             <button
               type="button"
               id="webauthnLoginBtn"
-              class="btn btn-outline w-full"
+              class="btn btn-outline btn-primary w-full"
             >
               <i data-lucide="fingerprint" class="size-5" id="webauthnLoginIcon"></i>
               <span class="loading loading-spinner loading-sm hidden" id="webauthnLoginLoading"></span>
