@@ -24,7 +24,7 @@ export const LoginPage: FC = () => {
             </div>
 
             {/* 表單 */}
-            <form id="loginForm" class="space-y-4" hx-post="/api/login" hx-swap="none">
+            <form id="loginForm" class="space-y-4">
               {/* 用戶名輸入 */}
               <div class="form-control">
                 <label class="label" for="username">
@@ -37,7 +37,7 @@ export const LoginPage: FC = () => {
                   placeholder="請輸入用戶名"
                   class="input input-bordered w-full"
                   required
-                  autocomplete="username"
+                  autocomplete="username webauthn"
                 />
               </div>
 
@@ -84,6 +84,20 @@ export const LoginPage: FC = () => {
                 </button>
               </div>
             </form>
+
+            {/* 分隔線 */}
+            <div class="divider">或</div>
+
+            {/* WebAuthn 登入按鈕 */}
+            <button
+              type="button"
+              id="webauthnLoginBtn"
+              class="btn btn-outline btn-primary w-full"
+            >
+              <i data-lucide="fingerprint" class="size-5" id="webauthnLoginIcon"></i>
+              <span class="loading loading-spinner loading-sm hidden" id="webauthnLoginLoading"></span>
+              <span id="webauthnLoginText">使用 Passkey 登入</span>
+            </button>
           </div>
         </div>
       </div>

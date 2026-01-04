@@ -97,6 +97,51 @@ const updateConfigSchema = z.object({
     example: 'ONCE',
     description: '提醒頻率模式：ONCE=首次觸發，DAILY=每日發送',
   }),
+
+  // WebAuthn 配置
+  WEBAUTHN_ENABLED: z.boolean().optional().openapi({
+    example: false,
+    description: '是否啟用 WebAuthn 認證',
+  }),
+  WEBAUTHN_RP_NAME: z.string().optional().openapi({
+    example: 'SubsTracker',
+    description: 'Relying Party 名稱（顯示給使用者）',
+  }),
+  WEBAUTHN_RP_ID: z.string().optional().openapi({
+    example: 'example.com',
+    description: 'Relying Party ID（主網域）',
+  }),
+  WEBAUTHN_RP_ORIGINS: z.union([
+    z.array(z.string().url('Origin URL 格式無效')),
+    z.string(),
+  ]).optional().openapi({
+    example: ['https://example.com', 'https://app.example.com'],
+    description: '允許的來源 Origins（支援 Related Origin Requests）',
+  }),
+  WEBAUTHN_ATTESTATION: z.enum(['none', 'direct', 'enterprise']).optional().openapi({
+    example: 'none',
+    description: '認證類型（none=不驗證, direct=直接驗證, enterprise=企業驗證）',
+  }),
+  WEBAUTHN_AUTHENTICATOR_ATTACHMENT: z.enum(['platform', 'cross-platform']).optional().openapi({
+    example: 'platform',
+    description: '驗證器類型偏好（platform=內建如 Touch ID, cross-platform=外部如 USB 金鑰，未設定表示不限制）',
+  }),
+  WEBAUTHN_RESIDENT_KEY: z.enum(['required', 'preferred', 'discouraged']).optional().openapi({
+    example: 'preferred',
+    description: '駐留金鑰要求（required=必須, preferred=優先, discouraged=不建議）',
+  }),
+  WEBAUTHN_USER_VERIFICATION: z.enum(['required', 'preferred', 'discouraged']).optional().openapi({
+    example: 'preferred',
+    description: '使用者驗證要求（required=必須生物識別, preferred=優先, discouraged=不建議）',
+  }),
+  WEBAUTHN_TIMEOUT: z.number().int().min(10000, 'Timeout 不得小於 10 秒').max(600000, 'Timeout 不得大於 10 分鐘').optional().openapi({
+    example: 60000,
+    description: '認證超時時間（毫秒，範圍：10000-600000）',
+  }),
+  WEBAUTHN_HINTS: z.array(z.enum(['security-key', 'client-device', 'hybrid'])).optional().openapi({
+    example: ['security-key', 'client-device'],
+    description: 'WebAuthn 提示（引導使用者選擇驗證器類型）',
+  }),
 })
 
 /**
@@ -135,6 +180,19 @@ const ConfigDataSchema = z.object({
   BARK_QUERY: z.string().optional(),
   NOTIFICATION_HOURS: z.array(z.number()),
   ENABLED_NOTIFIERS: z.array(z.string()),
+  REMINDER_MODE: z.string().optional(),
+
+  // WebAuthn 配置
+  WEBAUTHN_ENABLED: z.boolean().optional(),
+  WEBAUTHN_RP_NAME: z.string().optional(),
+  WEBAUTHN_RP_ID: z.string().optional(),
+  WEBAUTHN_RP_ORIGINS: z.array(z.string()).optional(),
+  WEBAUTHN_ATTESTATION: z.string().optional(),
+  WEBAUTHN_AUTHENTICATOR_ATTACHMENT: z.string().optional(),
+  WEBAUTHN_RESIDENT_KEY: z.string().optional(),
+  WEBAUTHN_USER_VERIFICATION: z.string().optional(),
+  WEBAUTHN_TIMEOUT: z.number().optional(),
+  WEBAUTHN_HINTS: z.array(z.string()).optional(),
 }).openapi({
   example: {
     ADMIN_USERNAME: 'admin',
@@ -156,6 +214,17 @@ const ConfigDataSchema = z.object({
     BARK_QUERY: '',
     NOTIFICATION_HOURS: [],
     ENABLED_NOTIFIERS: ['notifyx'],
+    REMINDER_MODE: 'ONCE',
+    WEBAUTHN_ENABLED: false,
+    WEBAUTHN_RP_NAME: 'SubsTracker',
+    WEBAUTHN_RP_ID: '',
+    WEBAUTHN_RP_ORIGINS: [],
+    WEBAUTHN_ATTESTATION: 'none',
+    WEBAUTHN_AUTHENTICATOR_ATTACHMENT: undefined,
+    WEBAUTHN_RESIDENT_KEY: 'preferred',
+    WEBAUTHN_USER_VERIFICATION: 'preferred',
+    WEBAUTHN_TIMEOUT: 60000,
+    WEBAUTHN_HINTS: [],
   },
 })
 

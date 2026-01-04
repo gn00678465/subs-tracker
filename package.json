@@ -21,10 +21,13 @@
     "@hono/swagger-ui": "^0.5.2",
     "@hono/zod-openapi": "^1.1.5",
     "@hono/zod-validator": "^0.7.5",
+    "@simplewebauthn/browser": "^13.2.2",
+    "@simplewebauthn/server": "^13.2.2",
     "@tailwindcss/vite": "^4.1.18",
     "date-fns": "^4.1.0",
     "hono": "^4.11.0",
     "lucide": "^0.562.0",
+    "psl": "^1.15.0",
     "resend": "^6.6.0",
     "tailwindcss": "^4.1.18",
     "zod": "^4.1.13"
@@ -39,9 +42,9 @@
     "daisyui": "^5.5.14",
     "eslint": "^9.39.2",
     "simple-git-hooks": "^2.13.1",
-    "typed-htmx": "^0.3.1",
     "vite": "^6.3.5",
     "vite-ssr-components": "^0.5.1",
-    "wrangler": "^4.54.0"
+    "wrangler": "^4.54.0",
+    "@types/psl": "1.1.3"
   }
 }

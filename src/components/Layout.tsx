@@ -31,7 +31,6 @@ export const Layout: FC<PropsWithChildren<LayoutProps>> = ({
         <meta name="apple-mobile-web-app-title" content="SubsTracker" />
 
         <ViteClient />
-        <script src="https://unpkg.com/htmx.org@2.0.4"></script>
         <Link href="/src/style.css" rel="stylesheet" />
         <Script src="/src/client/icons.ts" type="module" />
         {/* 載入主題切換模組 */}

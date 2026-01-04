@@ -24,13 +24,12 @@ toggleExpiryDateField()
 // 監聽切換事件
 hasEndDateToggle.addEventListener('change', toggleExpiryDateField)
 
-subscriptionForm.addEventListener('htmx:beforeRequest', handleFormSubmit)
+subscriptionForm.addEventListener('submit', handleFormSubmit)
 
 async function handleFormSubmit(evt: Event) {
   evt.preventDefault()
 
-  const hxEvt = evt as HtmxBeforeRequestEvent
-  const formDataObj = hxEvt.detail.requestConfig.formData
+  const formDataObj = new FormData(subscriptionForm)
 
   const submitBtn = (evt.target as HTMLFormElement).querySelector('button[type="submit"]') as HTMLButtonElement | null
   const submitText = document.getElementById('submitText')

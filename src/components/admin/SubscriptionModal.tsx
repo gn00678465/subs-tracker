@@ -13,7 +13,7 @@ export function SubscriptionModal() {
             </form>
           </div>
 
-          <form id="subscriptionForm" class="space-y-6" hx-post="/api/subscriptions" hx-swap="none">
+          <form id="subscriptionForm" class="space-y-6">
             <input type="hidden" id="subscriptionId" name="id" />
 
             {/* 基本資訊 */}

@@ -13,6 +13,7 @@ import auth from './routes/auth'
 import config from './routes/config'
 import notify from './routes/notify'
 import subscriptions from './routes/subscriptions'
+import webauthn from './routes/webauthn'
 import { getConfig, isNotificationAllowedAtHour } from './services/config'
 import { batchUpdateSubscriptions, getAllSubscriptions } from './services/subscription'
 import { processSubscriptionReminder } from './services/subscription_cron'
@@ -44,6 +45,17 @@ app.route('/api/config', config)
 
 // 掛載第三方通知路由（無需認證，使用 API Token）
 app.route('/api/notify', notify)
+
+// 掛載 WebAuthn 路由
+app.route('/api/webauthn', webauthn)
+
+// .well-known/webauthn 端點（ROR 發現）
+app.get('/.well-known/webauthn', async (c) => {
+  const config = await getConfig(c.env)
+  return c.json({
+    origins: config.WEBAUTHN_RP_ORIGINS || [],
+  })
+})
 
 // 登入頁面路由
 app.get('/', optionalAuthMiddleware, (c) => {
