@@ -403,7 +403,7 @@ async function loadPasskeys(): Promise<void> {
       window.lucide.createIcons()
     }
   }
-  catch (error) {
+  catch {
     passkeyList.innerHTML = '<div class="text-center text-error py-8">載入失敗</div>'
   }
 }

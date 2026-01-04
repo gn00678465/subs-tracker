@@ -24,7 +24,7 @@ export const LoginPage: FC = () => {
             </div>
 
             {/* 表單 */}
-            <form id="loginForm" class="space-y-4" hx-post="/api/login" hx-swap="none">
+            <form id="loginForm" class="space-y-4">
               {/* 用戶名輸入 */}
               <div class="form-control">
                 <label class="label" for="username">
