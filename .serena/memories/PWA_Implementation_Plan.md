@@ -243,7 +243,6 @@ export default defineConfig({
       "vite/client",
       "@cloudflare/workers-types/2023-07-01",
       "@types/bun",
-      "typed-htmx",
       "vite-plugin-pwa/client"  // 新增
     ]
   }
