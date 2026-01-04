@@ -418,7 +418,7 @@ webauthn.openapi(listCredentialsRoute, async (c) => {
     const credentials = await getUserCredentials(user.username, c.env)
 
     // 移除敏感資訊（publicKey）
-    const safeCredentials = credentials.map(({ publicKey, ...cred }) => cred)
+    const safeCredentials = credentials.map(({ publicKey: _publicKey, ...cred }) => cred)
 
     return success(c, safeCredentials)
   }
