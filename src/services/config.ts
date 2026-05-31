@@ -1,6 +1,7 @@
 import type { Bindings, Config } from '../types'
 import { generateRandomSecret, hashPassword } from '../utils/crypto'
 import * as logger from '../utils/logger'
+import { getDateParts } from '../utils/time'
 
 /**
  * 配置服務模組
@@ -269,6 +270,15 @@ export function isNotificationAllowedAtHour(config: Config, currentHour: number)
 
   // 檢查當前小時是否在允許列表中
   return NOTIFICATION_HOURS.includes(currentHour)
+}
+
+/**
+ * 獲取當前小時（依 config.TIMEZONE 解析）
+ * @param config 配置對象
+ * @returns 當前小時 (0-23)
+ */
+export function getCurrentHour(config: Config): number {
+  return getDateParts(new Date(), config.TIMEZONE).hour
 }
 
 /**

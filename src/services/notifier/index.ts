@@ -1,7 +1,7 @@
 import type { Config } from '../../types'
 import type { ChannelResult, NotificationOptions, NotificationResult } from './types'
 import * as logger from '../../utils/logger'
-import { isNotificationAllowedAtHour } from '../config'
+import { getCurrentHour, isNotificationAllowedAtHour } from '../config'
 import { sendBarkNotification } from './channels/bark'
 import { sendResendNotification } from './channels/resend'
 import { sendTelegramNotification } from './channels/telegram'
@@ -32,7 +32,7 @@ export async function sendNotificationToAllChannels(
   const { title, content } = options
 
   // 1. 檢查通知時段
-  const currentHour = new Date().getHours()
+  const currentHour = getCurrentHour(config)
   const isAllowed = isNotificationAllowedAtHour(config, currentHour)
 
   if (!isAllowed) {

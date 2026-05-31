@@ -14,7 +14,7 @@ import config from './routes/config'
 import notify from './routes/notify'
 import subscriptions from './routes/subscriptions'
 import webauthn from './routes/webauthn'
-import { getConfig, isNotificationAllowedAtHour } from './services/config'
+import { getConfig, getCurrentHour, isNotificationAllowedAtHour } from './services/config'
 import { batchUpdateSubscriptions, getAllSubscriptions } from './services/subscription'
 import { processSubscriptionReminder } from './services/subscription_cron'
 import * as loggerUtil from './utils/logger'
@@ -94,10 +94,10 @@ export default {
       // 1. 獲取配置
       const config = await getConfig(env)
 
-      // 2. 檢查通知時段（UTC）
-      const currentHour = new Date().getUTCHours()
+      // 2. 檢查通知時段（依 config.TIMEZONE）
+      const currentHour = getCurrentHour(config)
       if (!isNotificationAllowedAtHour(config, currentHour)) {
-        loggerUtil.info(`[Cron] 當前時段 UTC ${currentHour}時 不在允許範圍，跳過`, {
+        loggerUtil.info(`[Cron] 當前時段 ${currentHour}時 不在允許範圍，跳過`, {
           prefix: 'Cron',
           data: { allowedHours: config.NOTIFICATION_HOURS },
         })
