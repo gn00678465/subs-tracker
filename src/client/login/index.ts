@@ -1,21 +1,16 @@
 import { getSafeRedirectUrl } from '../../utils/url'
+import { api, ApiError } from '../lib/api'
+import { withLoading } from '../lib/async-ui'
+import { el } from '../lib/dom'
 // 導入 WebAuthn 登入功能
 import './webauthn'
 
-const form = document.getElementById('loginForm') as HTMLFormElement | null
-const btn = document.getElementById('submitBtn') as HTMLButtonElement | null
-const btnText = document.getElementById('btnText') as HTMLElement | null
-const btnLoading = document.getElementById('btnLoading') as HTMLElement | null
-const errorMsg = document.getElementById('errorMsg') as HTMLElement | null
-const errorText = document.getElementById('errorText') as HTMLElement | null
-
-function resetButtonState() {
-  if (!btn || !btnText || !btnLoading)
-    return
-  btn.disabled = false
-  btnText.classList.remove('hidden')
-  btnLoading.classList.add('hidden')
-}
+const form = el<HTMLFormElement>('loginForm')
+const btn = el<HTMLButtonElement>('submitBtn')
+const btnText = el('btnText')
+const btnLoading = el('btnLoading')
+const errorMsg = el('errorMsg')
+const errorText = el('errorText')
 
 function showError(message: string) {
   if (!errorMsg || !errorText)
@@ -38,36 +33,16 @@ form?.addEventListener('submit', async (evt: Event) => {
 
   errorMsg?.classList.add('hidden')
 
-  if (!btn || !btnText || !btnLoading)
-    return
-  btn.disabled = true
-  btnText.classList.add('hidden')
-  btnLoading.classList.remove('hidden')
-
   try {
-    const response = await fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        username,
-        password,
-      }),
-    })
+    await withLoading(
+      { button: btn, hide: [btnText], show: [btnLoading] },
+      () => api.post<{ username: string }>('/api/login', { username, password }),
+    )
 
-    const data = await response.json() as Api.Response<{ username: string }>
-
-    if (data.success) {
-      const params = new URLSearchParams(window.location.search)
-      const redirectTo = getSafeRedirectUrl(params.get('redirect_to'))
-      window.location.href = redirectTo
-    }
-    else {
-      showError(data.message || '登入失敗，請檢查用戶名和密碼')
-      resetButtonState()
-    }
+    const params = new URLSearchParams(window.location.search)
+    window.location.href = getSafeRedirectUrl(params.get('redirect_to'))
   }
-  catch {
-    showError('發生錯誤，請稍後再試')
-    resetButtonState()
+  catch (error) {
+    showError(error instanceof ApiError ? error.message : '發生錯誤，請稍後再試')
   }
 })

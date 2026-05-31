@@ -713,7 +713,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
       </div>
 
       {/* 客戶端邏輯 */}
-      <Script src="/src/client/config/index.ts" type="module" />
+      <Script src="/src/client/config/index.tsx" type="module" />
     </Layout>
   )
 }

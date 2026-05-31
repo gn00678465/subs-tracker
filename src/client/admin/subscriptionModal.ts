@@ -1,12 +1,16 @@
+import type { Subscription } from '../../types/index'
 import { toApiFormat } from '../../utils/formAdaptor'
 import { toast } from '../../utils/toast'
+import { api, ApiError } from '../lib/api'
+import { withLoading } from '../lib/async-ui'
+import { el, elx } from '../lib/dom'
+import { reloadSubscriptions } from './index'
 
-const subscriptionForm = document.getElementById('subscriptionForm') as HTMLFormElement
-const hasEndDateToggle = document.getElementById('hasEndDate') as HTMLInputElement
-const expiryDateField = document.getElementById('expiryDateField') as HTMLLabelElement
-const expiryDateInput = document.getElementById('expiryDate') as HTMLInputElement
+const subscriptionForm = elx<HTMLFormElement>('subscriptionForm')
+const hasEndDateToggle = elx<HTMLInputElement>('hasEndDate')
+const expiryDateField = elx<HTMLLabelElement>('expiryDateField')
+const expiryDateInput = elx<HTMLInputElement>('expiryDate')
 
-// 切換到期日期欄位的顯示/隱藏
 function toggleExpiryDateField() {
   if (hasEndDateToggle.checked) {
     expiryDateField.style.display = ''
@@ -18,33 +22,21 @@ function toggleExpiryDateField() {
   }
 }
 
-// 初始化
 toggleExpiryDateField()
-
-// 監聽切換事件
 hasEndDateToggle.addEventListener('change', toggleExpiryDateField)
-
 subscriptionForm.addEventListener('submit', handleFormSubmit)
 
 async function handleFormSubmit(evt: Event) {
   evt.preventDefault()
 
   const formDataObj = new FormData(subscriptionForm)
-
-  const submitBtn = (evt.target as HTMLFormElement).querySelector('button[type="submit"]') as HTMLButtonElement | null
-  const submitText = document.getElementById('submitText')
-  const submitLoading = document.getElementById('submitLoading')
-
-  if (submitBtn) {
-    submitBtn.disabled = true
-  }
-  submitText?.classList.add('hidden')
-  submitLoading?.classList.remove('hidden')
+  const submitBtn = subscriptionForm.querySelector<HTMLButtonElement>('button[type="submit"]')
+  const submitText = el('submitText')
+  const submitLoading = el('submitLoading')
 
   const id = (formDataObj.get('id') as string) || ''
 
   try {
-    // 使用 adaptor 轉換表單數據
     const data = toApiFormat(formDataObj)
 
     if (!data.name) {
@@ -57,52 +49,23 @@ async function handleFormSubmit(evt: Event) {
       throw new Error('周期數值必須大於 0')
     }
 
-    const url = id ? `/api/subscriptions/${id}` : '/api/subscriptions'
-    const method = id ? 'PUT' : 'POST'
-
-    const response = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    })
-
-    if (!response.ok) {
-      throw new Error('保存失敗')
-    }
-
-    const result = await response.json() as { data?: { id?: string } }
-    const savedId = id || result.data?.id
+    await withLoading(
+      { button: submitBtn, hide: [submitText], show: [submitLoading] },
+      async () => {
+        if (id) {
+          await api.put<Subscription>(`/api/subscriptions/${id}`, data)
+        }
+        else {
+          await api.post<Subscription>('/api/subscriptions', data)
+        }
+      },
+    )
 
     toast.success(id ? '更新成功' : '添加成功')
-    const modal = document.getElementById('subscriptionModal') as HTMLDialogElement | null
-    modal?.close()
-
-    // 派發成功事件
-    document.dispatchEvent(new CustomEvent('subscription-saved', {
-      detail: {
-        subscriptionId: savedId,
-        action: id ? 'update' : 'create',
-      },
-    }))
+    el<HTMLDialogElement>('subscriptionModal')?.close()
+    await reloadSubscriptions()
   }
   catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('保存失敗:', error)
-    toast.error('保存失敗，請稍後再試')
-
-    // 派發失敗事件
-    document.dispatchEvent(new CustomEvent('subscription-save-failed', {
-      detail: {
-        error: error instanceof Error ? error : new Error(String(error)),
-        subscriptionId: id || undefined,
-      },
-    }))
-  }
-  finally {
-    if (submitBtn) {
-      submitBtn.disabled = false
-    }
-    submitText?.classList.remove('hidden')
-    submitLoading?.classList.add('hidden')
+    toast.error(error instanceof ApiError ? error.message : '保存失敗，請稍後再試')
   }
 }
