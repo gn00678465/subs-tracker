@@ -525,3 +525,124 @@ wrangler secret put API_KEY --env production
 **Last Updated**: 2025-12-27  
 **Maintainer**: AI Coding Agent  
 **Related Docs**: [Cloudflare Workers](https://developers.cloudflare.com/workers/), [Hono](https://hono.dev/), [Vite](https://vite.dev/)
+
+<!-- harness:refactor-frontend:start -->
+# Refactor Harness — `refactor/frontend-client-layer`
+
+> Lightweight harness for the in-flight frontend-refactor work. Added by `/harness-creator`; integrates with (does not replace) the OpenSpec and GitNexus managed blocks. Remove this block once the branch is merged.
+
+## Scope Boundary
+
+**In scope (edit freely):**
+- Frontend client layer: `src/client/**` (islands + new `src/client/lib/`), `src/components/**`.
+- Two backend cron defects only: timezone unification via `getCurrentHour(config)` (`src/services/config.ts`, `src/index.tsx`, `src/services/notifier/index.ts`); immutable `processSubscriptionReminder` (`src/services/subscription_cron.ts`).
+- Test/infra scaffolding: `vitest.config.ts`, `e2e/**`, `src/**/*.{test,spec}.{ts,tsx}`, `bunfig.toml`, `.simple-git-hooks.mjs`, `apm.yml`.
+
+**Out of scope — MUST NOT change (behaviour-preserving refactor only):**
+- API response envelope shape `{ success, data, message }` (`src/utils/response.ts`, `src/types/api.d.ts`).
+- Route paths and handler contracts (`src/routes/**`).
+- KV storage logic / key schema (`src/services/**` KV read/write semantics).
+
+If a task seems to require touching an out-of-scope item, STOP and surface it instead of proceeding.
+
+## Verification Workflow (definition of done)
+
+The automated gate — run before claiming any task done, and before PR:
+
+```bash
+bun run lint && bun run typecheck && bun run test && bun run build
+```
+
+Coverage gate (enforced): `src/client/lib/**`, `src/utils/formAdaptor.ts`,
+`src/services/subscription_cron.ts` each ≥ 80% — `bun run test:coverage` exits
+non-zero below threshold (per-file thresholds in `vitest.config.ts`).
+
+### Visual harness — a LOCAL human-review tool, NOT a CI/PR gate
+
+The Playwright `toHaveScreenshot` baselines are intentionally **untracked**
+(`.gitignore` → `e2e/*-snapshots/`) and **platform-specific** (darwin), so the
+visual harness is not reproducible on a clean checkout or Linux CI. It is the
+operator-run before/after diff backing the **PV human sign-off gate**, not part
+of the green automated gate above. Local usage:
+
+```bash
+bun run test:visual:update   # establish/refresh the LOCAL baseline (first run)
+bun run test:visual          # compare current render against the local baseline
+bun run test:visual:capture  # write full-page PNGs to e2e/__screenshots__/ for eyeball review
+```
+
+With no local baseline present, `bun run test:visual` errors ("snapshot does not
+exist") rather than silently passing — it never reports a false green.
+
+## Tool Safety — high-risk operations (require explicit authorization)
+
+- KV writes against real namespaces (`wrangler kv key put` without `--local`).
+- `bun run deploy` / `wrangler deploy` (any environment).
+- Releases: `bun run release*` / `bumpp` (bumps version, tags, pushes).
+- `git push` and opening PRs — user-gated; do not auto-push or auto-merge.
+
+Local-only KV seeding (`wrangler kv key put --local`) and read-only commands are safe.
+
+## Feature State & Lifecycle Handoff
+
+State of record = the seven implementation plans in `docs/superpowers/plans/` (checkbox steps track progress) against spec `docs/superpowers/specs/2026-05-30-frontend-refactor-design.md`.
+
+Execution order (dependencies): **S0 foundation → S0 visual harness (capture baseline) → [lib layer ∥ cron] → island refactors → visual uplift (PV) → finishing cleanup (P7)**.
+
+To resume across sessions: read the plan files, run the Verification Workflow to see current green/red state, then continue the first plan whose steps are not all checked. Hard user gates (do not self-approve): PV visual-direction selection and final visual sign-off.
+
+## Harness Artifacts
+
+| File | Purpose |
+|------|---------|
+| `ARCHITECTURE.md` | Project structure, Worker layer responsibilities, HTTP + cron data flow, invariants. |
+| `PRODUCT.md` | Product scope and current-phase (refactor) goals + success criteria. |
+| `init.sh` | One-click restore to a known-good state: `bun install` → lint → typecheck → test → build (no deploy / no remote KV). |
+| `docs/superpowers/specs/`, `docs/superpowers/plans/` | Authoritative spec + the seven phase plans (state of record). |
+
+Startup: run `./init.sh` to reach green, then read `ARCHITECTURE.md` + `PRODUCT.md` for context and the plans for the next step.
+<!-- harness:refactor-frontend:end -->
+
+<!-- gitnexus:start -->
+# GitNexus — Code Intelligence
+
+This project is indexed by GitNexus as **subs-tracker** (1498 symbols, 2741 relationships, 116 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+
+> If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
+
+## Always Do
+
+- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `gitnexus_impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
+- **MUST run `gitnexus_detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows.
+- **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
+- When exploring unfamiliar code, use `gitnexus_query({query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
+- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `gitnexus_context({name: "symbolName"})`.
+
+## Never Do
+
+- NEVER edit a function, class, or method without first running `gitnexus_impact` on it.
+- NEVER ignore HIGH or CRITICAL risk warnings from impact analysis.
+- NEVER rename symbols with find-and-replace — use `gitnexus_rename` which understands the call graph.
+- NEVER commit changes without running `gitnexus_detect_changes()` to check affected scope.
+
+## Resources
+
+| Resource | Use for |
+|----------|---------|
+| `gitnexus://repo/subs-tracker/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/subs-tracker/clusters` | All functional areas |
+| `gitnexus://repo/subs-tracker/processes` | All execution flows |
+| `gitnexus://repo/subs-tracker/process/{name}` | Step-by-step execution trace |
+
+## CLI
+
+| Task | Read this skill file |
+|------|---------------------|
+| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
+| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
+| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
+| Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
+| Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
+| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
+
+<!-- gitnexus:end -->
