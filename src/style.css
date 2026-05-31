@@ -1,18 +1,115 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
+
+/* ============================================================================
+   Design system: Starbucks (see /DESIGN.md)
+   Warm cream canvas + four-tier green + gold-for-ceremony, color-block (no gradients).
+   SoDoSans is proprietary → Manrope substitute (DESIGN.md §3 "Note on Font Substitutes").
+   ========================================================================== */
+
 @plugin "daisyui" {
     themes: light --default, dark --prefersdark;
-    --color-primary: #36A45D;
 }
 
+/* Light — Neutral Warm cream page, white cards, Green Accent CTAs */
 @plugin "daisyui/theme" {
     name: "light";
     default: true;
-    --color-primary: #36A45D;
+    color-scheme: "light";
+    --color-primary: #00754A;          /* Green Accent — primary CTA */
+    --color-primary-content: #FFFFFF;
+    --color-secondary: #1E3932;        /* House Green — deep bands */
+    --color-secondary-content: #F2F0EB;
+    --color-accent: #CBA258;           /* Gold — ceremony/accent, used sparingly */
+    --color-accent-content: #2A1E07;
+    --color-neutral: #1E3932;          /* House Green */
+    --color-neutral-content: #F2F0EB;
+    --color-base-100: #FFFFFF;         /* card / navbar surface */
+    --color-base-200: #F2F0EB;         /* Neutral Warm — page canvas */
+    --color-base-300: #EDEBE9;         /* Ceramic — hover / separators */
+    --color-base-content: #1F1C19;     /* warm near-black (≈ rgba(0,0,0,.87)) */
+    --color-info: #2B5148;             /* Green Uplift */
+    --color-info-content: #FFFFFF;
+    --color-success: #00754A;          /* brand green = success */
+    --color-success-content: #FFFFFF;
+    --color-warning: #E0892B;          /* warm amber (warns without clashing gold) */
+    --color-warning-content: #2A1A05;  /* dark brown — amber is light, needs dark text */
+    --color-error: #C82014;            /* Starbucks red */
+    --color-error-content: #FFFFFF;    /* white on red (≈5.6:1 AA); DaisyUI auto-derived a dark, low-contrast value */
+    --radius-box: 0.75rem;             /* 12px cards/modals */
+    --radius-field: 0.5rem;            /* inputs (buttons overridden to full pill below) */
+    --radius-selector: 1rem;
+    --border: 1px;
 }
 
+/* Dark — House-Green espresso surfaces */
 @plugin "daisyui/theme" {
     name: "dark";
-    --color-primary: #36A45D;
+    color-scheme: "dark";
+    --color-primary: #34A877;
+    --color-primary-content: #06231B;
+    --color-secondary: #2B5148;
+    --color-secondary-content: #EAF1ED;
+    --color-accent: #D9B574;
+    --color-accent-content: #241704;
+    /* light sage so badge-soft (text = --color-neutral) stays legible on dark; dark -content for solid chips/avatar */
+    --color-neutral: #B8C9C1;
+    --color-neutral-content: #16302A;
+    --color-base-100: #1E3932;         /* card surface */
+    --color-base-200: #16302A;         /* page canvas */
+    --color-base-300: #25463E;
+    --color-base-content: #EAF1ED;
+    --color-info: #6FA395;
+    --color-info-content: #06231B;
+    --color-success: #4ABE8C;          /* lightened so badge-soft 正常 clears AA 4.5 (4.68:1); solid 啟用 btn 7.15:1 */
+    --color-success-content: #06231B;
+    --color-warning: #E0B15A;
+    --color-warning-content: #2A1A05;
+    --color-error: #E5685E;
+    --color-error-content: #2A0710;    /* dark on the lighter dark-theme red */
+    --radius-box: 0.75rem;
+    --radius-field: 0.5rem;
+    --radius-selector: 1rem;
+}
+
+/* Tailwind theme tokens */
+@theme {
+    --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ---- Brand voice: tight tracking, weight-led hierarchy (DESIGN.md §3) ---- */
+body {
+    font-family: var(--font-sans);
+    letter-spacing: -0.01em;
+    /* Warm cream is load-bearing — the page canvas, never pure white (DESIGN.md §7) */
+    background-color: var(--color-base-200);
+}
+h1, h2, h3, .card-title {
+    font-weight: 600;
+    letter-spacing: -0.016em;
+}
+
+/* ---- Buttons: universal 50px full-pill + scale(0.95) active (DESIGN.md §4) ---- */
+.btn {
+    border-radius: 9999px;
+    transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+.btn:active {
+    transform: scale(0.95);
+}
+
+/* ---- Cards: whisper-soft layered shadow over solid (DESIGN.md §6) ---- */
+.card.shadow-xl, .card.shadow-lg, .navbar.shadow-lg {
+    box-shadow: 0 0 0.5px rgb(0 0 0 / 0.14), 0 1px 2px rgb(0 0 0 / 0.10), 0 6px 16px rgb(0 0 0 / 0.06);
+}
+
+/* ---- Load-time motion: measured café-calm ease-out (DESIGN.md §4 expander curve) ---- */
+@keyframes sb-rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+main > *, .card {
+    animation: sb-rise 0.36s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
 /* 基礎 View Transition 設定 */
@@ -21,26 +118,8 @@
     animation: none;
     mix-blend-mode: normal;
 }
-
-/* 預設層級設定（淺色模式） */
-::view-transition-old(root) {
-    z-index: 1;
-}
-
-::view-transition-new(root) {
-    z-index: 2147483646;
-}
-
-/* 深色模式時反轉層級 */
-[data-theme="dark"]::view-transition-old(root) {
-    z-index: 2147483646;
-}
-
-[data-theme="dark"]::view-transition-new(root) {
-    z-index: 1;
-}
-
-/* 確保 root 元素有轉場名稱 */
-:root {
-    view-transition-name: root;
-}
+::view-transition-old(root) { z-index: 1; }
+::view-transition-new(root) { z-index: 2147483646; }
+[data-theme="dark"]::view-transition-old(root) { z-index: 2147483646; }
+[data-theme="dark"]::view-transition-new(root) { z-index: 1; }
+:root { view-transition-name: root; }
