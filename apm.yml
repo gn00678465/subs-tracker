@@ -1,0 +1,17 @@
+name: subs-tracker
+version: 1.0.0
+description: Agent-asset manifest (APM) for subs-tracker — framework-agnostic; React-only
+  skills pruned (Hono/JSX on Cloudflare Workers)
+targets:
+- claude
+- copilot
+- agent-skills
+dependencies:
+  apm: []
+  mcp:
+  - name: chrome-devtools
+    registry: false
+    transport: stdio
+    command: npx
+    args:
+    - chrome-devtools-mcp@latest

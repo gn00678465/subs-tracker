@@ -21,7 +21,7 @@ export const Layout: FC<PropsWithChildren<LayoutProps>> = ({
 
         {/* PWA Meta Tags */}
         <link rel="manifest" href="/manifest.webmanifest" />
-        <meta name="theme-color" content="#36A45D" />
+        <meta name="theme-color" content="#00754A" />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 

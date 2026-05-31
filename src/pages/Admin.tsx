@@ -54,7 +54,7 @@ export const AdminPage: FC<AdminPageProps> = ({ username }) => {
         </div>
 
         {/* 訂閱列表表格 */}
-        <div class="card bg-base-100 shadow-xl">
+        <div class="card bg-base-100 shadow-xl overflow-hidden">
           <div class="overflow-x-auto">
             <div role="table" aria-label="訂閱列表" class="w-full table">
               {/* 桌面版標題 - 只在 md 以上顯示 */}

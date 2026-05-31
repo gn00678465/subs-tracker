@@ -37,3 +37,22 @@ lerna-debug.log*
 .claude/*.local.json
 .claude/skills/ui-ux-pro-max/
 .shared/ui-ux-pro-max/
+
+# APM dependencies
+apm_modules/
+
+# Coverage reports
+coverage/
+
+# Playwright runtime output
+e2e/.playwright-output/
+
+# Visual harness screenshots — not tracked; regenerate locally
+#   capture artifacts (baseline / pv-after) and toHaveScreenshot snapshots
+e2e/__screenshots__/
+e2e/*-snapshots/
+
+# Auto-generated agent-skill mirrors / GitNexus tooling skills
+.agents/
+.claude/skills/gitnexus/
+.gitnexus/
