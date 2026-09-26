@@ -383,7 +383,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     display: flex;
     gap: 8px;
   }
-  .card-actions button {
+  .card-actions :is(button, a) {
     all: unset;
     box-sizing: border-box;
     display: inline-flex;
@@ -399,7 +399,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   .card-actions button:hover {
     box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.45);
   }
-  .card-actions button:focus-visible {
+  .card-actions :is(button, a):focus-visible {
     outline: 2px solid #fff;
     outline-offset: 2px;
   }
@@ -1080,9 +1080,6 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   .banner span {
     flex: 1;
   }
-  .banner .chev-r {
-    color: var(--ink-3);
-  }
   .banner.offline {
     border-color: var(--line);
     color: var(--ink-2);
@@ -1169,33 +1166,9 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     color: rgb(255 255 255 / 0.86);
     margin-inline-start: 1px;
   }
-  .detail .facts span b a {
-    color: #fff;
-  }
   .card-actions button[disabled] {
     opacity: 0.45;
     cursor: not-allowed;
-  }
-  .card-actions a {
-    all: unset;
-    box-sizing: border-box;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    height: 36px;
-    padding: 0 12px;
-    border-radius: 999px;
-    background: rgb(255 255 255 / 0.1);
-    font-size: 13px;
-    cursor: pointer;
-  }
-  .card-actions a svg {
-    width: 16px;
-    height: 16px;
-  }
-  .card-actions a:focus-visible {
-    outline: 2px solid #fff;
-    outline-offset: 2px;
   }
   .paused-toggle {
     all: unset;
