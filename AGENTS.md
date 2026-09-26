@@ -26,7 +26,7 @@ Scripts live in `package.json`. The ones with non-obvious behavior:
 - `bun run fmt` - oxfmt writes formatting in place.
 - `bun run preview` - build, then serve the production bundle locally. Use it for UI changes and dependency upgrades: some failures appear only in the bundled Worker.
 - `bun run cf-typegen` - regenerate `worker-configuration.d.ts` after changing `wrangler.toml`.
-- `bun run deploy` - build, apply D1 migrations to the remote database, then `wrangler deploy`. `wrangler deploy` does not apply migrations by itself.
+- `bun run deploy` - build, apply D1 migrations to the remote database, then `wrangler deploy`. `wrangler deploy` does not apply migrations by itself. Production deploys through Workers Builds (see Cloudflare Workers); use this script only when Workers Builds is disconnected.
 
 Tests use `bun test` (`*.test.ts` next to the module). Tests that touch storage call `createTestDb()` from `src/test/d1.ts`, which gives each test an empty local D1 with all migrations applied. `docs/dogfood.md` is the manual walkthrough of the app; run it after UI, flow, or dependency changes and before a release, then add a row to its run log.
 
@@ -51,7 +51,7 @@ Tests use `bun test` (`*.test.ts` next to the module). Tests that touch storage 
 
 Angular convention: `<type>(<scope>): <summary>`, with scopes such as `subscriptions`, `webauthn`, `routes`, `ui`, `config`, `deps`. Add a `BREAKING CHANGE:` footer for API contract changes. `bun run changelog` (conventional-changelog, `conventionalcommits` preset, which also reads `type(scope)!:`) adds the commits since the latest tag to `CHANGELOG.md` under the version in `package.json`.
 
-`bun run release`, `release:minor`, and `release:major` run bumpp (`bump.config.ts`): bump the version, write the changelog, commit all changes, tag, and push. The changelog must run before the tag exists; after it, the range from the latest tag to `HEAD` is empty. Release from a clean working tree. Run them only when the user asks for a release.
+`bun run release`, `release:minor`, and `release:major` run bumpp (`bump.config.ts`): bump the version, write the changelog, commit all changes, tag, and push. The changelog must run before the tag exists; after it, the range from the latest tag to `HEAD` is empty. They then push the release commit to the `release` branch, which starts the production deploy. Release from a clean working tree. Run them only when the user asks for a release.
 
 ## API Contracts
 
@@ -70,6 +70,7 @@ Angular convention: `<type>(<scope>): <summary>`, with scopes such as `subscript
 
 `wrangler.toml` defines one Worker, `subs-tracker`, with no `[env.*]` sections. With `@cloudflare/vite-plugin`, the environment is chosen at build time (`CLOUDFLARE_ENV`) and `wrangler deploy --env` has no effect; bindings are not inherited by environments either (`docs/research/2026-09-26-kv-vs-d1.md` §5.7).
 
+- Workers Builds deploys production (`docs/research/2026-09-26-workers-builds-tag-deploy.md`). Workers Builds cannot trigger on tags, so the production branch is `release`, and only the release scripts push to it; pushes to `main` do not deploy. Preview builds are off. Build command: `bun install --frozen-lockfile && bun run build`. Deploy command: `bun run db:migrate:remote && bunx wrangler deploy` (migrations first: when the D1 database is missing, they fail before `wrangler deploy` can create an empty one). Build variables: `BUN_VERSION=1.4.2`, `SKIP_DEPENDENCY_INSTALL=1`. The build API token needs Account → D1 → Edit. Roll back in Dashboard → Worker → Deployments.
 - D1: the binding is `DB`. A new deployment runs `wrangler d1 create subs-tracker --binding DB --update-config` once to add `database_id`. Migrations only add: change a table with a new migration file, never by editing an applied one.
 - Local data: `wrangler d1 execute DB --local --command "<SQL>"`. Seed legacy KV data for import tests with `wrangler kv key put <key> --path <file> --binding SUBSCRIPTIONS_KV --local --preview`; `vite preview` reads the `preview_id` namespace.
 - Legacy import: when `settings` has no row, the first read (a request or the Cron) imports KV `config`, `subscriptions`, and `webauthn:*` into D1 in one `batch()` (`src/services/legacyImport.ts`). KV is never written.
