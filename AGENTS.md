@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-Subscription tracker on Cloudflare Workers: Hono (API, JSX SSR, OpenAPI via `@hono/zod-openapi`), Vite 8 with `@cloudflare/vite-plugin`, TypeScript, plain CSS (`src/style.css`, taken from the prototype `docs/design/subs-tracker-design.html`). Package manager: bun. Storage: D1 (`DB`); KV (`SUBSCRIPTIONS_KV`) is read only once, to import data from older versions. An hourly Cron Trigger sends reminders at the user's reminder hour.
+Subscription tracker on Cloudflare Workers: Hono (API, JSX SSR, OpenAPI via `@hono/zod-openapi`), Vite 8 with `@cloudflare/vite-plugin`, TypeScript, Tailwind CSS v4 (component styles in `src/style.css`, taken from the prototype `docs/design/subs-tracker-design.html`). Package manager: bun. Storage: D1 (`DB`); KV (`SUBSCRIPTIONS_KV`) is read only once, to import data from older versions. An hourly Cron Trigger sends reminders at the user's reminder hour.
 
 **Layout**:
 
@@ -35,6 +35,7 @@ Tests use `bun test` (`*.test.ts` next to the module). Tests that touch storage 
 - TypeScript strict mode. Do not use `any`: oxlint enforces `typescript/no-explicit-any` as an error. Use `unknown` and narrow it, or a concrete type.
 - oxfmt owns formatting (`.oxfmtrc.json`: no semicolons, single quotes, `printWidth` 120, sorted imports). Run `bun run fmt`; do not hand-format.
 - Lint rules are in `.oxlintrc.json`. Override globs must be plain globs (`**/*.ts`); oxlint does not match extglob patterns such as `**/*.?([cm])ts`, and the rules under them silently stop applying.
+- Styles: `src/style.css` keeps the prototype's component CSS in `@layer components`; change the prototype `docs/design/subs-tracker-design.html` in the same commit. Colors switch with the theme, so they live as CSS variables on `:root` and map to Tailwind through `@theme inline` (`bg-surface`, `text-ink-2`, `bg-plum`); the default palette is removed. The `dark:` variant follows `data-theme` first, then the OS setting. Tailwind scans only `src/` (`source('.')`).
 - Browser globals that inline `onclick` handlers call are declared with `declare global { interface Window { ... } }` in the module that assigns them.
 
 ## Git Hooks

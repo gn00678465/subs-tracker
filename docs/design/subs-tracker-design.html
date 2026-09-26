@@ -103,6 +103,10 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     padding-block: 24px 64px;
     -webkit-font-smoothing: antialiased;
   }
+  ::placeholder {
+    color: var(--ink-3);
+    opacity: 1;
+  }
   ::selection {
     background: color-mix(in srgb, var(--c-blue) 30%, transparent);
   }
@@ -590,6 +594,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     cursor: pointer;
     transition: background 180ms var(--ease);
     flex: none;
+    margin: 0;
   }
   .switch::after {
     content: '';

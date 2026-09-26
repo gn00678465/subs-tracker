@@ -219,21 +219,21 @@ bunx wrangler d1 execute DB --local --command "SELECT * FROM subscriptions"
 
 ## 技術
 
-| 項目       | 使用                                                             |
-| ---------- | ---------------------------------------------------------------- |
-| 執行環境   | Cloudflare Workers                                               |
-| 儲存       | Cloudflare D1（KV 只用來匯入舊版資料）                           |
-| 後端       | Hono 4、`@hono/zod-openapi`、Zod 4                               |
-| 頁面       | Hono JSX 伺服器端渲染；瀏覽器端用 `hono/jsx/dom`                 |
-| 樣式       | `src/style.css`，取自原型 `docs/design/subs-tracker-design.html` |
-| 圖示       | Lucide                                                           |
-| Passkey    | SimpleWebAuthn 13.2.2                                            |
-| Email      | Resend                                                           |
-| 建置       | Vite 8、`@cloudflare/vite-plugin`、Wrangler 4                    |
-| 程式語言   | TypeScript 5.9（strict）                                         |
-| 格式與檢查 | oxfmt、oxlint                                                    |
-| 測試       | `bun test`                                                       |
-| 套件管理   | Bun                                                              |
+| 項目       | 使用                                                                                        |
+| ---------- | ------------------------------------------------------------------------------------------- |
+| 執行環境   | Cloudflare Workers                                                                          |
+| 儲存       | Cloudflare D1（KV 只用來匯入舊版資料）                                                      |
+| 後端       | Hono 4、`@hono/zod-openapi`、Zod 4                                                          |
+| 頁面       | Hono JSX 伺服器端渲染；瀏覽器端用 `hono/jsx/dom`                                            |
+| 樣式       | Tailwind CSS 4；元件樣式在 `src/style.css`，取自原型 `docs/design/subs-tracker-design.html` |
+| 圖示       | Lucide                                                                                      |
+| Passkey    | SimpleWebAuthn 13.2.2                                                                       |
+| Email      | Resend                                                                                      |
+| 建置       | Vite 8、`@cloudflare/vite-plugin`、Wrangler 4                                               |
+| 程式語言   | TypeScript 5.9（strict）                                                                    |
+| 格式與檢查 | oxfmt、oxlint                                                                               |
+| 測試       | `bun test`                                                                                  |
+| 套件管理   | Bun                                                                                         |
 
 ## 專案結構
 
