@@ -117,8 +117,10 @@ export const Sheet = ({ sub, subs, today, defaultDays, onSaved, onDeleted, onClo
   ]
   const currencies = distinct([...CURRENCIES, draft.currency])
 
+  // 根用單一元素，不用 fragment：hono/jsx 4.13 每次更新都把根 fragment 的節點重新插入 DOM，
+  // 欄位在第一個字之後就失去焦點，開啟動畫也重播
   return (
-    <>
+    <div>
       <div class="scrim" onClick={onClose}></div>
       <form class="sheet" novalidate aria-labelledby="sheet-title" onSubmit={save}>
         <div class="sheet-head">
@@ -370,6 +372,6 @@ export const Sheet = ({ sub, subs, today, defaultDays, onSaved, onDeleted, onClo
           )}
         </div>
       </form>
-    </>
+    </div>
   )
 }
