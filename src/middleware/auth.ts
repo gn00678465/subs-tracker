@@ -2,6 +2,7 @@ import type { Context, Next } from 'hono'
 
 import { loadSettings } from '../services/settings'
 import type { HonoEnv } from '../types'
+import { ErrorCode } from '../types/error'
 import { clearTokenCookie, extractToken, verifyJWT } from '../utils/crypto'
 import * as logger from '../utils/logger'
 
@@ -58,6 +59,22 @@ export async function authMiddleware(c: Context<HonoEnv>, next: Next): Promise<R
       500,
     )
   }
+}
+
+export const REAUTH_WINDOW_SECONDS = 10 * 60
+
+/**
+ * 新增或刪除 passkey、修改帳號前，要在 10 分鐘內登入過。
+ * 沒有換發 JWT 的機制，iat 就是最後一次輸入密碼或完成 passkey 驗證的時間；
+ * 重新驗證的方式是再登入一次（POST /api/login 或 passkey 登入）。
+ * 放在 authMiddleware 之後。
+ */
+export async function recentAuthMiddleware(c: Context<HonoEnv>, next: Next): Promise<Response | void> {
+  const { iat } = c.get('user')
+  if (Math.floor(Date.now() / 1000) - iat > REAUTH_WINDOW_SECONDS) {
+    return c.json({ success: false, message: '請再次驗證身分', code: ErrorCode.REAUTH_REQUIRED }, 403)
+  }
+  await next()
 }
 
 /**

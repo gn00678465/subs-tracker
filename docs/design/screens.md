@@ -144,7 +144,7 @@
   - 建立時間、最後使用時間。
   - 「已同步」或「僅限此裝置」。
 - RP ID 與目前網址不同的 passkey，標示「在此網址無法使用」。
-- 「新增 passkey」與「刪除」需要 10 分鐘內登入過；超過時，先要求輸入密碼或完成一次 passkey 驗證。改名不需要。
+- 「新增 passkey」「刪除」與「帳號與登入」的修改需要 10 分鐘內登入過；超過時 API 回傳 403 與 `REAUTH_REQUIRED`，頁面要求輸入密碼或完成一次 passkey 驗證（再登入一次），成功後重試。改名不需要。
 - 刪除最後一個 passkey 前，提示之後只能用密碼登入。
 - 移除全部 10 個 WebAuthn 技術選項。
 
@@ -178,23 +178,25 @@
 
 `/api/config` 的單一物件改成依設定頁的段落拆開，每一段各自儲存。
 
-| 項目         | 變更                                                                                    | 狀態                                             |
-| ------------ | --------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| 外部通知 API | 移除 `/api/notify/{token}` 與 `API_TOKEN`                                               | 已完成（`8e1287b`）                              |
-| 讀取設定     | `GET /api/settings`：提醒、帳號、各管道（含缺少的必填欄位與最近發送結果）、最近一次排程 | 已完成                                           |
-| 提醒         | `PUT /api/settings/reminder`；時區必須是有效的 IANA 時區                                | 已完成                                           |
-| 每日提醒時間 | `NOTIFICATION_HOURS` 改為 `reminderHour`；Cron 改為每小時執行                           | 已完成（`9524b80`）；存 `settings.reminder_hour` |
-| 預設提前天數 | 新增 `settings.default_reminder_days`                                                   | 已完成（`e0d3122`）                              |
-| 帳號         | `PUT /api/settings/account`：使用者名稱、新密碼（至少 8 個字元）                        | 已完成                                           |
-| 通知管道     | `PUT /api/settings/channels/{channel}`；必填欄位沒有值時不能啟用                        | 已完成                                           |
-| 測試管道     | `POST /api/settings/channels/{channel}/test`，用表單中尚未儲存的值                      | 已完成                                           |
-| 匯出         | `GET /api/settings/export`，從 D1 讀取，不含密碼雜湊、JWT 金鑰、passkey 與管道憑證      | 已完成                                           |
-| WebAuthn     | 移除 10 個 `WEBAUTHN_*`；RP ID 與 origin 從請求推導                                     | 設定已移除；passkey 改用 D1 待實作               |
+| 項目         | 變更                                                                                                 | 狀態                                             |
+| ------------ | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| 外部通知 API | 移除 `/api/notify/{token}` 與 `API_TOKEN`                                                            | 已完成（`8e1287b`）                              |
+| 讀取設定     | `GET /api/settings`：提醒、帳號、各管道（含缺少的必填欄位與最近發送結果）、最近一次排程              | 已完成                                           |
+| 提醒         | `PUT /api/settings/reminder`；時區必須是有效的 IANA 時區                                             | 已完成                                           |
+| 每日提醒時間 | `NOTIFICATION_HOURS` 改為 `reminderHour`；Cron 改為每小時執行                                        | 已完成（`9524b80`）；存 `settings.reminder_hour` |
+| 預設提前天數 | 新增 `settings.default_reminder_days`                                                                | 已完成（`e0d3122`）                              |
+| 帳號         | `PUT /api/settings/account`：使用者名稱、新密碼（至少 8 個字元）                                     | 已完成                                           |
+| 通知管道     | `PUT /api/settings/channels/{channel}`；必填欄位沒有值時不能啟用                                     | 已完成                                           |
+| 測試管道     | `POST /api/settings/channels/{channel}/test`，用表單中尚未儲存的值                                   | 已完成                                           |
+| 匯出         | `GET /api/settings/export`，從 D1 讀取，不含密碼雜湊、JWT 金鑰、passkey 與管道憑證                   | 已完成                                           |
+| WebAuthn     | 移除 10 個 `WEBAUTHN_*`；RP ID 與 origin 從請求推導；passkey 存 D1；新增、刪除與修改帳號前要重新驗證 | 已完成                                           |
 
 ### 新的持久狀態
 
 - **排程結果**：每次 Cron 在 `cron_runs` 新增一列；各管道的結果寫入 `reminder_deliveries` 與 `notification_channels.last_status`。首頁警告與桌機側欄讀最近一次 `cron_runs` 與失敗的管道。「傳送測試」的結果不寫入 `last_status`，避免蓋掉真實的失敗狀態。
 - **Passkey**：`rp_id`、`aaguid`、`last_used_at`、`backed_up` 是 `passkey_credentials` 的欄位；固定的 user handle 存在 `settings.webauthn_user_handle`。細節見 passkey 研究第 7.4 節。
+  - RP ID 沿用舊版的可註冊網域（`psl.get(主機名稱)`），不採用研究建議的完整主機名稱：改用主機名稱會讓升級前的 passkey 全部不能使用。預期 origin 取自請求網址（`new URL(c.req.url).origin`），其他子網域取得的 assertion 會被拒絕（WebAuthn §13.4.9）。
+  - 提供者名稱只對照研究第 5.4 節查證過的 4 個 AAGUID；AAGUID 對照表的授權未確認，不整份打包。
 
 ### 離線
 

@@ -2,7 +2,6 @@ import type { ChannelState, Settings } from '../db/settings'
 import { CHANNEL_FIELDS, CHANNELS, insertSettingsIfAbsent, upsertChannel } from '../db/settings'
 import { insertSubscription } from '../db/subscriptions'
 import type { Bindings, PeriodUnit, ReminderSetting, Subscription } from '../types'
-import type { StoredCredential } from '../types/webauthn'
 import type { CalendarDate } from '../utils/calendarDate'
 import { hourIn, isCalendarDate } from '../utils/calendarDate'
 import { generateRandomSecret, hashPassword } from '../utils/crypto'
@@ -198,6 +197,20 @@ export function normalizeLegacySubscription(stored: LegacySubscription): Subscri
 }
 
 // ==================== Passkey ====================
+
+// 舊版存在 KV `webauthn:credential:<id>` 的格式
+interface StoredCredential {
+  credentialID: string
+  publicKey: string
+  counter: number
+  transports?: string[]
+  createdAt: string
+  lastUsedAt?: string
+  userAgent?: string
+  nickname?: string
+  deviceType?: string
+  backedUp?: boolean
+}
 
 async function legacyCredentials(kv: KVNamespace, username: string): Promise<StoredCredential[]> {
   const index = parseJson<{ credentialIDs?: string[] }>(

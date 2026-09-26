@@ -1,24 +1,26 @@
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
 
 import { CHANNEL_FIELDS, CHANNELS } from '../db/settings'
-import { authMiddleware } from '../middleware/auth'
+import { authMiddleware, recentAuthMiddleware } from '../middleware/auth'
 import {
   exportData,
   readSettingsView,
   saveAccount,
   saveChannel,
   saveReminderSettings,
-  SettingsError,
   testChannel,
 } from '../services/settings'
 import type { HonoEnv } from '../types'
 import { isTimeZone, todayIn } from '../utils/calendarDate'
+import { UserError } from '../utils/errors'
 import * as logger from '../utils/logger'
 import { serverError, success, validationError } from '../utils/response'
 
 const settings = new OpenAPIHono<HonoEnv>()
 
 settings.use('*', authMiddleware)
+// 修改使用者名稱或密碼要在 10 分鐘內登入過
+settings.on('PUT', '/account', recentAuthMiddleware)
 
 const ErrorResponseSchema = z.object({
   success: z.literal(false),
@@ -91,7 +93,7 @@ const settingsViewSchema = z
   .openapi('Settings')
 
 function handleError(c: Parameters<typeof validationError>[0], error: unknown, action: string): Response {
-  if (error instanceof SettingsError) return validationError(c, error.message)
+  if (error instanceof UserError) return validationError(c, error.message)
   logger.error(`${action}失敗`, error, { prefix: 'Settings' })
   return serverError(c, `${action}失敗`)
 }
@@ -147,7 +149,11 @@ settings.openapi(
         password: z.string().min(8, '密碼至少 8 個字元').max(256).optional(),
       }),
     ),
-    responses: { 200: json(z.object({ success: z.literal(true), message: z.string() }), '已儲存'), ...errorResponses },
+    responses: {
+      200: json(z.object({ success: z.literal(true), message: z.string() }), '已儲存'),
+      403: json(ErrorResponseSchema, '需要重新驗證（code: REAUTH_REQUIRED）'),
+      ...errorResponses,
+    },
   }),
   // @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
   async (c) => {

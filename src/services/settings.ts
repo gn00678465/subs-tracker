@@ -10,12 +10,10 @@ import {
 import { listSubscriptions } from '../db/subscriptions'
 import type { Bindings, Subscription } from '../types'
 import { hashPassword } from '../utils/crypto'
+import { UserError } from '../utils/errors'
 import { importLegacyData } from './legacyImport'
 import { missingFields, sendToChannel } from './notifier'
 import type { ChannelResult } from './notifier/types'
-
-/** 使用者可以修正的錯誤，路由回傳 400 */
-export class SettingsError extends Error {}
 
 /**
  * 第一次讀取時從 KV 匯入；匯入後重新讀取，讓並行的首次請求得到同一組設定。
@@ -99,7 +97,7 @@ export async function saveChannel(
   await loadSettings(env)
   const cleaned = cleanChannelConfig(channel, config)
   const missing = missingFields(channel, cleaned)
-  if (enabled && missing.length > 0) throw new SettingsError(`啟用前請填寫：${missing.join('、')}`)
+  if (enabled && missing.length > 0) throw new UserError(`啟用前請填寫：${missing.join('、')}`)
 
   await upsertChannel(env.DB, channel, enabled, cleaned, new Date().toISOString()).run()
   const saved = (await readChannels(env.DB)).find((c) => c.channel === channel)
@@ -111,7 +109,7 @@ export async function saveChannel(
 export async function testChannel(channel: ChannelId, config: ChannelConfig): Promise<ChannelResult> {
   const cleaned = cleanChannelConfig(channel, config)
   const missing = missingFields(channel, cleaned)
-  if (missing.length > 0) throw new SettingsError(`請先填寫：${missing.join('、')}`)
+  if (missing.length > 0) throw new UserError(`請先填寫：${missing.join('、')}`)
   return sendToChannel(
     channel,
     {
