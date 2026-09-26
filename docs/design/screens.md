@@ -150,6 +150,12 @@
 
 ## 6. 資料與 API 需求
 
+### 儲存
+
+- D1（binding `DB`）是唯一的儲存（2026-09-26 決定，依據 `docs/research/2026-09-26-kv-vs-d1.md`）。資料表：`settings`（一列）、`notification_channels`、`subscriptions`、`reminder_deliveries`、`cron_runs`、`passkey_credentials`、`webauthn_challenges`。
+- KV 不再寫入，只作為舊資料的匯入來源。第一次讀取設定時，若 `settings` 沒有資料，就在一個 `batch()` 內匯入 KV 的舊資料，重複執行不會重複寫入。
+- 使用者擁有的欄位與 Cron 擁有的欄位分開。Cron 的更新帶條件（`expiry_date`、`updated_at` 沒被使用者改過），不會蓋掉使用者的修改。
+
 實作時一次改完，不再依畫面逐步追加。已經 commit 的變更也列在這裡核對。
 
 ### 訂閱
@@ -159,7 +165,7 @@
 | 日期格式     | `expiryDate`、`startDate` 存 `YYYY-MM-DD`                                                      | 已完成（`c968d4b`）    |
 | 分類         | `customType` 併入 `category`；列表不再依空白拆字串                                             | 資料已完成；列表待實作 |
 | `hasEndDate` | 移除                                                                                           | 待實作                 |
-| 提醒         | `isReminderSet` + `reminderMe` 合併成一個欄位：沿用預設、不提醒、N 天                          | 待實作，讀取時轉換舊值 |
+| 提醒         | `isReminderSet` + `reminderMe` 合併成一個欄位：沿用預設、不提醒、N 天                          | 待實作，匯入 D1 時轉換 |
 | 試用         | `isFreeTrial` 開始生效：不計入合計、提醒文字改為「試用即將結束」                               | 待實作                 |
 | 取消期限     | 新增選填日期 `cancelByDate`，提醒依它計算                                                      | 待實作                 |
 | 付款週期     | `periodUnit` 新增 `week`                                                                       | 待實作                 |
@@ -169,19 +175,19 @@
 
 ### 設定
 
-| 項目         | 變更                                                                | 狀態                   |
-| ------------ | ------------------------------------------------------------------- | ---------------------- |
-| 外部通知 API | 移除 `/api/notify/{token}` 與 `API_TOKEN`                           | 已完成（`8e1287b`）    |
-| 每日提醒時間 | `NOTIFICATION_HOURS` 改為 `REMINDER_HOUR`；Cron 改為每小時執行      | 已寫好，收在 git stash |
-| 預設提前天數 | 新增 `DEFAULT_REMINDER_DAYS`                                        | 待實作                 |
-| WebAuthn     | 移除 10 個 `WEBAUTHN_*`；RP ID 與 origin 從請求推導                 | 待實作                 |
-| 測試管道     | 新增 `POST /api/notifications/test/{channel}`，用表單中尚未儲存的值 | 待實作                 |
-| 匯出         | 新增 `GET /api/export`                                              | 待實作                 |
+| 項目         | 變更                                                                 | 狀態                                               |
+| ------------ | -------------------------------------------------------------------- | -------------------------------------------------- |
+| 外部通知 API | 移除 `/api/notify/{token}` 與 `API_TOKEN`                            | 已完成（`8e1287b`）                                |
+| 每日提醒時間 | `NOTIFICATION_HOURS` 改為 `REMINDER_HOUR`；Cron 改為每小時執行       | 已完成（`9524b80`）；改存 `settings.reminder_hour` |
+| 預設提前天數 | 新增 `settings.default_reminder_days`                                | 待實作                                             |
+| WebAuthn     | 移除 10 個 `WEBAUTHN_*`；RP ID 與 origin 從請求推導                  | 待實作                                             |
+| 測試管道     | 新增 `POST /api/notifications/test/{channel}`，用表單中尚未儲存的值  | 待實作                                             |
+| 匯出         | 新增 `GET /api/export`，從 D1 讀取，不含密碼雜湊、JWT 金鑰與管道憑證 | 待實作                                             |
 
 ### 新的持久狀態
 
-- **排程結果**：Cron 每次處理提醒後，把時間、發送數、各管道的成功或失敗寫進 KV 的一個 key。首頁警告與桌機側欄讀取它。
-- **Passkey**：每筆憑證補上 `rpId`、`aaguid`、`lastUsedAt`、`backedUp`；新增固定的 user handle。細節見 passkey 研究第 7.4 節。
+- **排程結果**：每次 Cron 在 `cron_runs` 新增一列；各管道的結果寫入 `reminder_deliveries` 與 `notification_channels.last_status`。首頁警告與桌機側欄讀最近一次 `cron_runs` 與失敗的管道。「傳送測試」的結果不寫入 `last_status`，避免蓋掉真實的失敗狀態。
+- **Passkey**：`rp_id`、`aaguid`、`last_used_at`、`backed_up` 是 `passkey_credentials` 的欄位；固定的 user handle 存在 `settings.webauthn_user_handle`。細節見 passkey 研究第 7.4 節。
 
 ### 離線
 
@@ -203,3 +209,4 @@
 - 付款方式改成自由輸入，並提示用過的值（2026-09-26）。
 - 離線時顯示最後一次的資料，不能修改（2026-09-26）。
 - 不用 UI 套件，移除 daisyUI（2026-09-26）。
+- 所有持久資料改存 D1，KV 只作為舊資料的匯入來源（2026-09-26）。
