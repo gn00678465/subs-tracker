@@ -1,7 +1,7 @@
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
 
 import { authMiddleware } from '../middleware/auth'
-import { loadSettings } from '../services/config'
+import { loadSettings } from '../services/settings'
 import type { SubscriptionInput } from '../services/subscription'
 import {
   createSubscription,

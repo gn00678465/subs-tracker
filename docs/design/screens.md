@@ -160,29 +160,36 @@
 
 ### 訂閱
 
-| 項目         | 變更                                                                                           | 狀態                   |
-| ------------ | ---------------------------------------------------------------------------------------------- | ---------------------- |
-| 日期格式     | `expiryDate`、`startDate` 存 `YYYY-MM-DD`                                                      | 已完成（`c968d4b`）    |
-| 分類         | `customType` 併入 `category`；列表不再依空白拆字串                                             | 資料已完成；列表待實作 |
-| `hasEndDate` | 移除                                                                                           | 待實作                 |
-| 提醒         | `isReminderSet` + `reminderMe` 合併成一個欄位：沿用預設、不提醒、N 天                          | 待實作，匯入 D1 時轉換 |
-| 試用         | `isFreeTrial` 開始生效：不計入合計、提醒文字改為「試用即將結束」                               | 待實作                 |
-| 取消期限     | 新增選填日期 `cancelByDate`，提醒依它計算                                                      | 待實作                 |
-| 付款週期     | `periodUnit` 新增 `week`                                                                       | 待實作                 |
-| 已續訂       | 新增 `POST /api/subscriptions/{id}/renew`，下次扣款日推進一個週期                              | 待實作                 |
-| 測試通知     | 移除 `POST /api/subscriptions/{id}/test`                                                       | 待實作                 |
-| 付款方式     | `periodMethod` 改名 `paymentMethod`，改為自由文字；讀取時把舊代碼轉成文字（`credit` → 信用卡） | 待實作                 |
+| 項目         | 變更                                                                                           | 狀態                                |
+| ------------ | ---------------------------------------------------------------------------------------------- | ----------------------------------- |
+| 日期格式     | `expiryDate`、`startDate` 存 `YYYY-MM-DD`                                                      | 已完成（`c968d4b`）                 |
+| 分類         | `customType` 併入 `category`；列表不再依空白拆字串                                             | 資料已完成（`e0d3122`）；列表待實作 |
+| `hasEndDate` | 移除                                                                                           | 已完成（`e0d3122`）                 |
+| 提醒         | `isReminderSet` + `reminderMe` 合併成 `reminder`：`'default'`、`'off'`、天數                   | 已完成（`e0d3122`），匯入時轉換     |
+| 試用         | `isFreeTrial` 開始生效：不計入合計、提醒文字改為「試用即將結束」                               | 提醒已完成（`e0d3122`）；合計待實作 |
+| 取消期限     | 新增選填日期 `cancelByDate`，提醒依它計算                                                      | 已完成（`e0d3122`）                 |
+| 付款週期     | `periodUnit` 新增 `week`                                                                       | 已完成（`e0d3122`）                 |
+| 已續訂       | 新增 `POST /api/subscriptions/{id}/renew`，下次扣款日推進一個週期                              | 已完成（`e0d3122`）                 |
+| 停用與啟用   | 移除 `PUT /api/subscriptions/{id}/toggle`，改用 `PUT /api/subscriptions/{id}` 的 `isActive`    | 已完成（`e0d3122`）                 |
+| 測試通知     | 移除 `POST /api/subscriptions/{id}/test`                                                       | 已完成（`e0d3122`）                 |
+| 付款方式     | `periodMethod` 改名 `paymentMethod`，改為自由文字；匯入時把舊代碼轉成文字（`credit` → 信用卡） | 已完成（`e0d3122`）                 |
 
 ### 設定
 
-| 項目         | 變更                                                                 | 狀態                                               |
-| ------------ | -------------------------------------------------------------------- | -------------------------------------------------- |
-| 外部通知 API | 移除 `/api/notify/{token}` 與 `API_TOKEN`                            | 已完成（`8e1287b`）                                |
-| 每日提醒時間 | `NOTIFICATION_HOURS` 改為 `REMINDER_HOUR`；Cron 改為每小時執行       | 已完成（`9524b80`）；改存 `settings.reminder_hour` |
-| 預設提前天數 | 新增 `settings.default_reminder_days`                                | 待實作                                             |
-| WebAuthn     | 移除 10 個 `WEBAUTHN_*`；RP ID 與 origin 從請求推導                  | 待實作                                             |
-| 測試管道     | 新增 `POST /api/notifications/test/{channel}`，用表單中尚未儲存的值  | 待實作                                             |
-| 匯出         | 新增 `GET /api/export`，從 D1 讀取，不含密碼雜湊、JWT 金鑰與管道憑證 | 待實作                                             |
+`/api/config` 的單一物件改成依設定頁的段落拆開，每一段各自儲存。
+
+| 項目         | 變更                                                                                    | 狀態                                             |
+| ------------ | --------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| 外部通知 API | 移除 `/api/notify/{token}` 與 `API_TOKEN`                                               | 已完成（`8e1287b`）                              |
+| 讀取設定     | `GET /api/settings`：提醒、帳號、各管道（含缺少的必填欄位與最近發送結果）、最近一次排程 | 已完成                                           |
+| 提醒         | `PUT /api/settings/reminder`；時區必須是有效的 IANA 時區                                | 已完成                                           |
+| 每日提醒時間 | `NOTIFICATION_HOURS` 改為 `reminderHour`；Cron 改為每小時執行                           | 已完成（`9524b80`）；存 `settings.reminder_hour` |
+| 預設提前天數 | 新增 `settings.default_reminder_days`                                                   | 已完成（`e0d3122`）                              |
+| 帳號         | `PUT /api/settings/account`：使用者名稱、新密碼（至少 8 個字元）                        | 已完成                                           |
+| 通知管道     | `PUT /api/settings/channels/{channel}`；必填欄位沒有值時不能啟用                        | 已完成                                           |
+| 測試管道     | `POST /api/settings/channels/{channel}/test`，用表單中尚未儲存的值                      | 已完成                                           |
+| 匯出         | `GET /api/settings/export`，從 D1 讀取，不含密碼雜湊、JWT 金鑰、passkey 與管道憑證      | 已完成                                           |
+| WebAuthn     | 移除 10 個 `WEBAUTHN_*`；RP ID 與 origin 從請求推導                                     | 設定已移除；passkey 改用 D1 待實作               |
 
 ### 新的持久狀態
 
@@ -194,7 +201,7 @@
 - 沿用現有的 PWA：`public/manifest.webmanifest`、`public/sw.js`、`src/client/registerSW.ts`。頁面與靜態檔已經有快取，目前缺的是 API 資料。
 - `manifest.webmanifest` 的 `theme_color`、`background_color` 改成新設計的顏色。
 - App 圖示改用 `docs/design/icons/` 的新圖示：`icon.svg`、`favicon.svg`、`icon-192.png`、`icon-512.png`、`apple-touch-icon.png`，取代 `public/` 的舊檔。
-- `public/sw.js` 對 `GET /api/subscriptions` 與 `GET /api/config` 改用「先網路，失敗時用快取」，並記錄快取時間。
+- `public/sw.js` 對 `GET /api/subscriptions` 與 `GET /api/settings` 改用「先網路，失敗時用快取」，並記錄快取時間。
 - 頁面依回應是否來自快取，顯示離線提示並停用修改。
 
 ### 合計的算法

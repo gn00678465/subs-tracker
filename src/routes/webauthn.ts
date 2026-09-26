@@ -9,7 +9,7 @@ import {
 } from '@simplewebauthn/server'
 
 import { authMiddleware } from '../middleware/auth'
-import { getConfig } from '../services/config'
+import { loadSettings } from '../services/settings'
 import {
   deleteCredential,
   extractChallenge,
@@ -74,29 +74,27 @@ webauthn.openapi(registerOptionsRoute, async (c) => {
 
   try {
     const user = c.get('user')
-    const config = await getConfig(c.env)
 
     // 取得已註冊的憑證（用於 excludeCredentials）
     const existingCreds = await getUserCredentials(user.username, c.env)
 
-    const rpID = config.WEBAUTHN_RP_ID || extractRPID(c.req.header('origin'))
+    const rpID = extractRPID(c.req.header('origin'))
 
     const options = await generateRegistrationOptions({
-      rpName: config.WEBAUTHN_RP_NAME || 'SubsTracker',
+      rpName: 'SubsTracker',
       rpID,
       userName: user.username,
       userDisplayName: user.username,
-      attestationType: config.WEBAUTHN_ATTESTATION || 'none',
+      attestationType: 'none',
       authenticatorSelection: {
-        authenticatorAttachment: config.WEBAUTHN_AUTHENTICATOR_ATTACHMENT,
-        residentKey: config.WEBAUTHN_RESIDENT_KEY || 'preferred',
-        userVerification: config.WEBAUTHN_USER_VERIFICATION || 'preferred',
+        residentKey: 'preferred',
+        userVerification: 'preferred',
       },
       excludeCredentials: existingCreds.map((cred) => ({
         id: cred.credentialID,
         transports: cred.transports,
       })),
-      timeout: config.WEBAUTHN_TIMEOUT || 60000,
+      timeout: 60000,
     })
 
     // 儲存 challenge
@@ -150,7 +148,6 @@ webauthn.openapi(registerVerifyRoute, async (c) => {
   try {
     const user = c.get('user')
     const body = await c.req.json()
-    const config = await getConfig(c.env)
 
     // 取得 challenge
     const challengeId = extractChallenge(body)
@@ -164,15 +161,8 @@ webauthn.openapi(registerVerifyRoute, async (c) => {
       return validationError(c, 'Challenge 已過期或無效')
     }
 
-    const rpID = config.WEBAUTHN_RP_ID || extractRPID(c.req.header('origin'))
-    let expectedOrigin = config.WEBAUTHN_RP_ORIGINS
-    if (!expectedOrigin || expectedOrigin.length === 0) {
-      logger.warning('WEBAUTHN_RP_ORIGINS not configured, using request origin as fallback', {
-        prefix: 'WebAuthn',
-        data: { origin: c.req.header('origin') },
-      })
-      expectedOrigin = [c.req.header('origin') || '']
-    }
+    const rpID = extractRPID(c.req.header('origin'))
+    const expectedOrigin = c.req.header('origin') || ''
 
     const verification = await verifyRegistrationResponse({
       response: body,
@@ -250,18 +240,18 @@ const authenticateOptionsRoute = createRoute({
 webauthn.openapi(authenticateOptionsRoute, async (c) => {
   try {
     const { username } = await c.req.json()
-    const config = await getConfig(c.env)
+    const settings = await loadSettings(c.env)
 
     const userCredentials = await getUserCredentials(username, c.env)
 
-    if (userCredentials.length === 0 || username !== config.ADMIN_USERNAME) {
+    if (userCredentials.length === 0 || username !== settings.adminUsername) {
       logger.warning(`Authentication options requested for invalid user or user without passkey: ${username}`, {
         prefix: 'WebAuthn',
       })
       return validationError(c, '認證初始化失敗')
     }
 
-    const rpID = config.WEBAUTHN_RP_ID || extractRPID(c.req.header('origin'))
+    const rpID = extractRPID(c.req.header('origin'))
 
     const options = await generateAuthenticationOptions({
       rpID,
@@ -269,8 +259,8 @@ webauthn.openapi(authenticateOptionsRoute, async (c) => {
         id: cred.credentialID,
         transports: cred.transports,
       })),
-      timeout: config.WEBAUTHN_TIMEOUT || 60000,
-      userVerification: config.WEBAUTHN_USER_VERIFICATION || 'preferred',
+      timeout: 60000,
+      userVerification: 'preferred',
     })
 
     await storeChallenge(options.challenge, 'authentication', c.env, username)
@@ -324,7 +314,7 @@ const authenticateVerifyRoute = createRoute({
 webauthn.openapi(authenticateVerifyRoute, async (c) => {
   try {
     const body = await c.req.json()
-    const config = await getConfig(c.env)
+    const settings = await loadSettings(c.env)
 
     // 從 response 中提取 challenge
     const challengeId = extractChallenge(body)
@@ -344,15 +334,8 @@ webauthn.openapi(authenticateVerifyRoute, async (c) => {
       return notFound(c, '憑證不存在')
     }
 
-    const rpID = config.WEBAUTHN_RP_ID || extractRPID(c.req.header('origin'))
-    let expectedOrigin = config.WEBAUTHN_RP_ORIGINS
-    if (!expectedOrigin || expectedOrigin.length === 0) {
-      logger.warning('WEBAUTHN_RP_ORIGINS not configured, using request origin as fallback', {
-        prefix: 'WebAuthn',
-        data: { origin: c.req.header('origin') },
-      })
-      expectedOrigin = [c.req.header('origin') || '']
-    }
+    const rpID = extractRPID(c.req.header('origin'))
+    const expectedOrigin = c.req.header('origin') || ''
 
     const verification = await verifyAuthenticationResponse({
       response: body,
@@ -371,7 +354,7 @@ webauthn.openapi(authenticateVerifyRoute, async (c) => {
       await updateCredentialCounter(credential.credentialID, verification.authenticationInfo.newCounter, c.env)
 
       // 生成 JWT token
-      const token = await generateJWT(storedChallenge.username, config.JWT_SECRET)
+      const token = await generateJWT(storedChallenge.username, settings.jwtSecret)
       setTokenCookie(c, token)
 
       logger.info('WebAuthn authentication successful', {

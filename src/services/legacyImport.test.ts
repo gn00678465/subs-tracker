@@ -5,7 +5,7 @@ import { listSubscriptions } from '../db/subscriptions'
 import { createTestDb, legacyKv } from '../test/d1'
 import type { Bindings } from '../types'
 import { hashPassword, verifyPassword } from '../utils/crypto'
-import { getConfig, loadSettings } from './config'
+import { loadSettings, readSettingsView } from './settings'
 
 let db: D1Database
 let dispose: () => Promise<void>
@@ -62,31 +62,36 @@ describe('first read imports the legacy KV once', () => {
   })
 
   test('legacy config, subscriptions and passkeys are converted', async () => {
-    const config = await getConfig(
-      env({
-        'config': legacyConfig,
-        'subscriptions': [legacySubscription],
-        'webauthn:user:madao:credentials': { credentialIDs: ['cred-1'] },
-        'webauthn:credential:cred-1': {
-          credentialID: 'cred-1',
-          publicKey: 'pk',
-          counter: 3,
-          transports: ['internal'],
-          createdAt: '2025-01-01T00:00:00.000Z',
-          backedUp: true,
-        },
-      }),
-    )
+    const kv = env({
+      'config': legacyConfig,
+      'subscriptions': [legacySubscription],
+      'webauthn:user:madao:credentials': { credentialIDs: ['cred-1'] },
+      'webauthn:credential:cred-1': {
+        credentialID: 'cred-1',
+        publicKey: 'pk',
+        counter: 3,
+        transports: ['internal'],
+        createdAt: '2025-01-01T00:00:00.000Z',
+        backedUp: true,
+      },
+    })
+    const settings = await loadSettings(kv)
+    const view = await readSettingsView(kv)
 
-    expect(config.ADMIN_USERNAME).toBe('madao')
-    expect(config.JWT_SECRET).toBe('legacy-secret')
-    expect(await verifyPassword('hunter22', config.ADMIN_PASSWORD, 'legacy-secret')).toBe(true)
+    expect(settings.adminUsername).toBe('madao')
+    expect(settings.jwtSecret).toBe('legacy-secret')
+    expect(await verifyPassword('hunter22', settings.adminPasswordHash, 'legacy-secret')).toBe(true)
     // 舊版在 UTC 00:00 發送，台北是 08:00
-    expect(config.REMINDER_HOUR).toBe(8)
-    expect(config.ENABLED_NOTIFIERS).toEqual(['telegram'])
-    expect(config.TELEGRAM_BOT_TOKEN).toBe('123:abc')
-    expect(config.BARK_KEY).toBe('bark-key')
-    expect(config.BARK_SERVER).toBe('https://api.day.app')
+    expect(view.reminder).toEqual({
+      timezone: 'Asia/Taipei',
+      reminderHour: 8,
+      reminderMode: 'ONCE',
+      defaultReminderDays: 3,
+    })
+    expect(view.channels.filter((c) => c.enabled || Object.keys(c.config).length > 0)).toMatchObject([
+      { channel: 'telegram', enabled: true, config: { TELEGRAM_BOT_TOKEN: '123:abc', TELEGRAM_CHAT_ID: '42' } },
+      { channel: 'bark', enabled: false, config: { BARK_KEY: 'bark-key' } },
+    ])
 
     expect(await listSubscriptions(db)).toEqual([
       {

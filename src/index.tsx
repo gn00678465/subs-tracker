@@ -3,13 +3,12 @@ import { csrf } from 'hono/csrf'
 import { logger } from 'hono/logger'
 import { prettyJSON } from 'hono/pretty-json'
 
-import { optionalAuthMiddleware, pageAuthMiddleware } from './middleware/auth'
+import { optionalAuthMiddleware } from './middleware/auth'
 import { createOpenAPIApp } from './openapi'
-import { ConfigPage } from './pages/Config'
 import { LoginPage } from './pages/Login'
 import { renderer } from './renderer'
 import auth from './routes/auth'
-import config from './routes/config'
+import settings from './routes/settings'
 import subscriptions from './routes/subscriptions'
 import webauthn from './routes/webauthn'
 import { runReminders } from './services/subscription_cron'
@@ -35,8 +34,8 @@ app.route('/api', auth)
 // 掛載訂閱路由
 app.route('/api/subscriptions', subscriptions)
 
-// 掛載配置路由
-app.route('/api/config', config)
+// 掛載設定路由
+app.route('/api/settings', settings)
 
 // 掛載 WebAuthn 路由
 app.route('/api/webauthn', webauthn)
@@ -52,12 +51,6 @@ app.get('/', optionalAuthMiddleware, (c) => {
 
   // 未登入，渲染登入頁
   return c.html(<LoginPage />)
-})
-
-// 配置頁面路由
-app.get('/admin/config', pageAuthMiddleware, (c) => {
-  const user = c.get('user')
-  return c.html(<ConfigPage username={user.username} />)
 })
 
 export default {

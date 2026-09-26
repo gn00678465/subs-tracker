@@ -1,4 +1,4 @@
-import type { Config } from '../../types'
+import type { ChannelConfig } from '../../db/settings'
 
 /**
  * 通知選項
@@ -34,12 +34,12 @@ export interface NotificationResult {
 /**
  * 渠道發送函數介面
  */
-export type ChannelSender = (options: NotificationOptions, config: Config) => Promise<ChannelResult>
+export type ChannelSender = (options: NotificationOptions, config: ChannelConfig) => Promise<ChannelResult>
 
 /**
  * 渠道配置驗證函數介面
  */
-export type ChannelValidator = (config: Config) => {
+export type ChannelValidator = (config: ChannelConfig) => {
   isValid: boolean
   missingFields?: string[]
 }

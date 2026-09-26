@@ -1,6 +1,6 @@
 import type { Context, Next } from 'hono'
 
-import { getConfig } from '../services/config'
+import { loadSettings } from '../services/settings'
 import type { HonoEnv } from '../types'
 import { clearTokenCookie, extractToken, verifyJWT } from '../utils/crypto'
 import * as logger from '../utils/logger'
@@ -25,11 +25,10 @@ export async function authMiddleware(c: Context<HonoEnv>, next: Next): Promise<R
       )
     }
 
-    // 獲取配置以獲取 JWT_SECRET
-    const config = await getConfig(c.env)
+    const { jwtSecret } = await loadSettings(c.env)
 
     // 驗證 Token
-    const payload = await verifyJWT(token, config.JWT_SECRET)
+    const payload = await verifyJWT(token, jwtSecret)
 
     if (!payload) {
       logger.warning('Token 驗證失敗', { prefix: 'Auth' })
@@ -70,8 +69,8 @@ export async function optionalAuthMiddleware(c: Context<HonoEnv>, next: Next): P
     const token = extractToken(c)
 
     if (token) {
-      const config = await getConfig(c.env)
-      const payload = await verifyJWT(token, config.JWT_SECRET)
+      const { jwtSecret } = await loadSettings(c.env)
+      const payload = await verifyJWT(token, jwtSecret)
 
       if (payload) {
         c.set('user', payload)
@@ -101,8 +100,8 @@ export async function pageAuthMiddleware(c: Context<HonoEnv>, next: Next): Promi
       return c.redirect('/')
     }
 
-    const config = await getConfig(c.env)
-    const payload = await verifyJWT(token, config.JWT_SECRET)
+    const { jwtSecret } = await loadSettings(c.env)
+    const payload = await verifyJWT(token, jwtSecret)
 
     if (!payload) {
       logger.warning('Token 驗證失敗，重定向到登入頁', { prefix: 'Auth' })

@@ -3,9 +3,10 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { readChannels } from '../db/settings'
 import { findSubscription, insertSubscription } from '../db/subscriptions'
 import { createTestDb, legacyKv } from '../test/d1'
-import type { Bindings, Config, Subscription } from '../types'
-import { updateConfig } from './config'
+import type { Bindings, Subscription } from '../types'
+import { saveChannel } from './settings'
 import { rollForward } from './subscription'
+import type { ReminderPolicy } from './subscription_cron'
 import { planReminder, reminderMessage, runReminders } from './subscription_cron'
 
 const base: Subscription = {
@@ -28,7 +29,7 @@ const base: Subscription = {
   updatedAt: '2026-01-01T00:00:00.000Z',
 }
 
-const config = { TIMEZONE: 'UTC', REMINDER_MODE: 'ONCE', DEFAULT_REMINDER_DAYS: 3 } as Config
+const policy: ReminderPolicy = { timezone: 'UTC', reminderMode: 'ONCE', defaultReminderDays: 3 }
 const today = '2026-09-26'
 
 describe('rollForward', () => {
@@ -54,20 +55,20 @@ describe('rollForward', () => {
 
 describe('planReminder', () => {
   test('default uses the configured days', () => {
-    expect(planReminder(base, today, config)).toEqual({ kind: 'renewal', date: '2026-09-28', daysLeft: 2 })
-    expect(planReminder({ ...base, expiryDate: '2026-09-30' }, today, config)).toBeNull()
-    expect(planReminder({ ...base, expiryDate: '2026-09-30', reminder: 7 }, today, config)).not.toBeNull()
+    expect(planReminder(base, today, policy)).toEqual({ kind: 'renewal', date: '2026-09-28', daysLeft: 2 })
+    expect(planReminder({ ...base, expiryDate: '2026-09-30' }, today, policy)).toBeNull()
+    expect(planReminder({ ...base, expiryDate: '2026-09-30', reminder: 7 }, today, policy)).not.toBeNull()
   })
 
   test('off, paused and expired subscriptions are not reminded', () => {
-    expect(planReminder({ ...base, reminder: 'off' }, today, config)).toBeNull()
-    expect(planReminder({ ...base, isActive: false }, today, config)).toBeNull()
-    expect(planReminder({ ...base, expiryDate: '2026-09-25', autoRenew: false }, today, config)).toBeNull()
+    expect(planReminder({ ...base, reminder: 'off' }, today, policy)).toBeNull()
+    expect(planReminder({ ...base, isActive: false }, today, policy)).toBeNull()
+    expect(planReminder({ ...base, expiryDate: '2026-09-25', autoRenew: false }, today, policy)).toBeNull()
   })
 
   test('trial and cancel-by date change what is reminded', () => {
-    expect(planReminder({ ...base, isFreeTrial: true }, today, config)?.kind).toBe('trial')
-    expect(planReminder({ ...base, expiryDate: '2026-10-20', cancelByDate: today }, today, config)).toEqual({
+    expect(planReminder({ ...base, isFreeTrial: true }, today, policy)?.kind).toBe('trial')
+    expect(planReminder({ ...base, expiryDate: '2026-10-20', cancelByDate: today }, today, policy)).toEqual({
       kind: 'cancelBy',
       date: today,
       daysLeft: 0,
@@ -76,10 +77,10 @@ describe('planReminder', () => {
 
   test('ONCE reminds again only after the date changes; DAILY once a day', () => {
     const sent = { ...base, lastReminderSentAt: '2026-09-25T09:00:00.000Z', lastCheckedExpiryDate: '2026-09-28' }
-    expect(planReminder(sent, today, config)).toBeNull()
-    expect(planReminder({ ...sent, lastCheckedExpiryDate: '2026-09-27' }, today, config)).not.toBeNull()
-    expect(planReminder(sent, today, { ...config, REMINDER_MODE: 'DAILY' })).not.toBeNull()
-    expect(planReminder(sent, '2026-09-25', { ...config, REMINDER_MODE: 'DAILY' })).toBeNull()
+    expect(planReminder(sent, today, policy)).toBeNull()
+    expect(planReminder({ ...sent, lastCheckedExpiryDate: '2026-09-27' }, today, policy)).not.toBeNull()
+    expect(planReminder(sent, today, { ...policy, reminderMode: 'DAILY' })).not.toBeNull()
+    expect(planReminder(sent, '2026-09-25', { ...policy, reminderMode: 'DAILY' })).toBeNull()
   })
 
   test('messages name the subscription, the date and the price', () => {
@@ -116,7 +117,7 @@ describe('runReminders', () => {
       await duringSend()
       return Response.json({ ok: telegramStatus === 200, description: 'Bad Gateway' }, { status: telegramStatus })
     }) as typeof fetch
-    await updateConfig({ ENABLED_NOTIFIERS: ['telegram'], TELEGRAM_BOT_TOKEN: 't', TELEGRAM_CHAT_ID: '1' }, env)
+    await saveChannel(env, 'telegram', true, { TELEGRAM_BOT_TOKEN: 't', TELEGRAM_CHAT_ID: '1' })
     await insertSubscription(env.DB, base).run()
   })
   afterEach(async () => {

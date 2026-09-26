@@ -3,7 +3,7 @@ import { Buffer } from 'node:buffer'
 import type { Base64URLString } from '@simplewebauthn/server'
 import psl from 'psl'
 
-import type { Bindings, Config } from '../types'
+import type { Bindings } from '../types'
 import type { StoredChallenge, StoredCredential, UserCredentialsIndex } from '../types/webauthn'
 import * as logger from '../utils/logger'
 
@@ -235,42 +235,6 @@ export function extractRPID(origin: string | undefined): string {
     return parts.slice(-2).join('.')
   }
   return hostname
-}
-
-/**
- * 從配置中提取所有相關的 RP ID（用於 ROR）
- */
-export function extractRelatedOrigins(config: Config): string[] {
-  const origins = config.WEBAUTHN_RP_ORIGINS || []
-  return origins
-    .map((origin) => {
-      try {
-        return extractRPID(origin)
-      } catch {
-        return ''
-      }
-    })
-    .filter(Boolean)
-}
-
-/**
- * 驗證 Origin 是否在允許清單中
- */
-export function validateOrigin(requestOrigin: string, config: Config): boolean {
-  const allowedOrigins = config.WEBAUTHN_RP_ORIGINS || []
-
-  // 檢查精確匹配
-  if (allowedOrigins.includes(requestOrigin)) {
-    return true
-  }
-
-  // 檢查 RP ID 是否匹配
-  const requestRPID = extractRPID(requestOrigin)
-  if (requestRPID === config.WEBAUTHN_RP_ID) {
-    return true
-  }
-
-  return false
 }
 
 /**

@@ -57,8 +57,8 @@ export function createOpenAPIApp() {
         description: '訂閱管理 API',
       },
       {
-        name: 'Config',
-        description: '系統配置 API',
+        name: 'Settings',
+        description: '設定、通知管道與匯出',
       },
       {
         name: 'Notify',

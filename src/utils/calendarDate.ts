@@ -62,3 +62,11 @@ export function addPeriod(date: CalendarDate, value: number, unit: 'day' | 'week
   const lastDay = new Date(Date.UTC(ny, nm + 1, 0)).getUTCDate()
   return fromUTC(Date.UTC(ny, nm, Math.min(d, lastDay)))
 }
+
+export function isTimeZone(value: string): boolean {
+  try {
+    return Boolean(new Intl.DateTimeFormat('en-US', { timeZone: value }).resolvedOptions().timeZone)
+  } catch {
+    return false
+  }
+}

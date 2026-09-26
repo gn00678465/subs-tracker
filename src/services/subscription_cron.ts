@@ -1,12 +1,12 @@
-import type { ChannelId } from '../db/settings'
-import { CHANNELS, recordChannelResult } from '../db/settings'
+import type { ChannelId, Settings } from '../db/settings'
+import { CHANNELS, readChannels, recordChannelResult } from '../db/settings'
 import { listSubscriptions } from '../db/subscriptions'
-import type { Bindings, Config, Subscription } from '../types'
+import type { Bindings, Subscription } from '../types'
 import type { CalendarDate } from '../utils/calendarDate'
 import { daysBetween, hourIn, todayIn } from '../utils/calendarDate'
 import * as logger from '../utils/logger'
-import { getConfig } from './config'
 import { sendNotificationToAllChannels } from './notifier'
+import { loadSettings } from './settings'
 import { rollForward } from './subscription'
 
 export type ReminderKind = 'renewal' | 'trial' | 'cancelBy'
@@ -17,24 +17,30 @@ export interface ReminderNotice {
   daysLeft: number
 }
 
-function reminderDays(subscription: Subscription, config: Config): number | null {
+export type ReminderPolicy = Pick<Settings, 'timezone' | 'reminderMode' | 'defaultReminderDays'>
+
+function reminderDays(subscription: Subscription, policy: ReminderPolicy): number | null {
   if (subscription.reminder === 'off') return null
-  return subscription.reminder === 'default' ? config.DEFAULT_REMINDER_DAYS : subscription.reminder
+  return subscription.reminder === 'default' ? policy.defaultReminderDays : subscription.reminder
 }
 
 // ONCE：同一個扣款日只提醒一次；使用者改了扣款日就重新提醒。DAILY：每天一次
-function alreadyReminded(subscription: Subscription, today: CalendarDate, config: Config): boolean {
+function alreadyReminded(subscription: Subscription, today: CalendarDate, policy: ReminderPolicy): boolean {
   if (!subscription.lastReminderSentAt) return false
   if (subscription.lastCheckedExpiryDate !== subscription.expiryDate) return false
-  if (config.REMINDER_MODE === 'DAILY') {
-    return todayIn(config.TIMEZONE, new Date(subscription.lastReminderSentAt)) === today
+  if (policy.reminderMode === 'DAILY') {
+    return todayIn(policy.timezone, new Date(subscription.lastReminderSentAt)) === today
   }
   return true
 }
 
 /** 有取消期限時依取消期限提醒；試用中提醒試用結束；其餘提醒扣款 */
-export function planReminder(subscription: Subscription, today: CalendarDate, config: Config): ReminderNotice | null {
-  const days = reminderDays(subscription, config)
+export function planReminder(
+  subscription: Subscription,
+  today: CalendarDate,
+  policy: ReminderPolicy,
+): ReminderNotice | null {
+  const days = reminderDays(subscription, policy)
   if (!subscription.isActive || days === null) return null
 
   const [kind, date]: [ReminderKind, CalendarDate] = subscription.cancelByDate
@@ -42,7 +48,7 @@ export function planReminder(subscription: Subscription, today: CalendarDate, co
     : [subscription.isFreeTrial ? 'trial' : 'renewal', subscription.expiryDate]
   const daysLeft = daysBetween(today, date)
   if (daysLeft < 0 || daysLeft > days) return null
-  if (alreadyReminded(subscription, today, config)) return null
+  if (alreadyReminded(subscription, today, policy)) return null
   return { kind, date, daysLeft }
 }
 
@@ -116,11 +122,12 @@ function saveDelivery(
  * 先送通知，再把結果寫入 D1。寫入失敗時記錄錯誤，通知已經送出。
  */
 export async function runReminders(env: Bindings, now: Date): Promise<void> {
-  const config = await getConfig(env)
-  if (hourIn(config.TIMEZONE, now) !== config.REMINDER_HOUR) return
+  const settings = await loadSettings(env, now)
+  if (hourIn(settings.timezone, now) !== settings.reminderHour) return
 
   const db = env.DB
-  const today = todayIn(config.TIMEZONE, now)
+  const channels = await readChannels(db)
+  const today = todayIn(settings.timezone, now)
   const startedAt = now.toISOString()
   const run = await db
     .prepare('INSERT INTO cron_runs (local_date, started_at) VALUES (?, ?) RETURNING id')
@@ -137,10 +144,10 @@ export async function runReminders(env: Bindings, now: Date): Promise<void> {
       const subscription = original.isActive ? rollForward(original, today) : original
       if (subscription !== original) statements.push(saveRollForward(db, original, subscription))
 
-      const notice = planReminder(subscription, today, config)
+      const notice = planReminder(subscription, today, settings)
       if (!notice) continue
 
-      const result = await sendNotificationToAllChannels(reminderMessage(subscription, notice), config)
+      const result = await sendNotificationToAllChannels(reminderMessage(subscription, notice), channels)
       for (const { channel, success, error } of result.results) {
         const message = success ? null : (error ?? '發送失敗')
         statements.push(saveDelivery(db, subscription.id, today, channel, message, startedAt))

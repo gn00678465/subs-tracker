@@ -24,10 +24,12 @@ export const CHANNEL_FIELDS = {
 
 export type ChannelField = (typeof CHANNEL_FIELDS)[ChannelId][number]
 
+export type ChannelConfig = Partial<Record<ChannelField, string>>
+
 export interface ChannelState {
   channel: ChannelId
   enabled: boolean
-  config: Partial<Record<ChannelField, string>>
+  config: ChannelConfig
   lastStatus: 'ok' | 'failed' | null
   lastError: string | null
   lastAttemptAt: string | null
@@ -121,7 +123,7 @@ export async function readChannels(db: D1Database): Promise<ChannelState[]> {
     return {
       channel,
       enabled: row?.enabled === 1,
-      config: row ? (JSON.parse(row.config) as ChannelState['config']) : {},
+      config: row ? (JSON.parse(row.config) as ChannelConfig) : {},
       lastStatus: row?.last_status ?? null,
       lastError: row?.last_error ?? null,
       lastAttemptAt: row?.last_attempt_at ?? null,
@@ -134,7 +136,7 @@ export function upsertChannel(
   db: D1Database,
   channel: ChannelId,
   enabled: boolean,
-  config: ChannelState['config'],
+  config: ChannelConfig,
   now: string,
   { ignoreExisting = false } = {},
 ): D1PreparedStatement {
@@ -163,4 +165,23 @@ export function recordChannelResult(
        ON CONFLICT(channel) DO UPDATE SET last_status = excluded.last_status, last_error = excluded.last_error, last_attempt_at = excluded.last_attempt_at`,
     )
     .bind(channel, status, error, at, at)
+}
+
+export interface CronRun {
+  localDate: string
+  startedAt: string
+  finishedAt: string | null
+  reminded: number
+  failed: number
+  error: string | null
+}
+
+export async function readLastCronRun(db: D1Database): Promise<CronRun | null> {
+  const row = await db
+    .prepare(
+      `SELECT local_date AS localDate, started_at AS startedAt, finished_at AS finishedAt, reminded, failed, error
+       FROM cron_runs ORDER BY id DESC LIMIT 1`,
+    )
+    .first<CronRun>()
+  return row ?? null
 }
