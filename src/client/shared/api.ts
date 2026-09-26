@@ -38,3 +38,7 @@ export async function api<T = undefined>(method: string, path: string, body?: un
 export function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
+
+/** 使用者關閉 passkey 對話框，或另一個 passkey 請求取代了這一個；不當作錯誤 */
+export const isCancel = (error: unknown) =>
+  error instanceof Error && (error.name === 'NotAllowedError' || error.name === 'AbortError')

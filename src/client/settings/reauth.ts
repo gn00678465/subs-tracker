@@ -26,7 +26,3 @@ export async function reauthWithPasskey(): Promise<void> {
   const credential = await startAuthentication({ optionsJSON: options })
   await api('POST', '/api/webauthn/authenticate/verify', credential)
 }
-
-/** 使用者關閉 passkey 對話框，不當作錯誤 */
-export const isCancel = (error: unknown) =>
-  error instanceof Error && (error.name === 'NotAllowedError' || error.name === 'AbortError')

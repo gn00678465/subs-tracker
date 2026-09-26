@@ -4,8 +4,6 @@ import type { CalendarDate } from '../../utils/calendarDate'
 
 export type Group = 'due' | 'week' | 'month' | 'later' | 'paused'
 
-export const GROUPS: Group[] = ['due', 'week', 'month', 'later', 'paused']
-
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
 const UNIT_LABEL: Record<PeriodUnit, string> = { day: '天', week: '週', month: '月', year: '年' }
 const PER_YEAR: Record<PeriodUnit, number> = { day: 365, week: 52, month: 12, year: 1 }

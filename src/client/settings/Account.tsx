@@ -5,10 +5,10 @@ import { Fingerprint, LogOut, Plus } from 'lucide'
 
 import { Icon } from '../../components/Icon'
 import type { PasskeyView } from '../../services/passkey'
-import { api, errorMessage } from '../shared/api'
+import { api, errorMessage, isCancel } from '../shared/api'
 import { toast } from '../shared/toast'
 import { Passkeys, passkeyName } from './Passkeys'
-import { isCancel, isReauthRequired, reauthWithPasskey, reauthWithPassword } from './reauth'
+import { isReauthRequired, reauthWithPasskey, reauthWithPassword } from './reauth'
 import { SectionSave } from './SectionSave'
 
 interface Reauth {

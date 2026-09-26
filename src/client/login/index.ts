@@ -1,6 +1,8 @@
 import type { PublicKeyCredentialRequestOptionsJSON } from '@simplewebauthn/browser'
 import { browserSupportsWebAuthnAutofill, startAuthentication } from '@simplewebauthn/browser'
 
+import { isCancel } from '../shared/api'
+
 const form = document.getElementById('login-form') as HTMLFormElement
 const submit = form.querySelector('button[type="submit"]') as HTMLButtonElement
 const error = document.getElementById('login-error') as HTMLParagraphElement
@@ -54,11 +56,6 @@ async function signInWithPasskey(conditional: boolean) {
   const result = await postJson('/api/webauthn/authenticate/verify', credential)
   if (!result.success) throw new Error(result.message)
   location.assign('/admin')
-}
-
-// 使用者取消對話框，或另一個 passkey 請求取代了這一個
-function isCancel(caught: unknown): boolean {
-  return caught instanceof Error && (caught.name === 'NotAllowedError' || caught.name === 'AbortError')
 }
 
 passkeyButton?.addEventListener('click', async () => {
