@@ -24,6 +24,7 @@
     "release:dry": "bumpp --no-commit --no-tag --no-push"
   },
   "dependencies": {
+    "@floating-ui/dom": "1.8.0",
     "@hono/swagger-ui": "^0.6.1",
     "@hono/zod-openapi": "^1.6.3",
     "@hono/zod-validator": "^0.9.1",

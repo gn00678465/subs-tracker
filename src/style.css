@@ -511,7 +511,7 @@
     height: 18px;
     color: var(--ink-3);
   }
-  /* 展開在欄位下方，不浮在內容上：浮動的月曆會被表單底部固定的儲存列蓋住，表單也捲不到它的底部 */
+  /* 手機展開在欄位下方，與欄位同寬，日期格較大 */
   .calendar {
     max-width: 360px;
     margin-top: 6px;
@@ -523,6 +523,19 @@
     background: var(--surface);
     transform-origin: top left;
     animation: calendar-in 160ms var(--ease);
+  }
+  /* 桌機浮在內容上，位置由 DatePicker.tsx 用 Floating UI 計算 */
+  @media (min-width: 1024px) {
+    .calendar {
+      position: fixed;
+      z-index: 30;
+      width: 304px;
+      margin-top: 0;
+      box-shadow: var(--shadow);
+    }
+    .calendar[data-side='top'] {
+      transform-origin: bottom left;
+    }
   }
   @keyframes calendar-in {
     from {

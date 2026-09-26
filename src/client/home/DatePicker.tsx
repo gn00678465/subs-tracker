@@ -1,3 +1,4 @@
+import { autoUpdate, computePosition, flip, hide, offset, shift } from '@floating-ui/dom'
 import { useEffect, useRef, useState } from 'hono/jsx'
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide'
 
@@ -8,6 +9,8 @@ import { addPeriod } from '../../utils/calendarDate'
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
 const YEARS_BACK = 30
 const YEARS_AHEAD = 10
+// 與 style.css 的桌機版面相同：桌機的月曆浮在內容上，手機展開在欄位下方
+const FLOATING = '(min-width: 1024px)'
 
 const pad = (n: number) => String(n).padStart(2, '0')
 const partsOf = (date: CalendarDate) => date.split('-').map(Number) as [number, number, number]
@@ -78,9 +81,28 @@ export const DatePicker = ({ id, name, label, value, today, optional, invalid, o
     const day = open && pending.current && root.current?.querySelector<HTMLElement>(`[data-date="${pending.current}"]`)
     if (!day) return
     pending.current = null
-    root.current?.querySelector('.calendar')?.scrollIntoView({ block: 'nearest' })
+    if (!matchMedia(FLOATING).matches) root.current?.querySelector('.calendar')?.scrollIntoView({ block: 'nearest' })
     day.focus({ preventScroll: true })
   }, [open, focus])
+
+  useEffect(() => {
+    const reference = root.current?.querySelector<HTMLElement>('.date-trigger')
+    const floating = root.current?.querySelector<HTMLElement>('.calendar')
+    if (!open || !reference || !floating || !matchMedia(FLOATING).matches) return
+    // 下方空間不夠時往上彈出；欄位捲出表單的可見範圍時隱藏
+    return autoUpdate(reference, floating, () => {
+      void computePosition(reference, floating, {
+        strategy: 'fixed',
+        placement: 'bottom-start',
+        middleware: [offset(6), flip({ padding: 12 }), shift({ padding: 12 }), hide()],
+      }).then(({ x, y, placement, middlewareData }) => {
+        floating.style.left = `${x}px`
+        floating.style.top = `${y}px`
+        floating.style.visibility = middlewareData.hide?.referenceHidden ? 'hidden' : 'visible'
+        floating.dataset.side = placement.split('-')[0]
+      })
+    })
+  }, [open])
 
   useEffect(() => {
     if (!open) return

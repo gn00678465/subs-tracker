@@ -14,6 +14,8 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap"
 />
 <script src="https://cdn.jsdelivr.net/npm/lucide@1.48.0/dist/umd/lucide.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@floating-ui/core@1.8.0/dist/floating-ui.core.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.8.0/dist/floating-ui.dom.umd.min.js"></script>
 <style>
   :root {
     --ground: #eceef1;
@@ -588,7 +590,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     height: 18px;
     color: var(--ink-3);
   }
-  /* 展開在欄位下方，不浮在內容上：浮動的月曆會被表單底部固定的儲存列蓋住，表單也捲不到它的底部 */
+  /* 手機展開在欄位下方，與欄位同寬，日期格較大 */
   .calendar {
     max-width: 360px;
     margin-top: 6px;
@@ -600,6 +602,19 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     background: var(--surface);
     transform-origin: top left;
     animation: calendar-in 160ms var(--ease);
+  }
+  /* 桌機浮在內容上，位置由 DatePicker.tsx 用 Floating UI 計算 */
+  @media (min-width: 1024px) {
+    .calendar {
+      position: fixed;
+      z-index: 30;
+      width: 304px;
+      margin-top: 0;
+      box-shadow: var(--shadow);
+    }
+    .calendar[data-side='top'] {
+      transform-origin: bottom left;
+    }
   }
   @keyframes calendar-in {
     from {
@@ -2315,18 +2330,43 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     </div>`
   }
 
-  function renderCalendar(picker, focusDay) {
+  // 與 CSS 的桌機版面相同：桌機的月曆浮在內容上，手機展開在欄位下方
+  const FLOATING = '(min-width: 1024px)'
+
+  function removeCalendar(picker) {
+    picker.stopFloating?.()
     picker.querySelector('.calendar')?.remove()
+  }
+
+  function renderCalendar(picker, focusDay) {
+    removeCalendar(picker)
     picker.insertAdjacentHTML('beforeend', calendarHTML(picker))
-    picker.querySelector('.date-trigger').setAttribute('aria-expanded', 'true')
+    const trigger = picker.querySelector('.date-trigger')
+    const calendar = picker.querySelector('.calendar')
+    trigger.setAttribute('aria-expanded', 'true')
     window.lucide?.createIcons()
-    if (!focusDay) return
-    picker.querySelector('.calendar').scrollIntoView({ block: 'nearest' })
-    picker.querySelector(`[data-date="${picker.dataset.focus}"]`).focus({ preventScroll: true })
+    if (matchMedia(FLOATING).matches) {
+      const { autoUpdate, computePosition, flip, hide, offset, shift } = window.FloatingUIDOM
+      picker.stopFloating = autoUpdate(trigger, calendar, () =>
+        computePosition(trigger, calendar, {
+          strategy: 'fixed',
+          placement: 'bottom-start',
+          middleware: [offset(6), flip({ padding: 12 }), shift({ padding: 12 }), hide()],
+        }).then(({ x, y, placement, middlewareData }) => {
+          calendar.style.left = `${x}px`
+          calendar.style.top = `${y}px`
+          calendar.style.visibility = middlewareData.hide?.referenceHidden ? 'hidden' : 'visible'
+          calendar.dataset.side = placement.split('-')[0]
+        }),
+      )
+    } else if (focusDay) {
+      calendar.scrollIntoView({ block: 'nearest' })
+    }
+    if (focusDay) picker.querySelector(`[data-date="${picker.dataset.focus}"]`).focus({ preventScroll: true })
   }
 
   function closeCalendar(picker, refocus = true) {
-    picker.querySelector('.calendar')?.remove()
+    removeCalendar(picker)
     const trigger = picker.querySelector('.date-trigger')
     trigger.setAttribute('aria-expanded', 'false')
     if (refocus) trigger.focus()
