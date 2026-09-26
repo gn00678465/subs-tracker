@@ -231,7 +231,6 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
       0 -4px 14px -6px rgb(0 0 0 / 0.35);
     margin-top: -12px;
     overflow: hidden;
-    transition: height 220ms var(--ease);
   }
   .card:first-of-type,
   .today + .card {
@@ -281,18 +280,39 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     font-weight: 700;
   }
   .detail {
-    display: none;
-    padding: 0 16px 16px;
+    display: grid;
+    grid-template-rows: 0fr;
+    padding-inline: 16px;
+    transition: grid-template-rows 280ms var(--ease);
   }
-  .card.is-open .detail {
+  .detail-inner {
+    min-height: 0;
+    overflow: hidden;
+  }
+  .detail-body {
     display: grid;
     gap: 16px;
+    padding-bottom: 16px;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition:
+      opacity 200ms var(--ease),
+      transform 280ms var(--ease);
   }
-  .card.is-open button.lip {
-    height: 48px;
+  .card.is-open .detail {
+    grid-template-rows: 1fr;
+  }
+  .card.is-open .detail-body {
+    opacity: 1;
+    transform: none;
+    transition-delay: 60ms;
+  }
+  .lip-meta {
+    transition: opacity 160ms var(--ease);
   }
   .card.is-open .lip-meta {
-    display: none;
+    opacity: 0;
+    visibility: hidden;
   }
   .detail-amount {
     display: flex;
@@ -1551,13 +1571,17 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
               <span class="lip-meta"><span>USD 11.99</span><span class="when">9/20</span></span>
             </button>
             <div class="detail">
-              <div class="detail-amount">
-                <div class="price">USD 11.99<small>/月</small></div>
-                <div class="countdown">已過期<b>6 天</b></div>
-              </div>
-              <div class="card-actions">
-                <button type="button"><i data-lucide="calendar-check"></i>更新到期日</button>
-                <button type="button"><i data-lucide="pause"></i>停用</button>
+              <div class="detail-inner">
+                <div class="detail-body">
+                  <div class="detail-amount">
+                    <div class="price">USD 11.99<small>/月</small></div>
+                    <div class="countdown">已過期<b>6 天</b></div>
+                  </div>
+                  <div class="card-actions">
+                    <button type="button"><i data-lucide="calendar-check"></i>更新到期日</button>
+                    <button type="button"><i data-lucide="pause"></i>停用</button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1568,19 +1592,23 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
               <span class="lip-meta"><span>TWD 390</span><span class="when">3 天後</span></span>
             </button>
             <div class="detail">
-              <div class="detail-amount">
-                <div class="price">TWD 390<small>/月</small></div>
-                <div class="countdown">9/29（二）扣款<b>3 天後</b></div>
-              </div>
-              <div class="facts">
-                <span>分類<b>影音</b></span>
-                <span>付款方式<b>信用卡</b></span>
-                <span>提醒<b>前 3 天</b></span>
-              </div>
-              <div class="card-actions">
-                <button type="button"><i data-lucide="pencil"></i>編輯</button>
-                <button type="button"><i data-lucide="pause"></i>停用</button>
-                <button type="button"><i data-lucide="send"></i>測試通知</button>
+              <div class="detail-inner">
+                <div class="detail-body">
+                  <div class="detail-amount">
+                    <div class="price">TWD 390<small>/月</small></div>
+                    <div class="countdown">9/29（二）扣款<b>3 天後</b></div>
+                  </div>
+                  <div class="facts">
+                    <span>分類<b>影音</b></span>
+                    <span>付款方式<b>信用卡</b></span>
+                    <span>提醒<b>前 3 天</b></span>
+                  </div>
+                  <div class="card-actions">
+                    <button type="button"><i data-lucide="pencil"></i>編輯</button>
+                    <button type="button"><i data-lucide="pause"></i>停用</button>
+                    <button type="button"><i data-lucide="send"></i>測試通知</button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1590,18 +1618,22 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
               <span class="lip-meta"><span>TWD 149</span><span class="when">5 天後</span></span>
             </button>
             <div class="detail">
-              <div class="detail-amount">
-                <div class="price">TWD 149<small>/月</small></div>
-                <div class="countdown">10/1（四）試用結束<b>5 天後</b></div>
-              </div>
-              <div class="facts">
-                <span>分類<b>音樂</b></span>
-                <span>付款方式<b>信用卡</b></span>
-                <span>提醒<b>前 7 天</b></span>
-              </div>
-              <div class="card-actions">
-                <button type="button"><i data-lucide="pencil"></i>編輯</button>
-                <button type="button"><i data-lucide="x"></i>不續訂</button>
+              <div class="detail-inner">
+                <div class="detail-body">
+                  <div class="detail-amount">
+                    <div class="price">TWD 149<small>/月</small></div>
+                    <div class="countdown">10/1（四）試用結束<b>5 天後</b></div>
+                  </div>
+                  <div class="facts">
+                    <span>分類<b>音樂</b></span>
+                    <span>付款方式<b>信用卡</b></span>
+                    <span>提醒<b>前 7 天</b></span>
+                  </div>
+                  <div class="card-actions">
+                    <button type="button"><i data-lucide="pencil"></i>編輯</button>
+                    <button type="button"><i data-lucide="x"></i>不續訂</button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1611,18 +1643,22 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
               <span class="lip-meta"><span>TWD 90</span><span class="when">12 天後</span></span>
             </button>
             <div class="detail">
-              <div class="detail-amount">
-                <div class="price">TWD 90<small>/月</small></div>
-                <div class="countdown">10/8（四）扣款<b>12 天後</b></div>
-              </div>
-              <div class="facts">
-                <span>分類<b>雲端</b></span>
-                <span>付款方式<b>Apple Pay</b></span>
-                <span>提醒<b>前 1 天</b></span>
-              </div>
-              <div class="card-actions">
-                <button type="button"><i data-lucide="pencil"></i>編輯</button>
-                <button type="button"><i data-lucide="pause"></i>停用</button>
+              <div class="detail-inner">
+                <div class="detail-body">
+                  <div class="detail-amount">
+                    <div class="price">TWD 90<small>/月</small></div>
+                    <div class="countdown">10/8（四）扣款<b>12 天後</b></div>
+                  </div>
+                  <div class="facts">
+                    <span>分類<b>雲端</b></span>
+                    <span>付款方式<b>Apple Pay</b></span>
+                    <span>提醒<b>前 1 天</b></span>
+                  </div>
+                  <div class="card-actions">
+                    <button type="button"><i data-lucide="pencil"></i>編輯</button>
+                    <button type="button"><i data-lucide="pause"></i>停用</button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1632,18 +1668,22 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
               <span class="lip-meta"><span>USD 20</span><span class="when">16 天後</span></span>
             </button>
             <div class="detail">
-              <div class="detail-amount">
-                <div class="price">USD 20<small>/月</small></div>
-                <div class="countdown">10/12（一）扣款<b>16 天後</b></div>
-              </div>
-              <div class="facts">
-                <span>分類<b>工具</b></span>
-                <span>付款方式<b>信用卡</b></span>
-                <span>提醒<b>前 3 天</b></span>
-              </div>
-              <div class="card-actions">
-                <button type="button"><i data-lucide="pencil"></i>編輯</button>
-                <button type="button"><i data-lucide="pause"></i>停用</button>
+              <div class="detail-inner">
+                <div class="detail-body">
+                  <div class="detail-amount">
+                    <div class="price">USD 20<small>/月</small></div>
+                    <div class="countdown">10/12（一）扣款<b>16 天後</b></div>
+                  </div>
+                  <div class="facts">
+                    <span>分類<b>工具</b></span>
+                    <span>付款方式<b>信用卡</b></span>
+                    <span>提醒<b>前 3 天</b></span>
+                  </div>
+                  <div class="card-actions">
+                    <button type="button"><i data-lucide="pencil"></i>編輯</button>
+                    <button type="button"><i data-lucide="pause"></i>停用</button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1653,18 +1693,22 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
               <span class="lip-meta"><span>TWD 590</span><span class="when">11/3</span></span>
             </button>
             <div class="detail">
-              <div class="detail-amount">
-                <div class="price">TWD 590<small>/年</small></div>
-                <div class="countdown">11/3（二）扣款<b>38 天後</b></div>
-              </div>
-              <div class="facts">
-                <span>分類<b>遊戲</b></span>
-                <span>付款方式<b>信用卡</b></span>
-                <span>提醒<b>前 7 天</b></span>
-              </div>
-              <div class="card-actions">
-                <button type="button"><i data-lucide="pencil"></i>編輯</button>
-                <button type="button"><i data-lucide="pause"></i>停用</button>
+              <div class="detail-inner">
+                <div class="detail-body">
+                  <div class="detail-amount">
+                    <div class="price">TWD 590<small>/年</small></div>
+                    <div class="countdown">11/3（二）扣款<b>38 天後</b></div>
+                  </div>
+                  <div class="facts">
+                    <span>分類<b>遊戲</b></span>
+                    <span>付款方式<b>信用卡</b></span>
+                    <span>提醒<b>前 7 天</b></span>
+                  </div>
+                  <div class="card-actions">
+                    <button type="button"><i data-lucide="pencil"></i>編輯</button>
+                    <button type="button"><i data-lucide="pause"></i>停用</button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -2255,7 +2299,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
           <span class="lip-name"><span class="n">${esc(s.name)}${tags.map((t) => `<span class="tag">${t}</span>`).join('')}</span><span class="sub"><span>${esc(s.category || '未分類')}</span><span>${esc(s.payment || '')}</span></span></span>
           <span class="lip-meta"><span class="amt">${s.currency} ${money(s.currency, s.price)}<small>${periodText(s)}</small></span><span class="when">${when}</span></span>
         </button>
-        <div class="detail">
+        <div class="detail"><div class="detail-inner"><div class="detail-body">
           <div class="detail-amount">
             <div class="price">${s.currency} ${money(s.currency, s.price)}<small>${periodText(s)}</small></div>
             <div class="countdown">${dateLine}<b>${s.active ? countdownText(days) : '已停用'}</b></div>
@@ -2272,7 +2316,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
             <button type="button" data-act="toggle" ${offline ? 'disabled' : ''}>${icon(s.active ? 'pause' : 'play')}${s.active ? '停用' : '啟用'}</button>
             ${s.website ? `<a href="${esc(s.website)}" target="_blank" rel="noopener">${icon('external-link')}前往網站</a>` : ''}
           </div>
-        </div>
+        </div></div></div>
       </div>`
   }
 
@@ -2770,9 +2814,20 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     }
     const lip = t.closest('.card button.lip')
     if (lip && !lip.closest('#preview')) {
-      const id = lip.closest('.card').dataset.id
+      const card = lip.closest('.card')
+      const id = card.dataset.id
       state.openId = state.openId === id ? null : id
-      return route()
+      document.querySelectorAll('#app .card.is-open').forEach((open) => {
+        open.classList.remove('is-open')
+        open.querySelector('button.lip').setAttribute('aria-expanded', 'false')
+      })
+      if (state.openId) {
+        card.classList.add('is-open')
+        lip.setAttribute('aria-expanded', 'true')
+        const behavior = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+        setTimeout(() => card.scrollIntoView({ block: 'nearest', behavior }), 300)
+      }
+      return
     }
     const act = t.closest('[data-act]')
     const cardId = t.closest('.card')?.dataset.id

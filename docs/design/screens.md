@@ -58,6 +58,8 @@
 
 展開的卡（一次只展開一張）：
 
+- 動畫：點卡緣後，卡片向下滑開，下方的卡跟著往下移；原本展開的卡同時收合。高度 280ms、內容淡入，使用 ease-out 曲線。展開的卡超出畫面時，捲動到完整可見。系統設定「減少動態效果」時不播放動畫。
+
 - 金額與週期、下次扣款日與倒數。試用的卡顯示「試用結束」。
 - 分類、付款方式、提醒天數。設了取消期限時，顯示「10/1 前取消」。
 - 有網站時顯示「前往網站」。
@@ -182,6 +184,8 @@
 
 ### 離線
 
+- 沿用現有的 PWA：`public/manifest.webmanifest`、`public/sw.js`、`src/client/registerSW.ts`。頁面與靜態檔已經有快取，目前缺的是 API 資料。
+- `manifest.webmanifest` 的 `theme_color`、`background_color` 改成新設計的顏色。
 - `public/sw.js` 對 `GET /api/subscriptions` 與 `GET /api/config` 改用「先網路，失敗時用快取」，並記錄快取時間。
 - 頁面依回應是否來自快取，顯示離線提示並停用修改。
 
