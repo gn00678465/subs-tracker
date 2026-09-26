@@ -766,8 +766,9 @@
     font-size: 13px;
     color: var(--ink-3);
   }
+  /* --c-green 是卡片底色，當文字色時混入 --ink，兩種主題都達到 4.5:1 */
   .row .status.on {
-    color: var(--c-green);
+    color: color-mix(in srgb, var(--c-green) 55%, var(--ink));
     font-weight: 500;
   }
   .row .chev {
