@@ -59,7 +59,15 @@ const iconConfig = {
 // 初始化圖示
 createIcons(iconConfig)
 
+declare global {
+  interface Window {
+    lucide?: {
+      createIcons: () => void
+    }
+  }
+}
+
 // 暴露到全域，供動態 HTML 使用
-;(window as any).lucide = {
+window.lucide = {
   createIcons: () => createIcons(iconConfig),
 }

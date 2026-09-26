@@ -49,14 +49,15 @@
 
 支援 **4 種通知渠道**，可同時啟用多個渠道進行通知：
 
-| 渠道 | 圖示 | 說明 | 配置項目 |
-|------|------|------|----------|
-| **Telegram** | 🤖 | Telegram Bot 推送訊息 | Bot Token + Chat ID |
-| **Email** | 📧 | 透過 Resend API 發送郵件 | Resend API Key + 收件地址 |
-| **Webhook** | 🔗 | 自訂 HTTP Webhook | URL + 請求模板（支援變數） |
-| **Bark** | 🍎 | iOS Bark 應用推送 | Bark URL |
+| 渠道         | 圖示 | 說明                     | 配置項目                   |
+| ------------ | ---- | ------------------------ | -------------------------- |
+| **Telegram** | 🤖   | Telegram Bot 推送訊息    | Bot Token + Chat ID        |
+| **Email**    | 📧   | 透過 Resend API 發送郵件 | Resend API Key + 收件地址  |
+| **Webhook**  | 🔗   | 自訂 HTTP Webhook        | URL + 請求模板（支援變數） |
+| **Bark**     | 🍎   | iOS Bark 應用推送        | Bark URL                   |
 
 **通知訊息支援變數替換**：
+
 - `{{name}}` - 訂閱名稱
 - `{{date}}` - 到期日期
 - `{{daysLeft}}` - 剩餘天數
@@ -72,17 +73,20 @@
 **部署步驟**：
 
 1. **Clone 專案**
+
    ```bash
    git clone https://github.com/your-username/subs-tracker.git
    cd subs-tracker
    ```
 
 2. **安裝依賴**（使用 Bun）
+
    ```bash
    bun install
    ```
 
 3. **建立 KV 命名空間**
+
    ```bash
    # 建立生產環境 KV
    npx wrangler kv namespace create SUBSCRIPTIONS_KV
@@ -94,6 +98,7 @@
 4. **更新 `wrangler.toml`**
 
    將步驟 3 產生的 KV namespace ID 填入 `wrangler.toml`：
+
    ```toml
    [[kv_namespaces]]
    binding = "SUBSCRIPTIONS_KV"
@@ -102,6 +107,7 @@
    ```
 
 5. **部署到 Cloudflare**
+
    ```bash
    bun run deploy
    ```
@@ -114,85 +120,6 @@
 
 ---
 
-## 🤖 GitHub Actions 自動化部署
-
-本專案已配置 GitHub Actions，可實現自動化的 CI/CD 部署流程。
-
-### 工作流程
-
-當你推送程式碼到 GitHub 時，GitHub Actions 會自動：
-
-1. ✅ **程式碼檢查**：執行 ESLint 程式碼檢查
-2. ✅ **型別檢查**：執行 TypeScript 型別驗證
-3. ✅ **建置專案**：編譯 TypeScript 和打包資源
-4. 🚀 **自動部署**：部署到對應的 Cloudflare Workers 環境
-
-### 觸發條件
-
-- **Push to `main`**：自動部署到 **生產環境**（`subscription-manager.workers.dev`）
-- **Push to `staging`**：自動部署到 **測試環境**（`subscription-manager-staging.workers.dev`）
-- **Pull Request**：執行 Lint 和 Type Check（不部署）
-- **手動觸發**：在 GitHub Actions 頁面手動執行工作流程
-
-### 設定步驟
-
-#### 1. 取得 Cloudflare API Token
-
-1. 登入 [Cloudflare Dashboard](https://dash.cloudflare.com/)
-2. 點選右上角頭像 → **My Profile** → **API Tokens**
-3. 點選 **Create Token** → 使用 **Edit Cloudflare Workers** 範本
-4. 設定權限：
-   - **Account** → **Cloudflare Workers** → **Edit**
-   - **Zone** → **Workers Routes** → **Edit**（如有自訂域名）
-5. 複製生成的 API Token
-
-#### 2. 取得 Cloudflare Account ID
-
-1. 在 Cloudflare Dashboard 中選擇任一網站
-2. 右側欄位中找到 **Account ID**
-3. 點選複製圖示
-
-#### 3. 設定 GitHub Secrets
-
-在你的 GitHub 倉庫中設定以下 Secrets：
-
-1. 進入 GitHub 倉庫 → **Settings** → **Secrets and variables** → **Actions**
-2. 點選 **New repository secret**，新增以下兩個 Secrets：
-
-| Secret Name | 說明 | 範例 |
-|-------------|------|------|
-| `CLOUDFLARE_API_TOKEN` | Cloudflare API Token | `xxxxxxxxxxxxxxxxxxxxxxxx` |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare Account ID | `a1b2c3d4e5f6g7h8i9j0` |
-
-#### 4. 推送程式碼觸發部署
-
-設定完成後，只需推送程式碼即可觸發自動部署：
-
-```bash
-# 部署到生產環境
-git checkout main
-git add .
-git commit -m "feat: add new feature"
-git push origin main
-
-# 部署到測試環境
-git checkout staging
-git merge main
-git push origin staging
-```
-
-### 查看部署狀態
-
-1. 進入 GitHub 倉庫的 **Actions** 頁面
-2. 查看最近的 Workflow 執行記錄
-3. 點選進入可查看詳細的執行日誌
-
-### Workflow 檔案
-
-完整的 GitHub Actions 配置位於：`.github/workflows/deploy.yml`
-
----
-
 ## 🔧 通知渠道配置
 
 進入管理後台 → **系統設定** → **通知設定** 標籤頁，配置各通知渠道。
@@ -200,16 +127,19 @@ git push origin staging
 ### 1. Telegram Bot
 
 **申請 Telegram Bot**：
+
 1. 在 Telegram 搜尋 `@BotFather`
 2. 傳送 `/newbot` 指令建立新 Bot
 3. 取得 **Bot Token**（格式：`123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11`）
 
 **取得 Chat ID**：
+
 1. 在 Telegram 搜尋你的 Bot 並傳送任意訊息
 2. 訪問 `https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates`
 3. 在回應中找到 `"chat":{"id":123456789}` 中的數字
 
 **配置項目**：
+
 - **Bot Token**：你的 Bot Token
 - **Chat ID**：你的 Chat ID（數字）
 
@@ -218,15 +148,18 @@ git push origin staging
 ### 2. Email (Resend)
 
 **申請 Resend API Key**：
+
 1. 註冊 [Resend](https://resend.com/) 帳號
 2. 進入 Dashboard → **API Keys** → **Create API Key**
 3. 複製生成的 API Key（格式：`re_xxxxxxxxxx`）
 
 **驗證發信域名**（可選）：
+
 - 若使用自訂域名，需在 Resend 中新增並驗證域名
 - 可使用 Resend 提供的預設測試域名（有發信限制）
 
 **配置項目**：
+
 - **Resend API Key**：你的 API Key
 - **發件地址**：如 `noreply@yourdomain.com`
 - **收件地址**：接收通知的郵箱
@@ -238,6 +171,7 @@ git push origin staging
 自訂 HTTP Webhook，支援 POST 請求與模板變數。
 
 **配置項目**：
+
 - **Webhook URL**：接收通知的 HTTP 端點
 - **請求模板**（JSON 格式）：
   ```json
@@ -248,6 +182,7 @@ git push origin staging
   ```
 
 **範例應用**：
+
 - 整合至企業內部系統
 - 觸發 IFTTT / Zapier 工作流程
 - 自訂通知處理邏輯
@@ -259,10 +194,12 @@ git push origin staging
 適用於 iOS 裝置的推送通知應用。
 
 **安裝 Bark App**：
+
 1. 從 App Store 下載 [Bark](https://apps.apple.com/app/bark-customed-notifications/id1403753865)
 2. 開啟 App 取得你的 **Bark URL**（格式：`https://api.day.app/YOUR_KEY/`）
 
 **配置項目**：
+
 - **Bark URL**：你的 Bark 推送 URL
 
 ---
@@ -296,11 +233,11 @@ git push origin staging
   </tr>
   <tr>
     <td><b>前端交互</b></td>
-    <td>htmx + Vanilla TypeScript</td>
+    <td>Hono JSX（hono/jsx/dom）+ Vanilla TypeScript</td>
   </tr>
   <tr>
     <td><b>建置工具</b></td>
-    <td>Vite 6.x + Wrangler 4.x</td>
+    <td>Vite 8.x（@cloudflare/vite-plugin）+ Wrangler 4.x</td>
   </tr>
   <tr>
     <td><b>套件管理</b></td>
@@ -319,6 +256,7 @@ git push origin staging
 ### 環境需求
 
 - **Bun**: >= 1.0.0
+- **Node.js**: >= 22.18（Vite 8、Wrangler 4 與 bumpp 12 的需求）
 - **Cloudflare 帳號**：用於部署
 
 ### 開發指令
@@ -330,13 +268,13 @@ bun install
 # 啟動開發伺服器（http://localhost:5173）
 bun run dev
 
-# TypeScript 型別檢查
-bun run typecheck
+# 格式檢查 + Lint + 型別檢查
+bun run check
 
-# ESLint 程式碼檢查
-bun run lint
+# 以 oxfmt 格式化
+bun run fmt
 
-# 自動修復 Lint 錯誤
+# 以 oxlint 檢查，並自動修正可修正的問題
 bun run lint:fix
 
 # 建置生產版本
@@ -365,18 +303,20 @@ subs-tracker/
 │   ├── types/                   # TypeScript 型別定義
 │   │   ├── index.ts             # 核心型別 (Bindings, Subscription, Config)
 │   │   ├── api.d.ts             # API 回應型別
-│   │   └── htmx.d.ts            # htmx 型別擴展
+│   │   └── webauthn.ts          # WebAuthn 憑證型別
 │   ├── middleware/
 │   │   └── auth.ts              # JWT 認證中介層
 │   ├── routes/                  # Hono 路由處理器
 │   │   ├── auth.ts              # 登入/登出端點
 │   │   ├── subscriptions.ts     # 訂閱 CRUD API
 │   │   ├── config.ts            # 系統設定 API
-│   │   └── notify.ts            # 第三方通知觸發
+│   │   ├── notify.ts            # 第三方通知觸發
+│   │   └── webauthn.ts          # Passkey 註冊與登入
 │   ├── services/                # 業務邏輯層
 │   │   ├── subscription.ts      # 訂閱 CRUD + 自動續期
 │   │   ├── subscription_cron.ts # Cron 任務邏輯
 │   │   ├── config.ts            # 設定管理
+│   │   ├── webauthn.ts          # Passkey 憑證儲存
 │   │   └── notifier/            # 通知系統
 │   │       ├── index.ts         # 多渠道通知調度器
 │   │       ├── types.ts         # 通知型別定義
@@ -403,6 +343,9 @@ subs-tracker/
 │       ├── logger.ts            # 日誌工具
 │       └── response.ts          # 標準化 API 回應
 ├── wrangler.toml                # Cloudflare Workers 設定
+├── vite.config.ts               # Vite 設定
+├── .oxlintrc.json               # oxlint 規則
+├── .oxfmtrc.json                # oxfmt 格式設定
 ├── package.json                 # 專案依賴
 ├── tsconfig.json                # TypeScript 設定
 └── README.md                    # 專案說明文件
@@ -414,13 +357,13 @@ subs-tracker/
 
 系統首次啟動時會自動生成以下設定，儲存於 KV 的 `config` 鍵值中：
 
-| 變數名稱 | 說明 | 預設值 |
-|---------|------|--------|
-| `JWT_SECRET` | JWT Token 加密密鑰 | 自動生成（32 字元） |
-| `ADMIN_PASSWORD` | 管理員密碼（已雜湊） | 自動生成（16 字元） |
-| `TIMEZONE` | 時區設定 | `Asia/Taipei` |
-| `NOTIFICATION_HOURS` | 通知時段 | `9,10,11,12,13,14,15,16,17,18,19,20,21,22` |
-| `NOTIFICATION_FREQUENCY` | 提醒頻率 | `ONCE`（單次提醒） |
+| 變數名稱                 | 說明                 | 預設值                                     |
+| ------------------------ | -------------------- | ------------------------------------------ |
+| `JWT_SECRET`             | JWT Token 加密密鑰   | 自動生成（32 字元）                        |
+| `ADMIN_PASSWORD`         | 管理員密碼（已雜湊） | 自動生成（16 字元）                        |
+| `TIMEZONE`               | 時區設定             | `Asia/Taipei`                              |
+| `NOTIFICATION_HOURS`     | 通知時段             | `9,10,11,12,13,14,15,16,17,18,19,20,21,22` |
+| `NOTIFICATION_FREQUENCY` | 提醒頻率             | `ONCE`（單次提醒）                         |
 
 **修改設定**：進入管理後台 → 系統設定頁面
 
@@ -454,6 +397,7 @@ crons = ["0 0 * * *"]  # 每天 UTC 0:00 (台北時間 08:00)
 系統內建 **OpenAPI 規範**與 **Swagger UI**。
 
 **訪問 API 文件**：
+
 ```
 https://your-worker.workers.dev/api/ui
 ```
@@ -463,6 +407,7 @@ https://your-worker.workers.dev/api/ui
 所有 API 遵循統一的回應格式：
 
 ✅ **成功回應**：
+
 ```json
 {
   "success": true,
@@ -472,6 +417,7 @@ https://your-worker.workers.dev/api/ui
 ```
 
 ❌ **錯誤回應**：
+
 ```json
 {
   "success": false,
@@ -482,6 +428,7 @@ https://your-worker.workers.dev/api/ui
 ```
 
 **HTTP 狀態碼**：
+
 - `200` - 成功
 - `201` - 已建立
 - `400` - 請求錯誤
@@ -502,9 +449,10 @@ https://your-worker.workers.dev/api/ui
 5. 開啟 Pull Request
 
 **程式碼規範**：
+
 - 使用 TypeScript 嚴格模式
-- 遵循 ESLint 設定（`@antfu/eslint-config`）
-- 禁止使用 `any` 型別
+- 提交前執行 `bun run check`（oxfmt、oxlint、tsc）
+- 禁止使用 `any` 型別（oxlint `typescript/no-explicit-any`）
 - 優先使用函式元件與箭頭函式
 
 ---
@@ -523,7 +471,8 @@ MIT License
 - [Cloudflare Workers](https://workers.cloudflare.com/) - 邊緣運算平台
 - [Tailwind CSS](https://tailwindcss.com/) - CSS 框架
 - [DaisyUI](https://daisyui.com/) - Tailwind CSS 元件庫
-- [htmx](https://htmx.org/) - 高互動性前端框架
+- [SimpleWebAuthn](https://simplewebauthn.dev/) - Passkey 註冊與驗證
+- [Oxc](https://oxc.rs/) - oxlint 與 oxfmt
 - [Resend](https://resend.com/) - 現代化郵件服務
 - [Lucide](https://lucide.dev/) - 圖示庫
 

@@ -1,13 +1,16 @@
 import type { PublicKeyCredentialCreationOptionsJSON } from '@simplewebauthn/browser'
 import { startRegistration } from '@simplewebauthn/browser'
+
+import type { Config } from '../../types'
+import type { StoredCredential } from '../../types/webauthn'
 import { toast } from '../../utils/toast'
 
-// TypeScript declaration for Lucide icons
+// 供 innerHTML 內的 onclick 呼叫
 declare global {
   interface Window {
-    lucide?: {
-      createIcons: () => void
-    }
+    registerPasskey: typeof registerPasskey
+    deletePasskey: typeof deletePasskey
+    editPasskeyNickname: typeof editPasskeyNickname
   }
 }
 
@@ -15,26 +18,28 @@ declare global {
 async function loadConfig(): Promise<void> {
   try {
     const res = await fetch('/api/config')
-    const data = await res.json() as { success: boolean, data?: any, message?: string }
-    if (!data.success)
-      throw new Error(data.message)
+    const data = (await res.json()) as {
+      success: boolean
+      data?: Omit<Config, 'JWT_SECRET' | 'ADMIN_PASSWORD'>
+      message?: string
+    }
+    if (!data.success || !data.data) throw new Error(data.message)
 
     const config = data.data
 
     // 填充基本設定
     ;(document.getElementById('adminUsername') as HTMLInputElement).value = config.ADMIN_USERNAME || ''
     const timezoneEl = document.getElementById('timezone')
-    if (timezoneEl)
-      (timezoneEl as unknown as HTMLSelectElement).value = config.TIMEZONE || 'UTC'
+    if (timezoneEl) (timezoneEl as unknown as HTMLSelectElement).value = config.TIMEZONE || 'UTC'
 
     // 通知時段
     const hours = config.NOTIFICATION_HOURS || []
-    ;(document.getElementById('notificationHours') as HTMLInputElement).value = hours.length === 0 ? '*' : hours.join(', ')
+    ;(document.getElementById('notificationHours') as HTMLInputElement).value =
+      hours.length === 0 ? '*' : hours.join(', ')
 
     // 提醒通知頻率
     const reminderModeEl = document.getElementById('reminderMode')
-    if (reminderModeEl)
-      (reminderModeEl as unknown as HTMLSelectElement).value = config.REMINDER_MODE || 'ONCE'
+    if (reminderModeEl) (reminderModeEl as unknown as HTMLSelectElement).value = config.REMINDER_MODE || 'ONCE'
 
     // 第三方 API Token
     ;(document.getElementById('apiToken') as HTMLInputElement).value = config.API_TOKEN || ''
@@ -52,8 +57,7 @@ async function loadConfig(): Promise<void> {
     // Webhook
     ;(document.getElementById('webhookUrl') as HTMLInputElement).value = config.WEBHOOK_URL || ''
     const webhookMethodEl = document.getElementById('webhookMethod')
-    if (webhookMethodEl)
-      (webhookMethodEl as unknown as HTMLSelectElement).value = config.WEBHOOK_METHOD || 'POST'
+    if (webhookMethodEl) (webhookMethodEl as unknown as HTMLSelectElement).value = config.WEBHOOK_METHOD || 'POST'
     ;(document.getElementById('webhookHeaders') as HTMLTextAreaElement).value = config.WEBHOOK_HEADERS || ''
     ;(document.getElementById('webhookTemplate') as HTMLTextAreaElement).value = config.WEBHOOK_TEMPLATE || ''
 
@@ -66,7 +70,7 @@ async function loadConfig(): Promise<void> {
     // Bark
     ;(document.getElementById('barkServer') as HTMLInputElement).value = config.BARK_SERVER || 'https://api.day.app'
     ;(document.getElementById('barkKey') as HTMLInputElement).value = config.BARK_KEY || ''
-    ;(document.getElementById('barkSave') as HTMLInputElement).checked = config.BARK_SAVE === 'true' || config.BARK_SAVE === true
+    ;(document.getElementById('barkSave') as HTMLInputElement).checked = String(config.BARK_SAVE) === 'true'
     ;(document.getElementById('barkQuery') as HTMLInputElement).value = config.BARK_QUERY || ''
 
     // WebAuthn 配置
@@ -76,8 +80,7 @@ async function loadConfig(): Promise<void> {
     const origins = config.WEBAUTHN_RP_ORIGINS || []
     ;(document.getElementById('webauthnRpOrigins') as HTMLTextAreaElement).value = origins.join('\n')
     const attestationEl = document.getElementById('webauthnAttestation')
-    if (attestationEl)
-      (attestationEl as unknown as HTMLSelectElement).value = config.WEBAUTHN_ATTESTATION || 'none'
+    if (attestationEl) (attestationEl as unknown as HTMLSelectElement).value = config.WEBAUTHN_ATTESTATION || 'none'
     const authAttachmentEl = document.getElementById('webauthnAuthAttachment')
     if (authAttachmentEl)
       (authAttachmentEl as unknown as HTMLSelectElement).value = config.WEBAUTHN_AUTHENTICATOR_ATTACHMENT || ''
@@ -93,7 +96,7 @@ async function loadConfig(): Promise<void> {
     if (config.WEBAUTHN_HINTS) {
       const hints = config.WEBAUTHN_HINTS
       document.querySelectorAll<HTMLInputElement>('[name="WEBAUTHN_HINTS"]').forEach((checkbox) => {
-        checkbox.checked = hints.includes(checkbox.value as any)
+        checkbox.checked = hints.some((hint) => hint === checkbox.value)
       })
     }
 
@@ -102,8 +105,7 @@ async function loadConfig(): Promise<void> {
 
     // 載入 Passkey 列表
     loadPasskeys()
-  }
-  catch (error) {
+  } catch (error) {
     toast.error(`載入配置失敗：${(error as Error).message}`)
   }
 }
@@ -140,9 +142,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // 監聽渠道選擇變化
   document.querySelectorAll<HTMLInputElement>('[name="ENABLED_NOTIFIERS"]').forEach((cb) => {
     cb.addEventListener('change', () => {
-      const enabled = Array.from(
-        document.querySelectorAll<HTMLInputElement>('[name="ENABLED_NOTIFIERS"]:checked'),
-      ).map(el => el.value)
+      const enabled = Array.from(document.querySelectorAll<HTMLInputElement>('[name="ENABLED_NOTIFIERS"]:checked')).map(
+        (el) => el.value,
+      )
       toggleChannelConfigs(enabled)
     })
   })
@@ -187,26 +189,20 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       // 收集表單資料
       const formData = new FormData(form)
-      const data: Record<string, any> = {}
+      const data: Record<string, unknown> = {}
 
       // 處理普通欄位
       for (const [key, value] of formData.entries()) {
-        if (key === 'ENABLED_NOTIFIERS')
-          continue
-        if (key === 'ADMIN_PASSWORD' && !value)
-          continue
-        if (key === 'ADMIN_PASSWORD_CONFIRM')
-          continue
-        if (key === 'BARK_SAVE')
-          continue
-        if (key === 'WEBAUTHN_HINTS')
-          continue // 多選 select 特殊處理（在後面處理）
+        if (key === 'ENABLED_NOTIFIERS') continue
+        if (key === 'ADMIN_PASSWORD' && !value) continue
+        if (key === 'ADMIN_PASSWORD_CONFIRM') continue
+        if (key === 'BARK_SAVE') continue
+        if (key === 'WEBAUTHN_HINTS') continue // 多選 select 特殊處理（在後面處理）
 
         // WebAuthn 特殊處理
         if (key === 'WEBAUTHN_AUTHENTICATOR_ATTACHMENT') {
           // 空字串表示"不限制"，不送出此欄位（使用後端預設 undefined）
-          if (value === '')
-            continue
+          if (value === '') continue
           data[key] = value
           continue
         }
@@ -226,18 +222,17 @@ document.addEventListener('DOMContentLoaded', () => {
       // 處理多選框：ENABLED_NOTIFIERS
       data.ENABLED_NOTIFIERS = Array.from(
         document.querySelectorAll<HTMLInputElement>('[name="ENABLED_NOTIFIERS"]:checked'),
-      ).map(el => el.value)
+      ).map((el) => el.value)
 
       // 處理通知時段
       const hoursInput = (document.getElementById('notificationHours') as HTMLInputElement).value.trim()
       if (hoursInput === '*' || !hoursInput) {
         data.NOTIFICATION_HOURS = []
-      }
-      else {
+      } else {
         data.NOTIFICATION_HOURS = hoursInput
           .split(/[,\s]+/)
-          .map(h => Number.parseInt(h, 10))
-          .filter(h => !Number.isNaN(h) && h >= 0 && h <= 23)
+          .map((h) => Number.parseInt(h, 10))
+          .filter((h) => !Number.isNaN(h) && h >= 0 && h <= 23)
       }
 
       // 處理 Bark Save checkbox
@@ -248,14 +243,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // 處理 WebAuthn RP Origins（textarea 轉陣列）
       const originsInput = (document.getElementById('webauthnRpOrigins') as HTMLTextAreaElement).value.trim()
-      data.WEBAUTHN_RP_ORIGINS = originsInput
-        ? originsInput.split('\n').filter(line => line.trim())
-        : []
+      data.WEBAUTHN_RP_ORIGINS = originsInput ? originsInput.split('\n').filter((line) => line.trim()) : []
 
       // 處理 WebAuthn Hints（checkbox 組轉陣列）
       data.WEBAUTHN_HINTS = Array.from(
         document.querySelectorAll<HTMLInputElement>('[name="WEBAUTHN_HINTS"]:checked'),
-      ).map(el => el.value)
+      ).map((el) => el.value)
 
       // 發送請求
       const res = await fetch('/api/config', {
@@ -264,21 +257,18 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify(data),
       })
 
-      const result = await res.json() as { success: boolean, message?: string }
+      const result = (await res.json()) as { success: boolean; message?: string }
 
       if (result.success) {
         toast.success('配置保存成功')
         // 重新載入配置
         setTimeout(() => loadConfig(), 1000)
-      }
-      else {
+      } else {
         throw new Error(result.message || '保存失敗')
       }
-    }
-    catch (error) {
+    } catch (error) {
       toast.error(`保存配置失敗：${(error as Error).message}`)
-    }
-    finally {
+    } finally {
       // 恢復按鈕狀態
       submitBtn.disabled = false
       submitText.classList.remove('hidden')
@@ -293,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
     for (let i = 0; i < 32; i++) {
       token += chars[Math.floor(Math.random() * chars.length)]
     }
-    (document.getElementById('apiToken') as HTMLInputElement).value = token
+    ;(document.getElementById('apiToken') as HTMLInputElement).value = token
     toast.success('令牌已生成')
   })
 
@@ -313,9 +303,9 @@ document.addEventListener('DOMContentLoaded', () => {
   })
 
   // 暴露函數到全域作用域（供 HTML onclick 使用）
-  ;(window as any).registerPasskey = registerPasskey
-  ;(window as any).deletePasskey = deletePasskey
-  ;(window as any).editPasskeyNickname = editPasskeyNickname
+  window.registerPasskey = registerPasskey
+  window.deletePasskey = deletePasskey
+  window.editPasskeyNickname = editPasskeyNickname
 })
 
 /**
@@ -323,12 +313,11 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 async function loadPasskeys(): Promise<void> {
   const passkeyList = document.getElementById('passkeyList')
-  if (!passkeyList)
-    return
+  if (!passkeyList) return
 
   try {
     const res = await fetch('/api/webauthn/credentials')
-    const data = await res.json() as Api.SuccessResponse<string[]>
+    const data = (await res.json()) as Api.SuccessResponse<Omit<StoredCredential, 'publicKey'>[]>
 
     if (!data.success) {
       passkeyList.innerHTML = '<div class="text-center text-base-content/70 py-8">載入失敗</div>'
@@ -363,7 +352,9 @@ async function loadPasskeys(): Promise<void> {
     }
 
     // 渲染列表
-    passkeyList.innerHTML = credentials.map((cred: any) => `
+    passkeyList.innerHTML = credentials
+      .map(
+        (cred) => `
       <div class="card bg-base-200">
         <div class="card-body p-4">
           <div class="flex justify-between items-start">
@@ -396,14 +387,15 @@ async function loadPasskeys(): Promise<void> {
           </div>
         </div>
       </div>
-    `).join('')
+    `,
+      )
+      .join('')
 
     // 重新初始化 Lucide icons
     if (window.lucide) {
       window.lucide.createIcons()
     }
-  }
-  catch {
+  } catch {
     passkeyList.innerHTML = '<div class="text-center text-error py-8">載入失敗</div>'
   }
 }
@@ -441,7 +433,7 @@ async function registerPasskey(clickedButton?: HTMLButtonElement): Promise<void>
       credentials: 'include',
     })
 
-    const optionsData = await optionsRes.json() as Api.SuccessResponse<PublicKeyCredentialCreationOptionsJSON>
+    const optionsData = (await optionsRes.json()) as Api.SuccessResponse<PublicKeyCredentialCreationOptionsJSON>
 
     if (!optionsData.success) {
       toast.error(optionsData.message || '無法開始註冊')
@@ -461,29 +453,25 @@ async function registerPasskey(clickedButton?: HTMLButtonElement): Promise<void>
       body: JSON.stringify(credential),
     })
 
-    const verifyData = await verifyRes.json() as Api.SuccessResponse<null>
+    const verifyData = (await verifyRes.json()) as Api.SuccessResponse<null>
 
     if (verifyData.success) {
       toast.success('Passkey 註冊成功！')
       // 重新載入列表
       loadPasskeys()
-    }
-    else {
+    } else {
       toast.error(verifyData.message || '註冊失敗')
     }
-  }
-  catch (error: any) {
+  } catch (caught) {
+    const error = caught instanceof Error ? caught : new Error(String(caught))
     if (error.name === 'NotAllowedError') {
       toast.error('註冊已取消')
-    }
-    else if (error.name === 'NotSupportedError') {
+    } else if (error.name === 'NotSupportedError') {
       toast.error('您的瀏覽器不支援 WebAuthn')
-    }
-    else {
+    } else {
       toast.error(`註冊失敗: ${error.message || '未知錯誤'}`)
     }
-  }
-  finally {
+  } finally {
     const registerBtn = document.getElementById('registerPasskeyBtn') as HTMLButtonElement
     const registerIcon = document.getElementById('registerPasskeyIcon')
     const registerLoading = document.getElementById('registerPasskeyLoading')
@@ -519,17 +507,15 @@ async function deletePasskey(credentialID: string): Promise<void> {
       credentials: 'include',
     })
 
-    const data = await res.json() as Api.SuccessResponse<null>
+    const data = (await res.json()) as Api.SuccessResponse<null>
 
     if (data.success) {
       toast.success('Passkey 已刪除')
       loadPasskeys()
-    }
-    else {
+    } else {
       toast.error(data.message || '刪除失敗')
     }
-  }
-  catch (error) {
+  } catch (error) {
     toast.error(`刪除失敗：${(error as Error).message}`)
   }
 }
@@ -559,17 +545,15 @@ async function editPasskeyNickname(credentialID: string): Promise<void> {
       body: JSON.stringify({ nickname }),
     })
 
-    const data = await res.json() as Api.SuccessResponse<null>
+    const data = (await res.json()) as Api.SuccessResponse<null>
 
     if (data.success) {
       toast.success('暱稱更新成功')
       loadPasskeys()
-    }
-    else {
+    } else {
       toast.error(data.message || '更新失敗')
     }
-  }
-  catch (error) {
+  } catch (error) {
     toast.error(`更新失敗：${(error as Error).message}`)
   }
 }

@@ -1,11 +1,11 @@
 import type { Config } from '../../types'
-import type { ChannelResult, NotificationOptions, NotificationResult } from './types'
 import * as logger from '../../utils/logger'
 import { isNotificationAllowedAtHour } from '../config'
 import { sendBarkNotification } from './channels/bark'
 import { sendResendNotification } from './channels/resend'
 import { sendTelegramNotification } from './channels/telegram'
 import { sendWebhookNotification } from './channels/webhook'
+import type { ChannelResult, NotificationOptions, NotificationResult } from './types'
 
 /**
  * 渠道映射表
@@ -79,8 +79,7 @@ export async function sendNotificationToAllChannels(
 
     try {
       return await sender(options, config)
-    }
-    catch (error) {
+    } catch (error) {
       logger.error(`渠道 ${channelName} 發送異常`, error, { prefix: 'Notifier' })
       return {
         channel: channelName,
@@ -96,8 +95,7 @@ export async function sendNotificationToAllChannels(
   const results: ChannelResult[] = settledResults.map((result, index) => {
     if (result.status === 'fulfilled') {
       return result.value
-    }
-    else {
+    } else {
       return {
         channel: enabledChannels[index],
         success: false,
@@ -106,8 +104,8 @@ export async function sendNotificationToAllChannels(
     }
   })
 
-  const successCount = results.filter(r => r.success).length
-  const failureCount = results.filter(r => !r.success).length
+  const successCount = results.filter((r) => r.success).length
+  const failureCount = results.filter((r) => !r.success).length
 
   // 5. 記錄摘要
   logger.notification(`通知發送完成: 成功 ${successCount}/${results.length}`, {
@@ -115,7 +113,7 @@ export async function sendNotificationToAllChannels(
       title,
       successCount,
       failureCount,
-      results: results.map(r => ({
+      results: results.map((r) => ({
         channel: r.channel,
         success: r.success,
         error: r.error,

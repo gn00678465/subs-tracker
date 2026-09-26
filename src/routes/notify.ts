@@ -1,8 +1,9 @@
-import type { Context } from 'hono'
-import type { HonoEnv } from '@/types'
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
+import type { Context } from 'hono'
+
 import { getConfig } from '@/services/config'
 import { sendNotificationToAllChannels } from '@/services/notifier'
+import type { HonoEnv } from '@/types'
 import * as logger from '@/utils/logger'
 
 // 創建第三方通知路由實例
@@ -18,13 +19,13 @@ const NotifyRequestSchema = z.object({
     example: '這是一條測試通知',
     description: '通知內容',
   }),
-  tags: z.union([
-    z.array(z.string()),
-    z.string(),
-  ]).optional().openapi({
-    example: ['測試', '重要'],
-    description: '標籤列表（可以是陣列或逗號分隔的字符串）',
-  }),
+  tags: z
+    .union([z.array(z.string()), z.string()])
+    .optional()
+    .openapi({
+      example: ['測試', '重要'],
+      description: '標籤列表（可以是陣列或逗號分隔的字符串）',
+    }),
 })
 
 // 成功響應 Schema
@@ -46,10 +47,14 @@ const NotifyErrorResponseSchema = z.object({
   message: z.string().openapi({
     example: '訪問未授權，令牌無效或缺失',
   }),
-  errors: z.array(z.object({
-    path: z.string(),
-    message: z.string(),
-  })).optional(),
+  errors: z
+    .array(
+      z.object({
+        path: z.string(),
+        message: z.string(),
+      }),
+    )
+    .optional(),
   code: z.string().optional().openapi({
     example: 'UNAUTHORIZED',
   }),
@@ -62,7 +67,7 @@ const NotifyErrorResponseSchema = z.object({
  * 2. Authorization Header：Bearer <token>
  * 3. Query 參數：?token=xxx
  */
-async function verifyApiToken(c: Context<HonoEnv>): Promise<{ valid: boolean, message?: string }> {
+async function verifyApiToken(c: Context<HonoEnv>): Promise<{ valid: boolean; message?: string }> {
   const config = await getConfig(c.env)
   const expectedToken = config.API_TOKEN || ''
 
@@ -101,17 +106,21 @@ const notifyRoute = createRoute({
   path: '/{token}',
   tags: ['Notify'],
   summary: '第三方通知觸發',
-  description: '通過第三方 API Token 觸發多渠道通知發送。支援三種 Token 傳遞方式：URL 路徑、Authorization Header、Query 參數。',
+  description:
+    '通過第三方 API Token 觸發多渠道通知發送。支援三種 Token 傳遞方式：URL 路徑、Authorization Header、Query 參數。',
   request: {
     params: z.object({
-      token: z.string().optional().openapi({
-        param: {
-          name: 'token',
-          in: 'path',
-        },
-        example: 'your-api-token-here',
-        description: 'API Token（可選，也可通過 Header 或 Query 傳遞）',
-      }),
+      token: z
+        .string()
+        .optional()
+        .openapi({
+          param: {
+            name: 'token',
+            in: 'path',
+          },
+          example: 'your-api-token-here',
+          description: 'API Token（可選，也可通過 Header 或 Query 傳遞）',
+        }),
     }),
     body: {
       content: {
@@ -177,17 +186,23 @@ notify.openapi(notifyRoute, async (c) => {
     if (!tokenValidation.valid) {
       logger.warning(`第三方 API Token 驗證失敗: ${tokenValidation.message}`, { prefix: 'Notify' })
       if (tokenValidation.message?.includes('禁用')) {
-        return c.json({
-          success: false,
-          message: tokenValidation.message,
-          code: 'FORBIDDEN',
-        }, 403)
+        return c.json(
+          {
+            success: false,
+            message: tokenValidation.message,
+            code: 'FORBIDDEN',
+          },
+          403,
+        )
       }
-      return c.json({
-        success: false,
-        message: tokenValidation.message || '訪問未授權',
-        code: 'UNAUTHORIZED',
-      }, 401)
+      return c.json(
+        {
+          success: false,
+          message: tokenValidation.message || '訪問未授權',
+          code: 'UNAUTHORIZED',
+        },
+        401,
+      )
     }
 
     const { title, content, tags } = c.req.valid('json')
@@ -195,12 +210,10 @@ notify.openapi(notifyRoute, async (c) => {
     logger.info(`第三方 API 觸發通知: ${title}`, { prefix: 'Notify' })
 
     // 處理標籤
-    const bodyTagsRaw = Array.isArray(tags)
-      ? tags
-      : (typeof tags === 'string' ? tags.split(/[,，\s]+/) : [])
+    const bodyTagsRaw = Array.isArray(tags) ? tags : typeof tags === 'string' ? tags.split(/[,，\s]+/) : []
     const bodyTags = bodyTagsRaw
-      .filter(tag => typeof tag === 'string' && tag.trim().length > 0)
-      .map(tag => tag.trim())
+      .filter((tag) => typeof tag === 'string' && tag.trim().length > 0)
+      .map((tag) => tag.trim())
 
     // 發送通知到所有渠道
     const config = await getConfig(c.env)
@@ -221,38 +234,47 @@ notify.openapi(notifyRoute, async (c) => {
 
     // 部分成功也返回成功（容錯設計）
     if (result.successCount > 0) {
-      return c.json({
-        success: true,
-        data: {
-          msgid: `MSGID${Date.now()}`,
-          totalChannels: result.totalChannels,
-          successCount: result.successCount,
+      return c.json(
+        {
+          success: true,
+          data: {
+            msgid: `MSGID${Date.now()}`,
+            totalChannels: result.totalChannels,
+            successCount: result.successCount,
+          },
+          message: `發送成功 (${result.successCount}/${result.totalChannels})`,
         },
-        message: `發送成功 (${result.successCount}/${result.totalChannels})`,
-      }, 200)
+        200,
+      )
+    } else if (result.totalChannels === 0) {
+      return c.json(
+        {
+          success: false,
+          message: '沒有啟用任何通知渠道，請在配置頁面啟用並配置',
+          code: 'NO_CHANNELS',
+        },
+        400,
+      )
+    } else {
+      return c.json(
+        {
+          success: false,
+          message: '所有通知渠道發送失敗',
+          code: 'ALL_FAILED',
+        },
+        500,
+      )
     }
-    else if (result.totalChannels === 0) {
-      return c.json({
-        success: false,
-        message: '沒有啟用任何通知渠道，請在配置頁面啟用並配置',
-        code: 'NO_CHANNELS',
-      }, 400)
-    }
-    else {
-      return c.json({
-        success: false,
-        message: '所有通知渠道發送失敗',
-        code: 'ALL_FAILED',
-      }, 500)
-    }
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('第三方 API 發送通知失敗', error, { prefix: 'Notify' })
-    return c.json({
-      success: false,
-      message: '第三方 API 發送通知失敗',
-      code: 'INTERNAL_ERROR',
-    }, 500)
+    return c.json(
+      {
+        success: false,
+        message: '第三方 API 發送通知失敗',
+        code: 'INTERNAL_ERROR',
+      },
+      500,
+    )
   }
 })
 

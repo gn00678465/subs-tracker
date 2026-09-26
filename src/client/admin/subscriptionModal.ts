@@ -11,8 +11,7 @@ function toggleExpiryDateField() {
   if (hasEndDateToggle.checked) {
     expiryDateField.style.display = ''
     expiryDateInput.required = true
-  }
-  else {
+  } else {
     expiryDateField.style.display = 'none'
     expiryDateInput.required = false
   }
@@ -70,7 +69,7 @@ async function handleFormSubmit(evt: Event) {
       throw new Error('保存失敗')
     }
 
-    const result = await response.json() as { data?: { id?: string } }
+    const result = (await response.json()) as { data?: { id?: string } }
     const savedId = id || result.data?.id
 
     toast.success(id ? '更新成功' : '添加成功')
@@ -78,27 +77,29 @@ async function handleFormSubmit(evt: Event) {
     modal?.close()
 
     // 派發成功事件
-    document.dispatchEvent(new CustomEvent('subscription-saved', {
-      detail: {
-        subscriptionId: savedId,
-        action: id ? 'update' : 'create',
-      },
-    }))
-  }
-  catch (error) {
+    document.dispatchEvent(
+      new CustomEvent('subscription-saved', {
+        detail: {
+          subscriptionId: savedId,
+          action: id ? 'update' : 'create',
+        },
+      }),
+    )
+  } catch (error) {
     // eslint-disable-next-line no-console
     console.error('保存失敗:', error)
     toast.error('保存失敗，請稍後再試')
 
     // 派發失敗事件
-    document.dispatchEvent(new CustomEvent('subscription-save-failed', {
-      detail: {
-        error: error instanceof Error ? error : new Error(String(error)),
-        subscriptionId: id || undefined,
-      },
-    }))
-  }
-  finally {
+    document.dispatchEvent(
+      new CustomEvent('subscription-save-failed', {
+        detail: {
+          error: error instanceof Error ? error : new Error(String(error)),
+          subscriptionId: id || undefined,
+        },
+      }),
+    )
+  } finally {
     if (submitBtn) {
       submitBtn.disabled = false
     }

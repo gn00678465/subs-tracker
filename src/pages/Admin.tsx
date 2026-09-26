@@ -1,5 +1,6 @@
 import type { FC } from 'hono/jsx'
 import { Script } from 'vite-ssr-components/hono'
+
 import { SubscriptionModal } from '../components/admin/SubscriptionModal'
 import { Layout } from '../components/Layout'
 import { Navbar } from '../components/Navbar'
@@ -30,7 +31,10 @@ export const AdminPage: FC<AdminPageProps> = ({ username }) => {
                     placeholder="搜索名稱、類型或備註..."
                     class="input input-bordered w-full pl-10"
                   />
-                  <i data-lucide="search" class="size-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"></i>
+                  <i
+                    data-lucide="search"
+                    class="size-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"
+                  ></i>
                 </div>
               </div>
 
@@ -62,22 +66,28 @@ export const AdminPage: FC<AdminPageProps> = ({ username }) => {
                 role="rowgroup"
                 class="hidden md:grid md:grid-cols-[1.5fr_1fr_1.2fr_1fr_0.5fr_1fr] gap-4 px-4 py-3 bg-base-100 border-b border-base-content/10 font-semibold text-sm sticky top-0 z-10"
               >
-                <div role="columnheader" class="flex items-center gap-1">名稱</div>
-                <div role="columnheader" class="flex items-center gap-1">類型</div>
+                <div role="columnheader" class="flex items-center gap-1">
+                  名稱
+                </div>
+                <div role="columnheader" class="flex items-center gap-1">
+                  類型
+                </div>
                 <div role="columnheader" class="flex items-center gap-1">
                   到期時間
                 </div>
-                <div role="columnheader" class="flex items-center gap-1">提醒設置</div>
-                <div role="columnheader" class="flex items-center gap-1">狀態</div>
-                <div role="columnheader" class="flex items-center gap-1">操作</div>
+                <div role="columnheader" class="flex items-center gap-1">
+                  提醒設置
+                </div>
+                <div role="columnheader" class="flex items-center gap-1">
+                  狀態
+                </div>
+                <div role="columnheader" class="flex items-center gap-1">
+                  操作
+                </div>
               </div>
 
               {/* 內容區域 */}
-              <div
-                id="subscriptionsBody"
-                role="rowgroup"
-                class="[&>*:nth-child(even)]:bg-base-200"
-              >
+              <div id="subscriptionsBody" role="rowgroup" class="[&>*:nth-child(even)]:bg-base-200">
                 {/* 初始 loading 狀態 */}
                 <div role="row" class="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_1.2fr_1fr_0.5fr_1fr]">
                   <div role="cell" class="md:col-span-6 text-center py-8">

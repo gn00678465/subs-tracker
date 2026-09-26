@@ -1,4 +1,5 @@
 import { resolve } from 'node:path'
+
 import { cloudflare } from '@cloudflare/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vite'
@@ -8,7 +9,7 @@ export default defineConfig({
   plugins: [cloudflare(), ssrPlugin(), tailwindcss()],
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src'),
+      '@': resolve(import.meta.dirname, 'src'),
     },
   },
 })

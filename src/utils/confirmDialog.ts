@@ -21,8 +21,7 @@ let cancelButton: HTMLButtonElement | null = null
  * Initialize confirm dialog container (called on first use)
  */
 function initConfirmDialog(): void {
-  if (dialogElement)
-    return // Already initialized
+  if (dialogElement) return // Already initialized
 
   // Create dialog element
   dialogElement = document.createElement('dialog')
@@ -76,14 +75,9 @@ function initConfirmDialog(): void {
  * @param options - Optional configuration (variant, button labels)
  * @returns Promise that resolves to true if confirmed, false if cancelled
  */
-export function confirmDialog(
-  title: string,
-  content: string,
-  options?: ConfirmDialogOptions,
-): Promise<boolean> {
+export function confirmDialog(title: string, content: string, options?: ConfirmDialogOptions): Promise<boolean> {
   // Ensure dialog exists
-  if (!dialogElement)
-    initConfirmDialog()
+  if (!dialogElement) initConfirmDialog()
 
   // Extract options with defaults
   const variant = options?.variant || 'info'
@@ -143,8 +137,7 @@ export function confirmDialog(
  * Cleanup confirm dialog (optional, for unmounting)
  */
 export function destroyConfirmDialog(): void {
-  if (dialogElement && dialogElement.parentNode)
-    dialogElement.parentNode.removeChild(dialogElement)
+  if (dialogElement && dialogElement.parentNode) dialogElement.parentNode.removeChild(dialogElement)
 
   dialogElement = null
   titleElement = null
@@ -160,5 +153,4 @@ declare global {
   }
 }
 
-if (typeof window !== 'undefined')
-  window.confirmDialog = confirmDialog
+if (typeof window !== 'undefined') window.confirmDialog = confirmDialog

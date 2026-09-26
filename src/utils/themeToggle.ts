@@ -32,8 +32,7 @@ export function initTheme(): void {
  */
 function toggleTheme(event: Event): void {
   const toggle = document.getElementById('theme-toggle') as HTMLInputElement | null
-  if (!toggle)
-    return
+  if (!toggle) return
 
   const newTheme: Theme = toggle.checked ? 'dark' : 'light'
 
@@ -54,14 +53,12 @@ function toggleTheme(event: Event): void {
  */
 export function setupThemeToggle(): void {
   const toggle = document.getElementById('theme-toggle') as HTMLInputElement | null
-  if (!toggle)
-    return
+  if (!toggle) return
 
   // 關鍵：監聽 label 的 click 事件（而非 checkbox 的 change 事件）
   // 因為 change 事件沒有滑鼠座標，而 circularReveal 需要座標來計算動畫原點
   const label = toggle.closest('label')
-  if (!label)
-    return
+  if (!label) return
 
   label.addEventListener('click', (event) => {
     // 阻止預設行為，手動控制 checkbox 狀態
@@ -84,8 +81,7 @@ if (typeof document !== 'undefined') {
       initTheme()
       setupThemeToggle()
     })
-  }
-  else {
+  } else {
     initTheme()
     setupThemeToggle()
   }

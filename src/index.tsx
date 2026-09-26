@@ -1,8 +1,8 @@
-import type { Bindings, Subscription } from './types'
 import { cors } from 'hono/cors'
 import { csrf } from 'hono/csrf'
 import { logger } from 'hono/logger'
 import { prettyJSON } from 'hono/pretty-json'
+
 import { optionalAuthMiddleware, pageAuthMiddleware } from './middleware/auth'
 import { createOpenAPIApp } from './openapi'
 import { AdminPage } from './pages/Admin'
@@ -17,6 +17,7 @@ import webauthn from './routes/webauthn'
 import { getConfig, isNotificationAllowedAtHour } from './services/config'
 import { batchUpdateSubscriptions, getAllSubscriptions } from './services/subscription'
 import { processSubscriptionReminder } from './services/subscription_cron'
+import type { Bindings, Subscription } from './types'
 import * as loggerUtil from './utils/logger'
 import { getCurrentTime } from './utils/time'
 
@@ -115,9 +116,7 @@ export default {
 
       // 4. 並行處理所有訂閱（僅讀取和計算，不寫入 KV）
       const currentTime = getCurrentTime()
-      const processPromises = subscriptions.map(sub =>
-        processSubscriptionReminder(sub, currentTime, config),
-      )
+      const processPromises = subscriptions.map((sub) => processSubscriptionReminder(sub, currentTime, config))
 
       const results = await Promise.allSettled(processPromises)
 
@@ -138,8 +137,7 @@ export default {
           loggerUtil.error('[Cron] 批量更新訂閱失敗', new Error(updateResult.message || '未知錯誤'), {
             prefix: 'Cron',
           })
-        }
-        else {
+        } else {
           loggerUtil.info(`[Cron] 成功更新 ${updateResult.updatedCount} 個訂閱`, { prefix: 'Cron' })
         }
       }
@@ -159,18 +157,13 @@ export default {
           const { action, success } = result.value
           if (success) {
             stats.processed++
-            if (action === 'reminded')
-              stats.reminded++
-            else if (action === 'renewed')
-              stats.renewed++
-            else if (action === 'skipped')
-              stats.skipped++
-          }
-          else {
+            if (action === 'reminded') stats.reminded++
+            else if (action === 'renewed') stats.renewed++
+            else if (action === 'skipped') stats.skipped++
+          } else {
             stats.failed++
           }
-        }
-        else {
+        } else {
           stats.failed++
           loggerUtil.error(`[Cron] 處理失敗: ${subscriptions[index].name}`, result.reason, {
             prefix: 'Cron',
@@ -182,8 +175,7 @@ export default {
         prefix: 'Cron',
         data: stats,
       })
-    }
-    catch (error) {
+    } catch (error) {
       loggerUtil.error('[Cron] 定時任務執行失敗', error, { prefix: 'Cron' })
     }
   },

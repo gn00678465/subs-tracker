@@ -1,8 +1,10 @@
-import type { Context } from 'hono'
-import type { JWTPayload } from '../types'
 import crypto from 'node:crypto'
+
+import type { Context } from 'hono'
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import { sign, verify } from 'hono/jwt'
+
+import type { JWTPayload } from '../types'
 import * as logger from './logger'
 
 // JWT 配置常量
@@ -43,8 +45,7 @@ export async function generateJWT(
 
   try {
     return await sign(payload, secret, 'HS256')
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('JWT 生成失敗', error, { prefix: 'JWT' })
     throw new Error('JWT 生成失敗')
   }
@@ -56,10 +57,7 @@ export async function generateJWT(
  * @param secret JWT 密鑰
  * @returns Payload 或 null（驗證失敗）
  */
-export async function verifyJWT(
-  token: string,
-  secret: string,
-): Promise<JWTPayload | null> {
+export async function verifyJWT(token: string, secret: string): Promise<JWTPayload | null> {
   try {
     if (!token || !secret) {
       logger.jwt('Token 或 Secret 為空')
@@ -84,8 +82,7 @@ export async function verifyJWT(
 
     logger.jwt(`驗證成功，用戶: ${payload.username}`)
     return payload
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('JWT 驗證過程出錯', error, { prefix: 'JWT' })
     return null
   }
@@ -151,17 +148,13 @@ export async function hashPassword(password: string, secret: string): Promise<st
   const keyData = encoder.encode(secret)
   const messageData = encoder.encode(password)
 
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    keyData,
-    { name: 'HMAC', hash: { name: 'SHA-256' } },
-    false,
-    ['sign'],
-  )
+  const cryptoKey = await crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: { name: 'SHA-256' } }, false, [
+    'sign',
+  ])
 
   const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData)
   const hashArray = Array.from(new Uint8Array(signature))
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
 /**
@@ -170,11 +163,7 @@ export async function hashPassword(password: string, secret: string): Promise<st
  * @param storedHash 存儲的 Hash 值
  * @param secret 密鑰
  */
-export async function verifyPassword(
-  inputPassword: string,
-  storedHash: string,
-  secret: string,
-): Promise<boolean> {
+export async function verifyPassword(inputPassword: string, storedHash: string, secret: string): Promise<boolean> {
   const inputHash = await hashPassword(inputPassword, secret)
   return inputHash === storedHash
 }

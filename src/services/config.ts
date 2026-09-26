@@ -104,9 +104,10 @@ export async function getConfig(env: Bindings): Promise<Config> {
       ENABLED_NOTIFIERS: Array.isArray(stored.ENABLED_NOTIFIERS)
         ? stored.ENABLED_NOTIFIERS
         : DEFAULT_CONFIG.ENABLED_NOTIFIERS,
-      REMINDER_MODE: (stored.REMINDER_MODE === 'ONCE' || stored.REMINDER_MODE === 'DAILY')
-        ? stored.REMINDER_MODE
-        : DEFAULT_CONFIG.REMINDER_MODE,
+      REMINDER_MODE:
+        stored.REMINDER_MODE === 'ONCE' || stored.REMINDER_MODE === 'DAILY'
+          ? stored.REMINDER_MODE
+          : DEFAULT_CONFIG.REMINDER_MODE,
 
       // WebAuthn 配置
       WEBAUTHN_ENABLED: stored.WEBAUTHN_ENABLED ?? DEFAULT_CONFIG.WEBAUTHN_ENABLED,
@@ -116,13 +117,12 @@ export async function getConfig(env: Bindings): Promise<Config> {
         ? stored.WEBAUTHN_RP_ORIGINS
         : DEFAULT_CONFIG.WEBAUTHN_RP_ORIGINS,
       WEBAUTHN_ATTESTATION: stored.WEBAUTHN_ATTESTATION || DEFAULT_CONFIG.WEBAUTHN_ATTESTATION,
-      WEBAUTHN_AUTHENTICATOR_ATTACHMENT: stored.WEBAUTHN_AUTHENTICATOR_ATTACHMENT ?? DEFAULT_CONFIG.WEBAUTHN_AUTHENTICATOR_ATTACHMENT,
+      WEBAUTHN_AUTHENTICATOR_ATTACHMENT:
+        stored.WEBAUTHN_AUTHENTICATOR_ATTACHMENT ?? DEFAULT_CONFIG.WEBAUTHN_AUTHENTICATOR_ATTACHMENT,
       WEBAUTHN_RESIDENT_KEY: stored.WEBAUTHN_RESIDENT_KEY || DEFAULT_CONFIG.WEBAUTHN_RESIDENT_KEY,
       WEBAUTHN_USER_VERIFICATION: stored.WEBAUTHN_USER_VERIFICATION || DEFAULT_CONFIG.WEBAUTHN_USER_VERIFICATION,
       WEBAUTHN_TIMEOUT: stored.WEBAUTHN_TIMEOUT || DEFAULT_CONFIG.WEBAUTHN_TIMEOUT,
-      WEBAUTHN_HINTS: Array.isArray(stored.WEBAUTHN_HINTS)
-        ? stored.WEBAUTHN_HINTS
-        : DEFAULT_CONFIG.WEBAUTHN_HINTS,
+      WEBAUTHN_HINTS: Array.isArray(stored.WEBAUTHN_HINTS) ? stored.WEBAUTHN_HINTS : DEFAULT_CONFIG.WEBAUTHN_HINTS,
     }
 
     // 檢測並強制升級明文密碼
@@ -145,8 +145,7 @@ export async function getConfig(env: Bindings): Promise<Config> {
 
     logger.config(`配置加載完成，用戶名: ${config.ADMIN_USERNAME}`)
     return config
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('獲取配置失敗', error, { prefix: 'Config' })
 
     // 返回預設配置（含自動生成的 JWT_SECRET）
@@ -163,7 +162,7 @@ export async function getConfig(env: Bindings): Promise<Config> {
 export async function updateConfig(
   newConfig: Partial<Config>,
   env: Bindings,
-): Promise<{ success: boolean, message?: string }> {
+): Promise<{ success: boolean; message?: string }> {
   try {
     // 讀取現有配置
     const currentConfig = await getConfig(env)
@@ -177,10 +176,7 @@ export async function updateConfig(
     // 特殊處理：ADMIN_PASSWORD 需要加密
     if (newConfig.ADMIN_PASSWORD) {
       logger.config('開始加密管理員密碼')
-      updatedConfig.ADMIN_PASSWORD = await hashPassword(
-        newConfig.ADMIN_PASSWORD,
-        currentConfig.JWT_SECRET,
-      )
+      updatedConfig.ADMIN_PASSWORD = await hashPassword(newConfig.ADMIN_PASSWORD, currentConfig.JWT_SECRET)
       logger.config('管理員密碼已成功加密並更新')
     }
 
@@ -193,7 +189,9 @@ export async function updateConfig(
     if (newConfig.WEBAUTHN_RP_ORIGINS !== undefined) {
       const origins = Array.isArray(newConfig.WEBAUTHN_RP_ORIGINS)
         ? newConfig.WEBAUTHN_RP_ORIGINS
-        : String(newConfig.WEBAUTHN_RP_ORIGINS).split('\n').filter(line => line.trim())
+        : String(newConfig.WEBAUTHN_RP_ORIGINS)
+            .split('\n')
+            .filter((line) => line.trim())
       updatedConfig.WEBAUTHN_RP_ORIGINS = origins
     }
 
@@ -202,8 +200,7 @@ export async function updateConfig(
 
     logger.config('配置更新成功')
     return { success: true }
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('更新配置失敗', error, { prefix: 'Config' })
     return {
       success: false,
@@ -231,7 +228,7 @@ export function getSafeConfig(config: Config): Omit<Config, 'JWT_SECRET' | 'ADMI
  * - [0, 1, 2, ...]：數字陣列
  * - ['0', '1', '2', ...]：字串陣列（轉為數字）
  */
-function normalizeNotificationHours(hours: any): number[] {
+function normalizeNotificationHours(hours: unknown): number[] {
   // 未設定或空陣列：允許所有小時
   if (!hours || (Array.isArray(hours) && hours.length === 0)) {
     return []
@@ -245,8 +242,8 @@ function normalizeNotificationHours(hours: any): number[] {
   // 字串或數字陣列：轉為數字並過濾有效值
   if (Array.isArray(hours)) {
     return hours
-      .map(h => typeof h === 'string' ? Number.parseInt(h, 10) : h)
-      .filter(h => !Number.isNaN(h) && h >= 0 && h <= 23)
+      .map((h) => (typeof h === 'string' ? Number.parseInt(h, 10) : h))
+      .filter((h) => !Number.isNaN(h) && h >= 0 && h <= 23)
   }
 
   // 無效格式：回退到預設

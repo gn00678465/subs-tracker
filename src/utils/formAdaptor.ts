@@ -76,8 +76,7 @@ function toFormDateString(isoStr: string): string {
  * 規範化字符串：trim 並將空字符串轉為 undefined
  */
 function normalizeString(value: unknown): string | undefined {
-  if (typeof value !== 'string')
-    return undefined
+  if (typeof value !== 'string') return undefined
   const trimmed = value.trim()
   return trimmed || undefined
 }
@@ -86,8 +85,7 @@ function normalizeString(value: unknown): string | undefined {
  * 解析數字字符串
  */
 function parseNumber(value: unknown): number | undefined {
-  if (!value)
-    return undefined
+  if (!value) return undefined
   const num = Number.parseInt(String(value))
   return Number.isNaN(num) ? undefined : num
 }
@@ -123,7 +121,7 @@ export function toApiFormat(formData: FormData): Partial<Subscription> {
     expiryDate: expiryDateISO,
     periodValue: parseNumber(raw.periodValue),
     periodUnit: raw.periodUnit as 'day' | 'month' | 'year',
-    periodMethod: normalizeString(raw.periodMethod) as any,
+    periodMethod: normalizeString(raw.periodMethod) as Subscription['periodMethod'],
     website: normalizeString(raw.website),
     reminderMe: parseNumber(raw.reminderMe),
     notes: normalizeString(raw.notes),

@@ -1,7 +1,8 @@
-import type { Subscription } from '../../types/index'
 import { differenceInDays } from 'date-fns/differenceInDays'
 import { differenceInHours } from 'date-fns/differenceInHours'
 import { differenceInWeeks } from 'date-fns/differenceInWeeks'
+
+import type { Subscription } from '../../types/index'
 
 /**
  * 格式化日期為 zh-TW 格式
@@ -76,13 +77,11 @@ export function getSubscriptionStatus(
   expiryDate: Date,
   currentTime: Date = new Date(),
 ): 'inactive' | 'expired' | 'soon' | 'normal' {
-  if (!subscription.isActive)
-    return 'inactive'
+  if (!subscription.isActive) return 'inactive'
 
   const diffDays = differenceInDays(expiryDate, currentTime)
 
-  if (diffDays < 0)
-    return 'expired'
+  if (diffDays < 0) return 'expired'
 
   const reminderDays = subscription.reminderMe ?? 7
   const isSoon = diffDays >= 0 && diffDays <= reminderDays

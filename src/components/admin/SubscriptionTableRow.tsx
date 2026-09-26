@@ -1,6 +1,7 @@
 /** @jsxImportSource hono/jsx/dom */
 import type { Subscription } from '@/types/index'
 import { reminderOptions } from '@/utils/constants'
+
 import { formatDate, formatRemainingTime, getSubscriptionStatus } from './utils'
 
 interface SubscriptionTableRowProps {
@@ -31,18 +32,21 @@ export function SubscriptionTableRow({
     normal: <div class="badge badge-success badge-soft gap-2">正常</div>,
   }
 
-  const reminderStatus = reminderOptions.find(option => option.value === String(subscription.reminderMe))?.label || '無提醒'
+  const reminderStatus =
+    reminderOptions.find((option) => option.value === String(subscription.reminderMe))?.label || '無提醒'
 
   // Category badges
   const categoryBadges = subscription.category
     ?.split(/[\\/,\s]+/)
-    .filter(t => t.trim())
-    .map(cat => (
-      <div class="badge badge-outline badge-sm" key={cat}>{cat.trim()}</div>
+    .filter((t) => t.trim())
+    .map((cat) => (
+      <div class="badge badge-outline badge-sm" key={cat}>
+        {cat.trim()}
+      </div>
     ))
 
   // Period and reminder text
-  const unitText = subscription.periodUnit === 'day' ? '每天' : (subscription.periodUnit === 'month' ? '每月' : '每年')
+  const unitText = subscription.periodUnit === 'day' ? '每天' : subscription.periodUnit === 'month' ? '每月' : '每年'
   const reminderValue = subscription.reminderMe
 
   return (
@@ -55,15 +59,11 @@ export function SubscriptionTableRow({
         <div class="space-y-1">
           <div class="flex gap-2 items-center">
             <div class="text-base font-semibold">{subscription.name}</div>
-            {categoryBadges && categoryBadges.length > 0 && (
-              <div class="flex flex-wrap gap-1">{categoryBadges}</div>
-            )}
+            {categoryBadges && categoryBadges.length > 0 && <div class="flex flex-wrap gap-1">{categoryBadges}</div>}
           </div>
           {subscription.notes && (
             <div class="text-sm text-base-content/70">
-              {subscription.notes.length > 50
-                ? `${subscription.notes.substring(0, 50)}...`
-                : subscription.notes}
+              {subscription.notes.length > 50 ? `${subscription.notes.substring(0, 50)}...` : subscription.notes}
             </div>
           )}
 
@@ -77,13 +77,7 @@ export function SubscriptionTableRow({
       <div role="cell" class="flex flex-col gap-1">
         <span class="md:hidden text-xs text-base-content/50 mb-1">類型</span>
         <div>{subscription.customType || '其他'}</div>
-        {subscription.periodValue && (
-          <div class="text-sm text-base-content/70">
-            周期:
-            {' '}
-            {unitText}
-          </div>
-        )}
+        {subscription.periodValue && <div class="text-sm text-base-content/70">周期: {unitText}</div>}
       </div>
 
       <div role="cell" class="flex flex-col">
@@ -91,23 +85,15 @@ export function SubscriptionTableRow({
         <div class="space-y-1">
           <div>{formatDate(subscription.expiryDate)}</div>
           {subscription.startDate && (
-            <div class="text-xs text-base-content/50">
-              開始:
-              {' '}
-              {formatDate(subscription.startDate)}
-            </div>
+            <div class="text-xs text-base-content/50">開始: {formatDate(subscription.startDate)}</div>
           )}
         </div>
       </div>
 
       <div role="cell" class="flex flex-col">
         <span class="md:hidden text-xs text-base-content/50 mb-1">提醒設置</span>
-        <div>
-          {reminderStatus}
-        </div>
-        {reminderValue === 0 && (
-          <div class="text-sm text-base-content/70 mt-1">僅到期時提醒</div>
-        )}
+        <div>{reminderStatus}</div>
+        {reminderValue === 0 && <div class="text-sm text-base-content/70 mt-1">僅到期時提醒</div>}
       </div>
 
       <div role="cell" class="flex flex-col">
@@ -118,11 +104,7 @@ export function SubscriptionTableRow({
       <div role="cell" class="flex flex-col md:flex-row gap-2">
         <span class="md:hidden text-xs text-base-content/50 mb-1">操作</span>
         <div class="flex flex-wrap gap-1">
-          <button
-            class="btn btn-primary btn-xs"
-            onClick={() => onEdit(subscription.id)}
-            data-testid="edit-btn"
-          >
+          <button class="btn btn-primary btn-xs" onClick={() => onEdit(subscription.id)} data-testid="edit-btn">
             編輯
           </button>
           <button
@@ -132,32 +114,26 @@ export function SubscriptionTableRow({
           >
             測試
           </button>
-          <button
-            class="btn btn-error btn-xs"
-            onClick={() => onDelete(subscription.id)}
-            data-testid="delete-btn"
-          >
+          <button class="btn btn-error btn-xs" onClick={() => onDelete(subscription.id)} data-testid="delete-btn">
             刪除
           </button>
-          {subscription.isActive
-            ? (
-                <button
-                  class="btn btn-warning btn-xs"
-                  onClick={() => onToggleStatus(subscription.id, false)}
-                  data-testid="toggle-status-btn"
-                >
-                  停用
-                </button>
-              )
-            : (
-                <button
-                  class="btn btn-success btn-xs"
-                  onClick={() => onToggleStatus(subscription.id, true)}
-                  data-testid="toggle-status-btn"
-                >
-                  啟用
-                </button>
-              )}
+          {subscription.isActive ? (
+            <button
+              class="btn btn-warning btn-xs"
+              onClick={() => onToggleStatus(subscription.id, false)}
+              data-testid="toggle-status-btn"
+            >
+              停用
+            </button>
+          ) : (
+            <button
+              class="btn btn-success btn-xs"
+              onClick={() => onToggleStatus(subscription.id, true)}
+              data-testid="toggle-status-btn"
+            >
+              啟用
+            </button>
+          )}
         </div>
       </div>
     </div>

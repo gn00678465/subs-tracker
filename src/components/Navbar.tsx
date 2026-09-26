@@ -1,4 +1,5 @@
 import type { FC } from 'hono/jsx'
+
 import { Avatar } from './Avatar'
 import ToggleTheme from './ToggleTheme'
 
@@ -22,11 +23,7 @@ export const Navbar: FC<NavbarProps> = ({ currentPage, username }) => {
             </div>
             <div class="navbar-start">
               <div class="flex items-center gap-2">
-                <img
-                  src="/icon.svg"
-                  alt="SubsTracker Logo"
-                  class="w-8 h-8"
-                />
+                <img src="/icon.svg" alt="SubsTracker Logo" class="w-8 h-8" />
                 <span class="text-xl font-bold">SubsTracker</span>
               </div>
               <div id="systemTime" class="hidden lg:block ml-4 text-sm text-base-content/70"></div>
@@ -56,16 +53,14 @@ export const Navbar: FC<NavbarProps> = ({ currentPage, username }) => {
 
               <ToggleTheme />
 
-              {username
-                ? (
-                    <Avatar username={username} />
-                  )
-                : (
-                    <a href="/api/logout" class="btn btn-ghost btn-sm">
-                      <i data-lucide="log-out" class="size-6"></i>
-                      登出
-                    </a>
-                  )}
+              {username ? (
+                <Avatar username={username} />
+              ) : (
+                <a href="/api/logout" class="btn btn-ghost btn-sm">
+                  <i data-lucide="log-out" class="size-6"></i>
+                  登出
+                </a>
+              )}
             </div>
           </nav>
         </div>
@@ -80,10 +75,7 @@ export const Navbar: FC<NavbarProps> = ({ currentPage, username }) => {
               </a>
             </li>
             <li>
-              <a
-                href="/admin/config"
-                class={`btn btn-ghost btn-sm ${currentPage === 'config' ? 'btn-active' : ''}`}
-              >
+              <a href="/admin/config" class={`btn btn-ghost btn-sm ${currentPage === 'config' ? 'btn-active' : ''}`}>
                 <i data-lucide="settings" class="size-4"></i>
                 系統配置
               </a>

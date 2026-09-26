@@ -1,9 +1,10 @@
-import type { Subscription } from '../../types/index'
 /** @jsxImportSource hono/jsx/dom */
 import { render } from 'hono/jsx/dom'
 import { createIcons, TriangleAlert } from 'lucide'
+
 import { SubscriptionTable } from '../../components/admin/SubscriptionTable'
 import { ErrorState, LoadingState } from '../../components/admin/SubscriptionTableStates'
+import type { Subscription } from '../../types/index'
 
 export function renderSubscriptionTable(
   subscriptions: Subscription[],
@@ -17,8 +18,7 @@ export function renderSubscriptionTable(
   },
 ) {
   const tbody = document.getElementById('subscriptionsBody')
-  if (!tbody)
-    return
+  if (!tbody) return
 
   tbody.innerHTML = ''
   render(
@@ -41,16 +41,14 @@ export function renderSubscriptionTable(
 
 export function renderLoadingState() {
   const tbody = document.getElementById('subscriptionsBody')
-  if (!tbody)
-    return
+  if (!tbody) return
   tbody.innerHTML = ''
   render(<LoadingState />, tbody)
 }
 
 export function renderErrorState(message: string) {
   const tbody = document.getElementById('subscriptionsBody')
-  if (!tbody)
-    return
+  if (!tbody) return
   tbody.innerHTML = ''
   render(<ErrorState message={message} />, tbody)
 }

@@ -12,10 +12,7 @@ export function Avatar({ username }: AvatarProps) {
           <span class="text-xs">{username[0].toUpperCase()}</span>
         </div>
       </div>
-      <ul
-        tabindex={-1}
-        class="dropdown-content menu bg-base-100 rounded-box z-1 w-40 p-2 shadow-sm"
-      >
+      <ul tabindex={-1} class="dropdown-content menu bg-base-100 rounded-box z-1 w-40 p-2 shadow-sm">
         <li class="menu-title">
           <span>
             用戶：

@@ -11,16 +11,11 @@ import { applyAutoRenewal } from './subscription'
 /**
  * 判斷是否應該發送提醒（考慮通知頻率模式）
  */
-function shouldSendReminder(
-  subscription: Subscription,
-  currentTime: Date,
-  config: Config,
-): boolean {
+function shouldSendReminder(subscription: Subscription, currentTime: Date, config: Config): boolean {
   const mode = config.REMINDER_MODE || 'ONCE'
 
   // 檢查到期日期是否變更（手動續期）
-  if (subscription.lastCheckedExpiryDate
-    && subscription.lastCheckedExpiryDate !== subscription.expiryDate) {
+  if (subscription.lastCheckedExpiryDate && subscription.lastCheckedExpiryDate !== subscription.expiryDate) {
     return true
   }
 
@@ -31,8 +26,7 @@ function shouldSendReminder(
 
   if (mode === 'ONCE') {
     return false
-  }
-  else {
+  } else {
     // DAILY 模式：檢查今天是否已發送
     const lastSentDate = new Date(subscription.lastReminderSentAt)
     const lastSentMidnight = getMidnightTimestamp(lastSentDate, 'UTC')
@@ -49,7 +43,7 @@ export async function processSubscriptionReminder(
   subscription: Subscription,
   currentTime: Date,
   config: Config,
-): Promise<{ action: 'reminded' | 'renewed' | 'skipped', success: boolean, updatedSubscription?: Subscription }> {
+): Promise<{ action: 'reminded' | 'renewed' | 'skipped'; success: boolean; updatedSubscription?: Subscription }> {
   try {
     // 1. 前置檢查
     if (!subscription.isActive || !subscription.isReminderSet || !subscription.reminderMe || !subscription.expiryDate) {
@@ -93,27 +87,20 @@ export async function processSubscriptionReminder(
     }
 
     // 5. 發送提醒
-    const result = await sendSubscriptionReminder(
-      subscription.name,
-      subscription.expiryDate,
-      daysDiff,
-      config,
-    )
+    const result = await sendSubscriptionReminder(subscription.name, subscription.expiryDate, daysDiff, config)
 
     if (result.successCount > 0) {
       subscription.lastReminderSentAt = currentTime.toISOString()
       subscription.lastCheckedExpiryDate = subscription.expiryDate
       subscription.updatedAt = currentTime.toISOString()
       return { action: 'reminded', success: true, updatedSubscription: subscription }
-    }
-    else {
+    } else {
       if (needsUpdate) {
         return { action: 'reminded', success: false, updatedSubscription: subscription }
       }
       return { action: 'reminded', success: false }
     }
-  }
-  catch (error) {
+  } catch (error) {
     logger.error(`處理訂閱失敗: ${subscription.name}`, error, { prefix: 'Cron' })
     return { action: 'skipped', success: false }
   }

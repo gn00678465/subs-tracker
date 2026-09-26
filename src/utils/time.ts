@@ -50,8 +50,7 @@ export function isValidTimezone(timezone: string): boolean {
   try {
     new Date().toLocaleString('en-US', { timeZone: timezone })
     return true
-  }
-  catch {
+  } catch {
     return false
   }
 }
@@ -74,7 +73,7 @@ export function getDateParts(date: Date, timezone = 'UTC'): DateParts {
 
     const parts = formatter.formatToParts(date)
     const getValue = (type: Intl.DateTimeFormatPartTypes): number => {
-      const part = parts.find(p => p.type === type)
+      const part = parts.find((p) => p.type === type)
       return part ? Number(part.value) : 0
     }
 
@@ -86,8 +85,7 @@ export function getDateParts(date: Date, timezone = 'UTC'): DateParts {
       minute: getValue('minute'),
       second: getValue('second'),
     }
-  }
-  catch (error) {
+  } catch (error) {
     // Fallback to UTC
     logger.error(`Failed to parse timezone ${timezone}`, error)
     return {
@@ -132,8 +130,7 @@ export function formatTime(
     }
 
     return date.toLocaleString(locale, options)
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Time formatting error', error)
     return new Date(time).toISOString()
   }
@@ -146,17 +143,9 @@ export function getTimezoneOffset(timezone = 'UTC'): number {
   try {
     const now = new Date()
     const parts = getDateParts(now, timezone)
-    const zonedTimestamp = Date.UTC(
-      parts.year,
-      parts.month - 1,
-      parts.day,
-      parts.hour,
-      parts.minute,
-      parts.second,
-    )
+    const zonedTimestamp = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second)
     return Math.round((zonedTimestamp - now.getTime()) / MS_PER_HOUR)
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Failed to get timezone offset', error)
     return 0
   }
@@ -171,8 +160,7 @@ export function formatTimezoneDisplay(timezone = 'UTC'): string {
     const offsetStr = offset >= 0 ? `+${offset}` : `${offset}`
     const name = TIMEZONE_NAMES[timezone] || timezone
     return `${name} (UTC${offsetStr})`
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Failed to format timezone display', error)
     return timezone
   }
@@ -181,10 +169,7 @@ export function formatTimezoneDisplay(timezone = 'UTC'): string {
 /**
  * 計算過期時間
  */
-export function calculateExpirationTime(
-  expirationMinutes: number,
-  _timezone = 'UTC',
-): Date {
+export function calculateExpirationTime(expirationMinutes: number, _timezone = 'UTC'): Date {
   const now = new Date()
   return new Date(now.getTime() + expirationMinutes * 60 * 1000)
 }
@@ -228,16 +213,11 @@ export function extractTimezoneFromRequest(request: Request): string {
   // 3. Accept-Language 推斷
   const acceptLanguage = request.headers.get('Accept-Language')
   if (acceptLanguage) {
-    if (acceptLanguage.includes('zh-TW') || acceptLanguage.includes('zh-HK'))
-      return 'Asia/Taipei'
-    if (acceptLanguage.includes('zh'))
-      return 'Asia/Shanghai'
-    if (acceptLanguage.includes('en-US'))
-      return 'America/New_York'
-    if (acceptLanguage.includes('en-GB'))
-      return 'Europe/London'
-    if (acceptLanguage.includes('ja'))
-      return 'Asia/Tokyo'
+    if (acceptLanguage.includes('zh-TW') || acceptLanguage.includes('zh-HK')) return 'Asia/Taipei'
+    if (acceptLanguage.includes('zh')) return 'Asia/Shanghai'
+    if (acceptLanguage.includes('en-US')) return 'America/New_York'
+    if (acceptLanguage.includes('en-GB')) return 'Europe/London'
+    if (acceptLanguage.includes('ja')) return 'Asia/Tokyo'
   }
 
   // 4. 默認值
@@ -290,11 +270,7 @@ export function addYears(date: Date, years: number): Date {
 /**
  * 根據週期單位增加時間
  */
-export function addPeriod(
-  date: Date,
-  value: number,
-  unit: 'day' | 'month' | 'year',
-): Date {
+export function addPeriod(date: Date, value: number, unit: 'day' | 'month' | 'year'): Date {
   switch (unit) {
     case 'day':
       return addDays(date, value)

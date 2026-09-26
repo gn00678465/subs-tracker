@@ -25,11 +25,13 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
       })
 
       // 檢查更新（每小時）
-      setInterval(() => {
-        registration.update()
-      }, 60 * 60 * 1000)
-    }
-    catch (error) {
+      setInterval(
+        () => {
+          registration.update()
+        },
+        60 * 60 * 1000,
+      )
+    } catch (error) {
       console.error('[PWA] Service Worker registration failed:', error)
     }
   })

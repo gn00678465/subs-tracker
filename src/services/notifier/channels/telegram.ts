@@ -1,5 +1,5 @@
-import type { ChannelSender, ChannelValidator } from '../types'
 import * as logger from '../../../utils/logger'
+import type { ChannelSender, ChannelValidator } from '../types'
 
 /**
  * 驗證 Telegram 配置
@@ -7,10 +7,8 @@ import * as logger from '../../../utils/logger'
 export const validateTelegramConfig: ChannelValidator = (config) => {
   const missingFields: string[] = []
 
-  if (!config.TELEGRAM_BOT_TOKEN)
-    missingFields.push('TELEGRAM_BOT_TOKEN')
-  if (!config.TELEGRAM_CHAT_ID)
-    missingFields.push('TELEGRAM_CHAT_ID')
+  if (!config.TELEGRAM_BOT_TOKEN) missingFields.push('TELEGRAM_BOT_TOKEN')
+  if (!config.TELEGRAM_CHAT_ID) missingFields.push('TELEGRAM_CHAT_ID')
 
   return {
     isValid: missingFields.length === 0,
@@ -50,7 +48,7 @@ export const sendTelegramNotification: ChannelSender = async (options, config) =
       }),
     })
 
-    const result = await response.json() as any
+    const result = (await response.json()) as { ok: boolean; description?: string; result?: { message_id?: number } }
 
     if (!response.ok) {
       logger.notification(`Telegram 發送失敗: ${result.description || 'Unknown error'}`, {
@@ -71,8 +69,7 @@ export const sendTelegramNotification: ChannelSender = async (options, config) =
       message: '發送成功',
       details: result.result,
     }
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Telegram 發送異常', error, { prefix: 'Notifier' })
     return {
       channel: channelName,

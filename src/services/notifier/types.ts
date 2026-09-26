@@ -7,7 +7,7 @@ export interface NotificationOptions {
   title: string
   content: string
   timestamp?: string
-  metadata?: Record<string, any> // 額外元數據（如 tags）
+  metadata?: Record<string, unknown> // 額外元數據（如 tags）
 }
 
 /**
@@ -18,7 +18,7 @@ export interface ChannelResult {
   success: boolean
   message?: string
   error?: string
-  details?: any // 渠道特定的回應資料
+  details?: unknown // 渠道特定的回應資料
 }
 
 /**
@@ -34,10 +34,7 @@ export interface NotificationResult {
 /**
  * 渠道發送函數介面
  */
-export type ChannelSender = (
-  options: NotificationOptions,
-  config: Config,
-) => Promise<ChannelResult>
+export type ChannelSender = (options: NotificationOptions, config: Config) => Promise<ChannelResult>
 
 /**
  * 渠道配置驗證函數介面

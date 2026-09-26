@@ -2,14 +2,7 @@
  * Toast notification utility (Singleton)
  * Provides DaisyUI-compatible toast notifications with class-based API
  */
-import {
-  CircleCheckBig,
-  CircleQuestionMark,
-  CircleX,
-  createElement,
-  Info,
-  TriangleAlert,
-} from 'lucide'
+import { CircleCheckBig, CircleQuestionMark, CircleX, createElement, Info, TriangleAlert } from 'lucide'
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info'
 
@@ -188,17 +181,10 @@ class Toast {
    * 更新容器位置
    */
   private updatePosition(position: ToastOptions['position']): void {
-    if (!this.container || !position)
-      return
+    if (!this.container || !position) return
 
     // 移除所有位置類別
-    this.container.classList.remove(
-      'toast-top',
-      'toast-bottom',
-      'toast-start',
-      'toast-center',
-      'toast-end',
-    )
+    this.container.classList.remove('toast-top', 'toast-bottom', 'toast-start', 'toast-center', 'toast-end')
 
     // 添加新位置類別
     const [vertical, horizontal] = position.split('-') as ['top' | 'bottom', 'start' | 'center' | 'end']
