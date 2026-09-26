@@ -49,9 +49,9 @@ Tests use `bun test` (`*.test.ts` next to the module). Tests that touch storage 
 
 ## Commit Messages
 
-Angular convention: `<type>(<scope>): <summary>`, with scopes such as `subscriptions`, `webauthn`, `routes`, `ui`, `config`, `deps`. Add a `BREAKING CHANGE:` footer for API contract changes. `bun run changelog` (conventional-changelog, angular preset) builds `CHANGELOG.md` from these messages; it currently produces no entries for this repository's history (issue #10).
+Angular convention: `<type>(<scope>): <summary>`, with scopes such as `subscriptions`, `webauthn`, `routes`, `ui`, `config`, `deps`. Add a `BREAKING CHANGE:` footer for API contract changes. `bun run changelog` (conventional-changelog, `conventionalcommits` preset, which also reads `type(scope)!:`) adds the commits since the latest tag to `CHANGELOG.md` under the version in `package.json`.
 
-`bun run release`, `release:minor`, and `release:major` bump the version, tag, amend the changelog into the release commit, and push with tags. Run them only when the user asks for a release.
+`bun run release`, `release:minor`, and `release:major` run bumpp (`bump.config.ts`): bump the version, write the changelog, commit all changes, tag, and push. The changelog must run before the tag exists; after it, the range from the latest tag to `HEAD` is empty. Release from a clean working tree. Run them only when the user asks for a release.
 
 ## API Contracts
 
