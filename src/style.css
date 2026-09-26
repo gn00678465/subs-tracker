@@ -4,9 +4,9 @@
   --surface: #ffffff;
   --ink: #15181c;
   --ink-2: #4a5260;
-  --ink-3: #6b7380;
+  --ink-3: #626a77;
   --line: #d5d9df;
-  --today: #d63a22;
+  --today: #bf3019;
   --focus: #2b6cf0;
   --danger: #b3261e;
   --shadow: 0 1px 2px rgb(21 24 28 / 0.08), 0 8px 24px -12px rgb(21 24 28 / 0.28);
@@ -15,7 +15,7 @@
   --c-blue: #2b4c8c;
   --c-brick: #8a3b2e;
   --c-violet: #5b4a8c;
-  --c-ochre: #7d5f10;
+  --c-ochre: #6f540e;
   --c-slate: #2f3a45;
   --c-teal: #1d5c66;
   --c-plum: #7a2e5c;
@@ -23,7 +23,7 @@
   --font-ui: 'Noto Sans TC', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
   --font-figure: 'Barlow Semi Condensed', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
 
-  --paused: #5e646d;
+  --paused: #52585f;
   --radius-card: 14px;
   --radius-control: 10px;
   --lip: 56px;
@@ -46,7 +46,7 @@
     --c-blue: #33599f;
     --c-brick: #9c4536;
     --c-violet: #68569f;
-    --c-ochre: #8a6a14;
+    --c-ochre: #6f540e;
     --c-slate: #3a4653;
     --c-teal: #226b76;
     --c-plum: #8a3569;
@@ -69,7 +69,7 @@
   --c-blue: #33599f;
   --c-brick: #9c4536;
   --c-violet: #68569f;
-  --c-ochre: #8a6a14;
+  --c-ochre: #6f540e;
   --c-slate: #3a4653;
   --c-teal: #226b76;
   --c-plum: #8a3569;
@@ -176,7 +176,7 @@ body {
 }
 .lip-meta .when {
   font-weight: 500;
-  color: rgb(255 255 255 / 0.78);
+  color: rgb(255 255 255 / 0.86);
   min-width: 4.5em;
   text-align: right;
 }
@@ -236,13 +236,13 @@ body {
 .detail-amount .price small {
   font-size: 15px;
   font-weight: 500;
-  color: rgb(255 255 255 / 0.78);
+  color: rgb(255 255 255 / 0.86);
   margin-inline-start: 4px;
 }
 .countdown {
   text-align: right;
   font-size: 13px;
-  color: rgb(255 255 255 / 0.78);
+  color: rgb(255 255 255 / 0.86);
 }
 .countdown b {
   display: block;
@@ -256,7 +256,7 @@ body {
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   font-size: 12px;
-  color: rgb(255 255 255 / 0.72);
+  color: rgb(255 255 255 / 0.86);
 }
 .facts span b {
   display: block;
@@ -277,12 +277,12 @@ body {
   height: 36px;
   padding: 0 12px;
   border-radius: 999px;
-  background: rgb(255 255 255 / 0.14);
+  background: rgb(255 255 255 / 0.1);
   font-size: 13px;
   cursor: pointer;
 }
 .card-actions button:hover {
-  background: rgb(255 255 255 / 0.22);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.45);
 }
 .card-actions button:focus-visible {
   outline: 2px solid #fff;
@@ -328,7 +328,7 @@ body {
   color: rgb(255 255 255 / 0.86);
 }
 .card.state-expired {
-  background: color-mix(in srgb, var(--tone) 78%, var(--ground));
+  background: color-mix(in srgb, var(--tone) 60%, var(--paused));
 }
 /* 控制項 */
 .btn-row {
@@ -803,7 +803,7 @@ a.banner:focus-visible {
 .lip-meta .amt small {
   font-size: 12px;
   font-weight: 500;
-  color: rgb(255 255 255 / 0.72);
+  color: rgb(255 255 255 / 0.86);
   margin-inline-start: 1px;
 }
 .detail .facts span b a {
@@ -822,7 +822,7 @@ a.banner:focus-visible {
   height: 36px;
   padding: 0 12px;
   border-radius: 999px;
-  background: rgb(255 255 255 / 0.14);
+  background: rgb(255 255 255 / 0.1);
   font-size: 13px;
   cursor: pointer;
 }
@@ -1306,7 +1306,7 @@ textarea.input {
   }
   .lip-name .sub span {
     font-size: 13px;
-    color: rgb(255 255 255 / 0.78);
+    color: rgb(255 255 255 / 0.86);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
