@@ -55,19 +55,3 @@ export function renderTemplate(template: string, variables: TemplateVariables): 
 function escapeJsonString(str: string): string {
   return JSON.stringify(str).slice(1, -1)
 }
-
-/**
- * 驗證模板格式（可選）
- */
-export function validateTemplate(template: string): { valid: boolean; error?: string } {
-  try {
-    // 檢查是否為有效 JSON
-    JSON.parse(template)
-    return { valid: true }
-  } catch (error) {
-    return {
-      valid: false,
-      error: error instanceof Error ? error.message : 'Invalid JSON template',
-    }
-  }
-}

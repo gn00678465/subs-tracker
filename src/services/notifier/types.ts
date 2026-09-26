@@ -7,7 +7,6 @@ export interface NotificationOptions {
   title: string
   content: string
   timestamp?: string
-  metadata?: Record<string, unknown> // 額外元數據（如 tags）
 }
 
 /**
@@ -16,9 +15,7 @@ export interface NotificationOptions {
 export interface ChannelResult {
   channel: string // 'telegram' | 'bark' | 'email' | 'webhook'
   success: boolean
-  message?: string
   error?: string
-  details?: unknown // 渠道特定的回應資料
 }
 
 /**

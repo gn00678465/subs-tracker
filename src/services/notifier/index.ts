@@ -13,13 +13,6 @@ const CHANNEL_IMPLEMENTATIONS: Record<ChannelId, { send: ChannelSender; validate
   webhook: { send: sendWebhookNotification, validate: validateWebhookConfig },
 }
 
-// 使用者沒有填寫時使用的值
-const CHANNEL_DEFAULTS: ChannelConfig = {
-  BARK_SERVER: 'https://api.day.app',
-  BARK_SAVE: 'false',
-  WEBHOOK_METHOD: 'POST',
-}
-
 /** 管道缺少的必填欄位；空陣列代表可以發送 */
 export function missingFields(channel: ChannelId, config: ChannelConfig): string[] {
   return CHANNEL_IMPLEMENTATIONS[channel].validate(config).missingFields ?? []
@@ -31,7 +24,7 @@ export async function sendToChannel(
   config: ChannelConfig,
 ): Promise<ChannelResult> {
   try {
-    return await CHANNEL_IMPLEMENTATIONS[channel].send(options, { ...CHANNEL_DEFAULTS, ...config })
+    return await CHANNEL_IMPLEMENTATIONS[channel].send(options, config)
   } catch (error) {
     logger.error(`渠道 ${channel} 發送異常`, error, { prefix: 'Notifier' })
     return { channel, success: false, error: error instanceof Error ? error.message : 'Unknown error' }
