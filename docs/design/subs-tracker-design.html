@@ -39,6 +39,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     --font-ui: 'Noto Sans TC', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
     --font-figure: 'Barlow Semi Condensed', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
 
+    --paused: #5e646d;
     --radius-card: 14px;
     --radius-control: 10px;
     --lip: 56px;
@@ -65,6 +66,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
       --c-slate: #3a4653;
       --c-teal: #226b76;
       --c-plum: #8a3569;
+      --paused: #3b4049;
     }
   }
   :root[data-theme='dark'] {
@@ -87,6 +89,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     --c-slate: #3a4653;
     --c-teal: #226b76;
     --c-plum: #8a3569;
+    --paused: #3b4049;
   }
 
   * {
@@ -417,12 +420,13 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     margin-inline-start: 8px;
     vertical-align: 2px;
   }
-  .state-paused {
-    filter: saturate(0.1);
-    opacity: 0.72;
+  /* 卡片互相重疊，淡化只能用不透明的混色；opacity 會讓後面的卡透出來 */
+  .card.state-paused {
+    background: color-mix(in srgb, var(--tone) 15%, var(--paused));
+    color: rgb(255 255 255 / 0.86);
   }
-  .state-expired {
-    opacity: 0.8;
+  .card.state-expired {
+    background: color-mix(in srgb, var(--tone) 78%, var(--ground));
   }
   .state-list {
     display: grid;
@@ -1767,14 +1771,14 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
               <span class="lip-meta"><span>USD 11.99</span><span class="when">9/20</span></span>
             </button>
           </div>
-          <p>沒有自動續訂而且已過到期日：放在今天線上方，80% 不透明。</p>
+          <p>沒有自動續訂而且已過到期日：放在今天線上方，分類色混入底色變淡。</p>
           <div class="card state-paused" style="--tone: var(--c-blue)">
             <button class="lip" type="button" tabindex="-1">
               <span class="lip-name">已停用<span class="tag">已停用</span></span>
               <span class="lip-meta"><span>TWD 90</span><span class="when">—</span></span>
             </button>
           </div>
-          <p>已停用：去色，收在清單最後的「已停用」區，不計入合計，也不提醒。</p>
+          <p>已停用：分類色混入灰色，收在清單最後的「已停用」區，不計入合計，也不提醒。</p>
         </div>
       </div>
     </section>
