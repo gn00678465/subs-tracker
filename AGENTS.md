@@ -27,7 +27,7 @@ Scripts live in `package.json`. The ones with non-obvious behavior:
 - `bun run cf-typegen` - regenerate `worker-configuration.d.ts` after changing `wrangler.toml`.
 - `bun run deploy` - `wrangler deploy` without `--env`, so it deploys the top-level `subs-tracker` Worker, not `production`.
 
-No test runner is configured. `docs/pending-verification.md` lists checks still owed since the toolchain upgrade; before a release, or when a change touches a listed file, run them against `bun run preview` and delete each one that passes.
+No test runner is configured. `docs/dogfood.md` is the manual walkthrough of the app; run it after UI, flow, or dependency changes and before a release, then add a row to its run log.
 
 ## Code Style
 
@@ -43,11 +43,11 @@ No test runner is configured. `docs/pending-verification.md` lists checks still 
 - pre-commit: gitleaks (skipped when not installed), `bun run fmt:check`, `bun run lint`. The hook only checks; fix with `bun run fmt` and `bun run lint:fix`, then stage again.
 - pre-push: `bun run typecheck`.
 
-`.git-blame-ignore-revs` lists the bulk oxfmt commit. Keep that commit's hash stable: do not rebase across it.
+`.git-blame-ignore-revs` lists the bulk oxfmt commit by hash. Merge branches that contain it with a merge commit; squash and rebase change the hash.
 
 ## Commit Messages
 
-Angular convention: `<type>(<scope>): <summary>`, with scopes such as `subscriptions`, `webauthn`, `routes`, `ui`, `config`, `deps`. Add a `BREAKING CHANGE:` footer for API contract changes. `bun run changelog` (conventional-changelog, angular preset) builds `CHANGELOG.md` from these messages; it currently produces no entries for this repository's history, cause unknown.
+Angular convention: `<type>(<scope>): <summary>`, with scopes such as `subscriptions`, `webauthn`, `routes`, `ui`, `config`, `deps`. Add a `BREAKING CHANGE:` footer for API contract changes. `bun run changelog` (conventional-changelog, angular preset) builds `CHANGELOG.md` from these messages; it currently produces no entries for this repository's history (issue #10).
 
 `bun run release`, `release:minor`, and `release:major` bump the version, tag, amend the changelog into the release commit, and push with tags. Run them only when the user asks for a release.
 
@@ -58,7 +58,7 @@ Angular convention: `<type>(<scope>): <summary>`, with scopes such as `subscript
 
 ## Dependency Notes
 
-- `@simplewebauthn/*` stays on 13.2.2. Versions 13.3.x and 14.x pull in `@peculiar/x509`, and the bundled Worker then fails at startup with `Cannot get schema for 'AlgorithmIdentifier' target`. Verify any upgrade with `bun run preview`, not only `tsc`.
+- `@simplewebauthn/*` stays on 13.2.2. Versions 13.3.x and 14.x pull in `@peculiar/x509`, and the bundled Worker then fails at startup with `Cannot get schema for 'AlgorithmIdentifier' target` (issue #9). Verify any upgrade with `bun run preview`, not only `tsc`.
 - `@types/psl` is required: the `psl` package ships types, but its `exports` map does not expose them to `tsc`.
 - `@cloudflare/workers-types` v5 has no dated entry points; `tsconfig.json` uses the package root.
 - `typescript` is a direct dev dependency; nothing else installs `tsc`.
