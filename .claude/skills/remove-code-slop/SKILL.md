@@ -1,3 +1,9 @@
+---
+name: remove-code-slop
+description: Remove AI-generated slop from the current branch diff against main. Use when the user asks to clean up AI slop before a PR.
+disable-model-invocation: true
+---
+
 # Remove AI code slop
 
 Check the diff against main, and remove all AI generated slop introduced in this branch.

@@ -1,22 +1,3 @@
-<!-- OPENSPEC:START -->
-# OpenSpec Instructions
-
-These instructions are for AI assistants working in this project.
-
-Always open `@/openspec/AGENTS.md` when the request:
-- Mentions planning or proposals (words like proposal, spec, change, plan)
-- Introduces new capabilities, breaking changes, architecture shifts, or big performance/security work
-- Sounds ambiguous and you need the authoritative spec before coding
-
-Use `@/openspec/AGENTS.md` to learn:
-- How to create and apply change proposals
-- Spec format and conventions
-- Project structure and guidelines
-
-Keep this managed block so 'openspec update' can refresh the instructions.
-
-<!-- OPENSPEC:END -->
-
 # AGENTS.md
 
 > This document is for AI coding agents. For human-readable project info, see [README.md](README.md).
@@ -32,6 +13,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 **Key Directories**:
 - `src/` - Application source code
   - `client/` - Client Script
+  - `middleware/` - Hono middleware (auth)
   - `components/` - UI components
   - `routes/` - Hono route handlers
   - `pages/` - Frontend page
@@ -39,7 +21,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
   - `types/` - TypeScript type definitions
   - `utils/` - Helper functions (crypto, time)
 - `public/` - Static assets
-- `index.js` - Worker entry point (built output)
+- `src/index.tsx` - Worker entry point (`main` in wrangler.toml); exports `fetch` and the cron `scheduled` handler
 - `wrangler.toml` - Cloudflare Workers configuration
 
 ---
@@ -50,10 +32,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 ```bash
 bun run dev
 ```
-This starts Vite dev server AND Wrangler local mode, providing:
-- Live reload for code changes
-- Local KV namespace simulation (bindings auto-injected)
-- Miniflare runtime (mimics Workers environment)
+This starts Vite with `@cloudflare/vite-plugin`, which runs the Worker in workerd with local KV bindings and live reload.
 
 ### Type Generation for Cloudflare Bindings
 ```bash
@@ -63,7 +42,7 @@ bun run cf-typegen
 **Why**: Generates `CloudflareBindings` interface for type-safe access to `env.*` in Hono context.
 
 ### Common Issues
-- **KV not working locally**: Ensure `wrangler dev` is running (via `bun run dev`), not plain Vite.
+- **KV not working locally**: KV bindings come from `@cloudflare/vite-plugin` in `vite.config.ts`; start the app with `bun run dev`.
 - **Type errors on `env.SUBSCRIPTIONS_KV`**: Run `bun run cf-typegen` and restart TypeScript server.
 - **Tailwind classes not applying**: Check `@tailwindcss/vite` is in `vite.config.ts` plugins array.
 
@@ -76,28 +55,13 @@ bun run cf-typegen
 bun install
 ```
 
-### Adding Dependencies
-```bash
-# Production dependency
-bun add <package>
-
-# Dev dependency
-bun add -d <package>
-```
-
-### Generate Cloudflare Types
-```bash
-bun run cf-typegen
-```
-Run this after installing/removing dependencies that interact with Workers bindings.
-
 ---
 
 ## Build and Test Commands
 
 ### Full Check Suite (Run Before PR)
 ```bash
-bun run lint && bun run typecheck && bun run test && bun run build
+bun run lint && bun run typecheck && bun run build
 ```
 
 ### Individual Checks
@@ -115,19 +79,11 @@ bun run typecheck
 ```
 Runs `tsc --noEmit` to validate TypeScript without emitting files.
 
-**Testing**:
-```bash
-bun run test          # Run all tests
-bun run test:watch    # Watch mode
-bun run test:coverage # Generate coverage report
-```
-Uses Vitest (fast Vite-native test runner).
-
 **Build**:
 ```bash
 bun run build
 ```
-Outputs to `index.js` (Worker entry point). Must succeed before deployment.
+Outputs to `dist/`. Must succeed before deployment.
 
 **Preview**:
 ```bash
@@ -141,34 +97,9 @@ Builds and starts local preview server (tests production build locally).
 - TypeScript strict mode
 - TypeScript 一律不使用 any 型別
 
-## Testing Instructions
+## Testing
 
-### Test Structure Expectations
-- **Unit tests**: `src/**/*.test.ts` - Test individual functions/components
-- **Integration tests**: `src/**/*.spec.ts` - Test route handlers with mocked KV
-- **Coverage requirement**: Aim for >80% on `src/services/` and `src/utils/`
-
-### Writing Tests for KV-Dependent Code
-Use Miniflare's `unstable_dev` or mock KV:
-```typescript
-// Example: Mock KV in Vitest
-import { describe, it, expect, vi } from 'vitest'
-
-const mockKV = {
-  get: vi.fn(),
-  put: vi.fn(),
-  delete: vi.fn(),
-}
-
-// Test your service with mockKV
-```
-
-### Pre-Commit Checklist
-1. Run `bun run lint:fix` - Auto-fix linting issues
-2. Run `bun run typecheck` - Ensure no type errors
-3. Run `bun run test` - All tests pass
-4. Run `bun run build` - Build succeeds without warnings
-5. Verify changes in `bun run preview` (if UI changes)
+No test runner is configured: `package.json` has no `test` script and no Vitest dependency. Verify changes with `bun run lint`, `bun run typecheck`, `bun run build`, and `bun run preview` for UI changes.
 
 ---
 
@@ -210,7 +141,6 @@ Closes #42
 - [ ] All commits follow Angular convention
 - [ ] `bun run lint` passes
 - [ ] `bun run typecheck` passes
-- [ ] `bun run test` passes (coverage ≥80% for new code)
 - [ ] `bun run build` succeeds
 - [ ] Updated types after schema changes (`bun run cf-typegen`)
 - [ ] Tested locally with `bun run preview`
@@ -224,7 +154,7 @@ Closes #42
 **Environments defined in `wrangler.toml`**:
 - `production` → `subscription-manager`
 - `staging` → `subscription-manager-staging`
-- (default/local) → `sub`
+- (default/local) → `subs-tracker`
 
 ### Deployment Commands
 
@@ -232,7 +162,7 @@ Closes #42
 ```bash
 bun run deploy
 ```
-Deploys to `production` environment (default per wrangler.toml).
+`bun run deploy` runs `wrangler deploy` without selecting an environment, so it deploys the top-level `subs-tracker` Worker.
 
 **To Staging**:
 ```bash
@@ -281,37 +211,6 @@ bun run release:major
 bun run release:dry
 ```
 
-### CI/CD Release Workflow
-
-**GitHub Actions Release** (recommended for team projects):
-1. Navigate to GitHub → Actions → "Release" workflow
-2. Click "Run workflow"
-3. Select version type: `patch`, `minor`, or `major`
-4. Workflow automatically:
-   - Bumps version
-   - Generates changelog
-   - Commits and pushes changes
-   - Creates GitHub Release with release notes
-
-**Automatic Deployment**: Pushing tags to `main` branch triggers the deploy workflow, which:
-- Extracts version from `package.json`
-- Injects version into Workers via `--var VERSION:X.X.X`
-- Deploys to production with version metadata
-
-### Version Access in Code
-
-Version is available in Workers runtime via environment variables:
-
-```typescript
-// In Hono route handler
-app.get('/version', (c) => {
-  return c.json({ version: c.env.VERSION })
-})
-
-// Access in service
-const version = env.VERSION // e.g., "1.2.3"
-```
-
 ### Changelog Generation
 
 Changelog is auto-generated from Conventional Commits:
@@ -328,7 +227,7 @@ bun run changelog
 ### Release Best Practices
 
 1. **Before releasing**:
-   - Ensure all tests pass (`bun run typecheck && bun run lint`)
+   - Ensure `bun run typecheck && bun run lint` pass
    - Verify build succeeds (`bun run build`)
    - Update documentation if needed
 
@@ -345,7 +244,6 @@ bun run changelog
 
 4. **After releasing**:
    - Verify deployment in production
-   - Check version endpoint: `https://subscription-manager.workers.dev/version`
    - Monitor logs for issues: `wrangler tail --env production`
 
 ### Troubleshooting Releases
@@ -357,7 +255,6 @@ bun run changelog
 
 **Error: "Permission denied (publickey)"**
 - Check GitHub SSH keys or use HTTPS
-- For CI: ensure `GITHUB_TOKEN` has write permissions
 
 **Changelog not updating**
 - Verify commits follow Conventional Commits format
@@ -366,38 +263,20 @@ bun run changelog
 
 ### KV Operations (Development)
 
-**List all keys in local KV**:
+**List keys in local KV**:
 ```bash
-wrangler kv:key list --binding SUBSCRIPTIONS_KV --local
+wrangler kv key list --binding SUBSCRIPTIONS_KV --local
 ```
 
-**Get a key**:
+**Get the subscription list**:
 ```bash
-wrangler kv:key get "user:12345" --binding SUBSCRIPTIONS_KV --local
+wrangler kv key get "subscriptions" --binding SUBSCRIPTIONS_KV --local
 ```
 
-**Put a key**:
-```bash
-wrangler kv:key put "user:12345" '{"plan":"premium"}' --binding SUBSCRIPTIONS_KV --local
-```
-
-**For production KV**, remove `--local` and add `--env production`.
+Other keys follow `webauthn:credential:<id>` (see `src/services/webauthn.ts`). **For production KV**, remove `--local` and add `--env production`.
 
 ### Cron Trigger Testing
-**Trigger cron manually** (production):
-```bash
-wrangler deploy && curl -X POST https://subscription-manager.workers.dev/__scheduled
-```
-Or use Cloudflare Dashboard → Workers → Triggers → Cron Triggers → "Trigger Now".
-
-**Local testing**: Cron handlers run on schedule in `wrangler dev`, or manually invoke:
-```typescript
-// In test: simulate scheduled event
-const request = new Request('http://localhost/__scheduled', {
-  method: 'POST',
-})
-await app.fetch(request, env)
-```
+The `scheduled` handler in `src/index.tsx` runs on the `crons` schedule in `wrangler.toml`. To run it in production on demand, use Cloudflare Dashboard → Workers → Triggers → Cron Triggers → "Trigger Now".
 
 ### Viewing Logs
 **Real-time (production)**:
@@ -430,32 +309,14 @@ wrangler tail --env production
 
 ## Adding New Features (Workflow)
 
-1. **Update types**: Add/modify in `src/types/*.type.ts`
+1. **Update types**: Add/modify in `src/types/`
 2. **Run type generation**: `bun run cf-typegen` (if touching Workers bindings)
 3. **Implement service logic**: In `src/services/`
 4. **Add route handler**: In `src/routes/`
-5. **Write tests**: Co-located `*.test.ts` files
-6. **Verify**: Run full check suite (`lint + typecheck + test + build`)
-7. **Preview**: `bun run preview` to test production build
-8. **Commit**: Follow Angular convention
-9. **Deploy**: Push to trigger CI, or manual `bun run deploy`
-
----
-
-## CI/CD Pipeline
-
-**GitHub Actions** configuration expected at `.github/workflows/ci.yml`:
-```yaml
-# Expected stages:
-1. Install dependencies (bun install --frozen-lockfile)
-2. Lint (bun run lint)
-3. Type check (bun run typecheck)
-4. Test (bun run test)
-5. Build (bun run build)
-6. Deploy (on main branch merge)
-```
-
-**PR gate**: All checks must pass before merge.
+5. **Verify**: Run full check suite (`lint + typecheck + build`)
+6. **Preview**: `bun run preview` to test production build
+7. **Commit**: Follow Angular convention
+8. **Deploy**: `bun run deploy`
 
 ---
 
@@ -492,11 +353,11 @@ wrangler secret put API_KEY --env production
 **Fix**: Update `wrangler.toml` with correct namespace ID from dashboard.
 
 **Error**: `Exceeded Workers size limit (1MB)`  
-**Fix**: Check bundle size (`npm run build` output), enable minification, remove unused deps.
+**Fix**: Check bundle size (`bun run build` output), enable minification, remove unused deps.
 
 ### Type Errors
 **Error**: `Property 'SUBSCRIPTIONS_KV' does not exist on type 'Env'`  
-**Fix**: Run `npm run cf-typegen` and restart TS server (`Cmd+Shift+P` → "Restart TS Server").
+**Fix**: Run `bun run cf-typegen` and restart TS server (`Cmd+Shift+P` → "Restart TS Server").
 
 ---
 
@@ -505,7 +366,6 @@ wrangler secret put API_KEY --env production
 | Task | Command |
 |------|---------|
 | Start dev server | `bun run dev` |
-| Run tests | `bun run test` |
 | Type check | `bun run typecheck` |
 | Lint & fix | `bun run lint:fix` |
 | Build | `bun run build` |
@@ -518,10 +378,44 @@ wrangler secret put API_KEY --env production
 | **Preview version bump** | `bun run release:dry` |
 | **Generate changelog** | `bun run changelog` |
 | Tail logs | `wrangler tail --env production` |
-| Full pre-commit check | `bun run lint && bun run typecheck && bun run test && bun run build` |
+| Full pre-commit check | `bun run lint && bun run typecheck && bun run build` |
 
 ---
 
-**Last Updated**: 2025-12-27  
-**Maintainer**: AI Coding Agent  
 **Related Docs**: [Cloudflare Workers](https://developers.cloudflare.com/workers/), [Hono](https://hono.dev/), [Vite](https://vite.dev/)
+
+<!-- gitnexus:start -->
+# GitNexus — Code Intelligence
+
+This project is indexed by GitNexus as **subs-tracker**. If the index is stale, run `node .gitnexus/run.cjs analyze --index-only` from the project root. If `.gitnexus/run.cjs` is missing, bootstrap with `bunx gitnexus@latest analyze`.
+
+## Workflow
+
+- Before you change a function, class, or method, run `impact({target: "symbolName", direction: "upstream"})` (CLI: `node .gitnexus/run.cjs impact "symbolName" --direction upstream --repo .`) and report callers, processes, and risk. Warn the user about HIGH or CRITICAL `risk` before the edit; `riskSharedAxes` does not waive that warning. Compare File/symbol: MCP File omits axes; Graph-RAG expands File.
+- `risk: UNKNOWN` means the index could not resolve the callers (plain-object property access, dynamic dispatch, cross-language calls), not that there are none. Confirm with a text search before you treat the symbol as safe to change or delete.
+- For read-only questions, query the graph first: `query({search_query: "concept"})` for concepts and flows, `context({name: "symbolName"})` for a named symbol, `impact` for blast radius. Use text search for literals, or when the graph returns empty or `UNKNOWN`.
+- Rename symbols with `rename`, which follows the call graph, not with find-and-replace.
+- Before you commit, run `detect_changes({scope: "all"})` (CLI: `node .gitnexus/run.cjs detect-changes --scope all --repo .`). A result with `partial: true` or `truncated: true` is incomplete; run it again. For regression review against main, use `detect_changes({scope: "compare", base_ref: "main"})` (CLI: `node .gitnexus/run.cjs detect-changes --scope compare --base-ref "main" --repo .`).
+- For security review, `explain({target: "fileOrSymbol"})` lists taint findings (source→sink flows; needs `analyze --pdg`).
+
+## Resources
+
+| Resource | Use for |
+| --- | --- |
+| `gitnexus://repo/subs-tracker/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/subs-tracker/clusters` | All functional areas |
+| `gitnexus://repo/subs-tracker/processes` | All execution flows |
+| `gitnexus://repo/subs-tracker/process/{name}` | Step-by-step execution trace |
+
+## CLI
+
+| Task | Read this skill file |
+| --- | --- |
+| Understand architecture / "How does X work?" | `.claude/skills/gitnexus-exploring/SKILL.md` |
+| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus-impact-analysis/SKILL.md` |
+| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus-debugging/SKILL.md` |
+| Rename / extract / split / refactor | `.claude/skills/gitnexus-refactoring/SKILL.md` |
+| Tools, resources, schema reference | `.claude/skills/gitnexus-guide/SKILL.md` |
+| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus-cli/SKILL.md` |
+
+<!-- gitnexus:end -->
