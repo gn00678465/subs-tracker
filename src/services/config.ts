@@ -228,7 +228,7 @@ export function getSafeConfig(config: Config): Omit<Config, 'JWT_SECRET' | 'ADMI
  * - [0, 1, 2, ...]：數字陣列
  * - ['0', '1', '2', ...]：字串陣列（轉為數字）
  */
-function normalizeNotificationHours(hours: any): number[] {
+function normalizeNotificationHours(hours: unknown): number[] {
   // 未設定或空陣列：允許所有小時
   if (!hours || (Array.isArray(hours) && hours.length === 0)) {
     return []

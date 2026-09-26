@@ -18,7 +18,7 @@ export type LogLevel =
 interface LogOptions {
   timestamp?: boolean
   prefix?: string
-  data?: any
+  data?: unknown
 }
 
 /**
@@ -135,7 +135,7 @@ export function warning(message: string, options?: LogOptions): void {
 /**
  * ERROR 級別日誌（錯誤）
  */
-export function error(message: string, error?: any, options?: LogOptions): void {
+export function error(message: string, error?: unknown, options?: LogOptions): void {
   const errorData = error instanceof Error ? { message: error.message, stack: error.stack } : error
 
   log('ERROR', message, { ...options, data: errorData })
@@ -226,7 +226,7 @@ export function createLogger(prefix: string) {
     debug: (message: string, options?: Omit<LogOptions, 'prefix'>) => debug(message, { ...options, prefix }),
     info: (message: string, options?: Omit<LogOptions, 'prefix'>) => info(message, { ...options, prefix }),
     warning: (message: string, options?: Omit<LogOptions, 'prefix'>) => warning(message, { ...options, prefix }),
-    error: (message: string, err?: any, options?: Omit<LogOptions, 'prefix'>) =>
+    error: (message: string, err?: unknown, options?: Omit<LogOptions, 'prefix'>) =>
       error(message, err, { ...options, prefix }),
     request: (method: string, path: string, options?: Omit<LogOptions, 'prefix'>) =>
       request(method, path, { ...options, prefix }),

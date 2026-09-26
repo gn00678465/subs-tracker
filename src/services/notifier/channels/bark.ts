@@ -53,7 +53,7 @@ export const sendBarkNotification: ChannelSender = async (options, config) => {
       }),
     })
 
-    const result = (await response.json()) as any
+    const result = (await response.json()) as { code?: number; message?: string }
 
     if (!response.ok || result.code !== 200) {
       logger.notification(`Bark 發送失敗: ${result.message || 'Unknown error'}`, {

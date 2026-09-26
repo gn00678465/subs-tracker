@@ -276,10 +276,11 @@ export function validateOrigin(requestOrigin: string, config: Config): boolean {
 /**
  * 從 WebAuthn 回應中安全地提取 Challenge
  */
-export function extractChallenge(body: any): string | undefined {
+export function extractChallenge(body: unknown): string | undefined {
+  const { response, challenge } = (body ?? {}) as { response?: { clientDataJSON?: unknown }; challenge?: unknown }
   try {
     // 優先從 clientDataJSON 提取（標準做法）
-    const clientDataJSON = body?.response?.clientDataJSON
+    const clientDataJSON = response?.clientDataJSON
     if (typeof clientDataJSON === 'string' && clientDataJSON.length > 0) {
       const decoded = Buffer.from(clientDataJSON, 'base64')
       const parsed = JSON.parse(decoded.toString('utf8'))
@@ -295,8 +296,8 @@ export function extractChallenge(body: any): string | undefined {
   }
 
   // 備選：直接從 body 取得（某些自定義實作或測試可能用到）
-  if (typeof body?.challenge === 'string' && body.challenge.length > 0) {
-    return body.challenge
+  if (typeof challenge === 'string' && challenge.length > 0) {
+    return challenge
   }
 
   return undefined

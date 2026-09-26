@@ -48,7 +48,7 @@ export const sendTelegramNotification: ChannelSender = async (options, config) =
       }),
     })
 
-    const result = (await response.json()) as any
+    const result = (await response.json()) as { ok: boolean; description?: string; result?: { message_id?: number } }
 
     if (!response.ok) {
       logger.notification(`Telegram 發送失敗: ${result.description || 'Unknown error'}`, {

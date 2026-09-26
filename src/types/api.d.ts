@@ -7,7 +7,7 @@ declare namespace Api {
   /**
    * 標準 API 成功回應
    */
-  interface SuccessResponse<T = any> {
+  interface SuccessResponse<T = unknown> {
     success: true
     data?: T // 可選：實際資料
     message?: string // 可選：成功訊息（如 "創建成功"）
@@ -30,7 +30,7 @@ declare namespace Api {
   /**
    * 通用 API 回應
    */
-  type Response<T = any> = SuccessResponse<T> | ErrorResponse
+  type Response<T = unknown> = SuccessResponse<T> | ErrorResponse
 
   type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode]
 }

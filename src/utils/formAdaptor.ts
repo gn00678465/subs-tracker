@@ -121,7 +121,7 @@ export function toApiFormat(formData: FormData): Partial<Subscription> {
     expiryDate: expiryDateISO,
     periodValue: parseNumber(raw.periodValue),
     periodUnit: raw.periodUnit as 'day' | 'month' | 'year',
-    periodMethod: normalizeString(raw.periodMethod) as any,
+    periodMethod: normalizeString(raw.periodMethod) as Subscription['periodMethod'],
     website: normalizeString(raw.website),
     reminderMe: parseNumber(raw.reminderMe),
     notes: normalizeString(raw.notes),

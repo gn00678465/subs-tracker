@@ -1,14 +1,16 @@
 import type { PublicKeyCredentialCreationOptionsJSON } from '@simplewebauthn/browser'
 import { startRegistration } from '@simplewebauthn/browser'
 
+import type { Config } from '../../types'
+import type { StoredCredential } from '../../types/webauthn'
 import { toast } from '../../utils/toast'
 
-// TypeScript declaration for Lucide icons
+// 供 innerHTML 內的 onclick 呼叫
 declare global {
   interface Window {
-    lucide?: {
-      createIcons: () => void
-    }
+    registerPasskey: typeof registerPasskey
+    deletePasskey: typeof deletePasskey
+    editPasskeyNickname: typeof editPasskeyNickname
   }
 }
 
@@ -16,8 +18,12 @@ declare global {
 async function loadConfig(): Promise<void> {
   try {
     const res = await fetch('/api/config')
-    const data = (await res.json()) as { success: boolean; data?: any; message?: string }
-    if (!data.success) throw new Error(data.message)
+    const data = (await res.json()) as {
+      success: boolean
+      data?: Omit<Config, 'JWT_SECRET' | 'ADMIN_PASSWORD'>
+      message?: string
+    }
+    if (!data.success || !data.data) throw new Error(data.message)
 
     const config = data.data
 
@@ -64,8 +70,7 @@ async function loadConfig(): Promise<void> {
     // Bark
     ;(document.getElementById('barkServer') as HTMLInputElement).value = config.BARK_SERVER || 'https://api.day.app'
     ;(document.getElementById('barkKey') as HTMLInputElement).value = config.BARK_KEY || ''
-    ;(document.getElementById('barkSave') as HTMLInputElement).checked =
-      config.BARK_SAVE === 'true' || config.BARK_SAVE === true
+    ;(document.getElementById('barkSave') as HTMLInputElement).checked = String(config.BARK_SAVE) === 'true'
     ;(document.getElementById('barkQuery') as HTMLInputElement).value = config.BARK_QUERY || ''
 
     // WebAuthn 配置
@@ -91,7 +96,7 @@ async function loadConfig(): Promise<void> {
     if (config.WEBAUTHN_HINTS) {
       const hints = config.WEBAUTHN_HINTS
       document.querySelectorAll<HTMLInputElement>('[name="WEBAUTHN_HINTS"]').forEach((checkbox) => {
-        checkbox.checked = hints.includes(checkbox.value as any)
+        checkbox.checked = hints.some((hint) => hint === checkbox.value)
       })
     }
 
@@ -184,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       // 收集表單資料
       const formData = new FormData(form)
-      const data: Record<string, any> = {}
+      const data: Record<string, unknown> = {}
 
       // 處理普通欄位
       for (const [key, value] of formData.entries()) {
@@ -298,9 +303,9 @@ document.addEventListener('DOMContentLoaded', () => {
   })
 
   // 暴露函數到全域作用域（供 HTML onclick 使用）
-  ;(window as any).registerPasskey = registerPasskey
-  ;(window as any).deletePasskey = deletePasskey
-  ;(window as any).editPasskeyNickname = editPasskeyNickname
+  window.registerPasskey = registerPasskey
+  window.deletePasskey = deletePasskey
+  window.editPasskeyNickname = editPasskeyNickname
 })
 
 /**
@@ -312,7 +317,7 @@ async function loadPasskeys(): Promise<void> {
 
   try {
     const res = await fetch('/api/webauthn/credentials')
-    const data = (await res.json()) as Api.SuccessResponse<string[]>
+    const data = (await res.json()) as Api.SuccessResponse<Omit<StoredCredential, 'publicKey'>[]>
 
     if (!data.success) {
       passkeyList.innerHTML = '<div class="text-center text-base-content/70 py-8">載入失敗</div>'
@@ -349,7 +354,7 @@ async function loadPasskeys(): Promise<void> {
     // 渲染列表
     passkeyList.innerHTML = credentials
       .map(
-        (cred: any) => `
+        (cred) => `
       <div class="card bg-base-200">
         <div class="card-body p-4">
           <div class="flex justify-between items-start">
@@ -457,7 +462,8 @@ async function registerPasskey(clickedButton?: HTMLButtonElement): Promise<void>
     } else {
       toast.error(verifyData.message || '註冊失敗')
     }
-  } catch (error: any) {
+  } catch (caught) {
+    const error = caught instanceof Error ? caught : new Error(String(caught))
     if (error.name === 'NotAllowedError') {
       toast.error('註冊已取消')
     } else if (error.name === 'NotSupportedError') {

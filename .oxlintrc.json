@@ -334,7 +334,7 @@
             "allowInterfaces": "always"
           }
         ],
-        "typescript/no-explicit-any": "warn",
+        "typescript/no-explicit-any": "error",
         "typescript/no-extra-non-null-assertion": "error",
         "typescript/no-extraneous-class": "off",
         "typescript/no-invalid-void-type": "off",

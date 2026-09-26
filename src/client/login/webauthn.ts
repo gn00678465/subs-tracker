@@ -98,7 +98,8 @@ webauthnLoginBtn?.addEventListener('click', async (e) => {
     } else {
       showWebAuthnError(verifyData.message || '認證失敗')
     }
-  } catch (error: any) {
+  } catch (caught) {
+    const error = caught instanceof Error ? caught : new Error(String(caught))
     if (error.name === 'NotAllowedError') {
       // 使用者主動取消，靜默處理（不顯示錯誤）
       hideWebAuthnError()
