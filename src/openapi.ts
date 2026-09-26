@@ -1,6 +1,7 @@
-import type { Bindings } from './types'
 import { swaggerUI } from '@hono/swagger-ui'
 import { OpenAPIHono } from '@hono/zod-openapi'
+
+import type { Bindings } from './types'
 
 /**
  * 創建支持 OpenAPI 的 Hono 實例
@@ -9,22 +10,28 @@ export function createOpenAPIApp() {
   const app = new OpenAPIHono<{ Bindings: Bindings }>({
     defaultHook: (result, c) => {
       if (!result.success) {
-        return c.json({
-          success: false,
-          message: '請求驗證失敗',
-          errors: result.error.issues.map(err => ({
-            path: err.path.join('.'),
-            message: err.message,
-          })),
-        }, 400)
+        return c.json(
+          {
+            success: false,
+            message: '請求驗證失敗',
+            errors: result.error.issues.map((err) => ({
+              path: err.path.join('.'),
+              message: err.message,
+            })),
+          },
+          400,
+        )
       }
     },
   })
 
   // Swagger UI 路由
-  app.get('/ui', swaggerUI({
-    url: '/doc',
-  }))
+  app.get(
+    '/ui',
+    swaggerUI({
+      url: '/doc',
+    }),
+  )
 
   // OpenAPI JSON 文檔
   app.doc('/doc', {

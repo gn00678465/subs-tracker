@@ -1,12 +1,13 @@
-import type { ChannelSender, ChannelValidator } from '../types'
 import { Resend } from 'resend'
+
 import * as logger from '../../../utils/logger'
+import type { ChannelSender, ChannelValidator } from '../types'
 
 /**
  * Resend 實例快取
  * 避免每次發送郵件都重新創建實例
  */
-let resendInstanceCache: { apiKey: string, instance: Resend } | null = null
+let resendInstanceCache: { apiKey: string; instance: Resend } | null = null
 
 /**
  * 獲取或創建 Resend 實例
@@ -30,9 +31,9 @@ function escapeHtml(text: string): string {
     '<': '&lt;',
     '>': '&gt;',
     '"': '&quot;',
-    '\'': '&#39;',
+    "'": '&#39;',
   }
-  return text.replace(/[&<>"']/g, char => htmlEscapeMap[char] || char)
+  return text.replace(/[&<>"']/g, (char) => htmlEscapeMap[char] || char)
 }
 
 /**
@@ -56,12 +57,9 @@ function generateEmailHtml(title: string, content: string): string {
 export const validateResendConfig: ChannelValidator = (config) => {
   const missingFields: string[] = []
 
-  if (!config.RESEND_API_KEY)
-    missingFields.push('RESEND_API_KEY')
-  if (!config.EMAIL_FROM)
-    missingFields.push('EMAIL_FROM')
-  if (!config.EMAIL_TO)
-    missingFields.push('EMAIL_TO')
+  if (!config.RESEND_API_KEY) missingFields.push('RESEND_API_KEY')
+  if (!config.EMAIL_FROM) missingFields.push('EMAIL_FROM')
+  if (!config.EMAIL_TO) missingFields.push('EMAIL_TO')
 
   return {
     isValid: missingFields.length === 0,
@@ -103,9 +101,7 @@ export const sendResendNotification: ChannelSender = async (options, config) => 
     const { title, content } = options
 
     const { data, error } = await resend.emails.send({
-      from: config.EMAIL_FROM_NAME
-        ? `${config.EMAIL_FROM_NAME} <${emailFrom}>`
-        : emailFrom,
+      from: config.EMAIL_FROM_NAME ? `${config.EMAIL_FROM_NAME} <${emailFrom}>` : emailFrom,
       to: [emailTo],
       subject: title,
       html: generateEmailHtml(title, content),
@@ -130,8 +126,7 @@ export const sendResendNotification: ChannelSender = async (options, config) => 
       message: '發送成功',
       details: data,
     }
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Resend 發送異常', error, { prefix: 'Notifier' })
     return {
       channel: channelName,

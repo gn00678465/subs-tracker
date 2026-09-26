@@ -6,11 +6,7 @@
     "strict": true,
     "skipLibCheck": true,
     "lib": ["ES2022", "DOM"],
-    "types": [
-      "vite/client",
-      "@cloudflare/workers-types",
-      "@types/bun",
-    ],
+    "types": ["vite/client", "@cloudflare/workers-types", "@types/bun"],
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx",
     "resolveJsonModule": true,

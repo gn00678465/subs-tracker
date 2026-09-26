@@ -30,29 +30,27 @@ const CACHE_LIMITS = {
 }
 
 // 需要預快取的關鍵資源
-const PRECACHE_URLS = [
-  '/',
-  '/manifest.webmanifest',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/favicon.svg',
-]
+const PRECACHE_URLS = ['/', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png', '/favicon.svg']
 
 // 安裝事件 - 預快取資源
 globalThis.addEventListener('install', (event) => {
   console.log('[SW] Installing...')
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Precaching resources')
-      return cache.addAll(PRECACHE_URLS)
-    }).then(() => {
-      console.log('[SW] Skip waiting')
-      return globalThis.skipWaiting()
-    }).catch((error) => {
-      // IMPROVEMENT: Added error handling for precaching failures
-      console.error('[SW] Precaching failed:', error)
-      throw error
-    }),
+    caches
+      .open(CACHE_NAME)
+      .then((cache) => {
+        console.log('[SW] Precaching resources')
+        return cache.addAll(PRECACHE_URLS)
+      })
+      .then(() => {
+        console.log('[SW] Skip waiting')
+        return globalThis.skipWaiting()
+      })
+      .catch((error) => {
+        // IMPROVEMENT: Added error handling for precaching failures
+        console.error('[SW] Precaching failed:', error)
+        throw error
+      }),
   )
 })
 
@@ -60,25 +58,34 @@ globalThis.addEventListener('install', (event) => {
 globalThis.addEventListener('activate', (event) => {
   console.log('[SW] Activating...')
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName.includes('subsTracker-') && cacheName !== CACHE_NAME
-            && cacheName !== PAGES_CACHE && cacheName !== STATIC_CACHE
-            && cacheName !== IMAGE_CACHE && cacheName !== CDN_CACHE) {
-            console.log('[SW] Deleting old cache:', cacheName)
-            return caches.delete(cacheName)
-          }
-          return null
-        }),
-      )
-    }).then(() => {
-      console.log('[SW] Claiming clients')
-      return globalThis.clients.claim()
-    }).catch((error) => {
-      // IMPROVEMENT: Added error handling
-      console.error('[SW] Activation failed:', error)
-    }),
+    caches
+      .keys()
+      .then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (
+              cacheName.includes('subsTracker-') &&
+              cacheName !== CACHE_NAME &&
+              cacheName !== PAGES_CACHE &&
+              cacheName !== STATIC_CACHE &&
+              cacheName !== IMAGE_CACHE &&
+              cacheName !== CDN_CACHE
+            ) {
+              console.log('[SW] Deleting old cache:', cacheName)
+              return caches.delete(cacheName)
+            }
+            return null
+          }),
+        )
+      })
+      .then(() => {
+        console.log('[SW] Claiming clients')
+        return globalThis.clients.claim()
+      })
+      .catch((error) => {
+        // IMPROVEMENT: Added error handling
+        console.error('[SW] Activation failed:', error)
+      }),
   )
 })
 
@@ -112,35 +119,25 @@ globalThis.addEventListener('fetch', (event) => {
   }
 
   // JS/CSS - Cache First
-  if (request.destination === 'script' || request.destination === 'style'
-    || url.pathname.match(/\.(js|css)$/)) {
-    event.respondWith(
-      cacheFirst(request, STATIC_CACHE, CACHE_MAX_AGE.STATIC, CACHE_LIMITS.STATIC),
-    )
+  if (request.destination === 'script' || request.destination === 'style' || url.pathname.match(/\.(js|css)$/)) {
+    event.respondWith(cacheFirst(request, STATIC_CACHE, CACHE_MAX_AGE.STATIC, CACHE_LIMITS.STATIC))
     return
   }
 
   // 圖片 - Cache First
-  if (request.destination === 'image'
-    || url.pathname.match(/\.(png|jpg|jpeg|svg|gif|webp)$/)) {
-    event.respondWith(
-      cacheFirst(request, IMAGE_CACHE, CACHE_MAX_AGE.IMAGES, CACHE_LIMITS.IMAGES),
-    )
+  if (request.destination === 'image' || url.pathname.match(/\.(png|jpg|jpeg|svg|gif|webp)$/)) {
+    event.respondWith(cacheFirst(request, IMAGE_CACHE, CACHE_MAX_AGE.IMAGES, CACHE_LIMITS.IMAGES))
     return
   }
 
   // htmx CDN - Stale While Revalidate
   if (url.hostname === 'unpkg.com' && url.pathname.includes('htmx.org')) {
-    event.respondWith(
-      staleWhileRevalidate(request, CDN_CACHE, CACHE_MAX_AGE.CDN, CACHE_LIMITS.CDN),
-    )
+    event.respondWith(staleWhileRevalidate(request, CDN_CACHE, CACHE_MAX_AGE.CDN, CACHE_LIMITS.CDN))
     return
   }
 
   // 其他請求 - Network First
-  event.respondWith(
-    networkFirst(request, CACHE_NAME, NETWORK_TIMEOUT.DEFAULT, CACHE_MAX_AGE.DEFAULT),
-  )
+  event.respondWith(networkFirst(request, CACHE_NAME, NETWORK_TIMEOUT.DEFAULT, CACHE_MAX_AGE.DEFAULT))
 })
 
 // Helper: 清理舊快取項目以維持限制
@@ -151,7 +148,7 @@ async function trimCache(cacheName, maxItems) {
   if (keys.length > maxItems) {
     // 刪除最舊的項目
     const itemsToDelete = keys.slice(0, keys.length - maxItems)
-    await Promise.all(itemsToDelete.map(key => cache.delete(key)))
+    await Promise.all(itemsToDelete.map((key) => cache.delete(key)))
     console.log(`[SW] Trimmed ${itemsToDelete.length} items from ${cacheName}`)
   }
 }
@@ -208,12 +205,11 @@ async function networkFirst(request, cacheName, timeout, maxAge, cacheLimit) {
       const cache = await caches.open(cacheName)
       putWithMetadata(cache, request, networkResponse.clone())
         .then(() => cacheLimit && trimCache(cacheName, cacheLimit))
-        .catch(err => console.warn('[SW] Cache update failed:', err))
+        .catch((err) => console.warn('[SW] Cache update failed:', err))
     }
 
     return networkResponse
-  }
-  catch (error) {
+  } catch (error) {
     console.log('[SW] Network failed, trying cache:', error.message)
     const cachedResponse = await caches.match(request)
 
@@ -255,15 +251,12 @@ async function cacheFirst(request, cacheName, maxAge, cacheLimit) {
 
       // IMPROVEMENT: 清理舊快取
       if (cacheLimit) {
-        trimCache(cacheName, cacheLimit).catch(err =>
-          console.warn('[SW] Cache trimming failed:', err),
-        )
+        trimCache(cacheName, cacheLimit).catch((err) => console.warn('[SW] Cache trimming failed:', err))
       }
     }
 
     return networkResponse
-  }
-  catch (error) {
+  } catch (error) {
     // IMPROVEMENT: 錯誤處理
     console.error('[SW] Cache First failed for:', request.url, error)
     throw error
@@ -275,30 +268,29 @@ async function staleWhileRevalidate(request, cacheName, maxAge, cacheLimit) {
   const cachedResponse = await caches.match(request)
 
   // IMPROVEMENT: 添加錯誤處理的非阻塞更新
-  const fetchPromise = fetch(request).then(async (networkResponse) => {
-    // IMPROVEMENT: 驗證 response 狀態碼
-    if (networkResponse.ok && networkResponse.status === 200) {
-      try {
-        const cache = await caches.open(cacheName)
-        await putWithMetadata(cache, request, networkResponse.clone())
+  const fetchPromise = fetch(request)
+    .then(async (networkResponse) => {
+      // IMPROVEMENT: 驗證 response 狀態碼
+      if (networkResponse.ok && networkResponse.status === 200) {
+        try {
+          const cache = await caches.open(cacheName)
+          await putWithMetadata(cache, request, networkResponse.clone())
 
-        // IMPROVEMENT: 清理舊快取
-        if (cacheLimit) {
-          trimCache(cacheName, cacheLimit).catch(err =>
-            console.warn('[SW] Cache trimming failed:', err),
-          )
+          // IMPROVEMENT: 清理舊快取
+          if (cacheLimit) {
+            trimCache(cacheName, cacheLimit).catch((err) => console.warn('[SW] Cache trimming failed:', err))
+          }
+        } catch (error) {
+          console.warn('[SW] Background cache update failed:', error)
         }
       }
-      catch (error) {
-        console.warn('[SW] Background cache update failed:', error)
-      }
-    }
-    return networkResponse
-  }).catch((error) => {
-    // IMPROVEMENT: 網路失敗時的錯誤處理
-    console.warn('[SW] Background fetch failed:', error)
-    return cachedResponse // 返回快取的響應
-  })
+      return networkResponse
+    })
+    .catch((error) => {
+      // IMPROVEMENT: 網路失敗時的錯誤處理
+      console.warn('[SW] Background fetch failed:', error)
+      return cachedResponse // 返回快取的響應
+    })
 
   // 如果有快取且未過期，立即返回；否則等待網路響應
   if (cachedResponse && !isCacheExpired(cachedResponse, maxAge)) {

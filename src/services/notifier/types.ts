@@ -34,10 +34,7 @@ export interface NotificationResult {
 /**
  * 渠道發送函數介面
  */
-export type ChannelSender = (
-  options: NotificationOptions,
-  config: Config,
-) => Promise<ChannelResult>
+export type ChannelSender = (options: NotificationOptions, config: Config) => Promise<ChannelResult>
 
 /**
  * 渠道配置驗證函數介面

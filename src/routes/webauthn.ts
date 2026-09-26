@@ -1,6 +1,5 @@
-import type { HonoEnv } from '../types'
-import type { StoredCredential } from '../types/webauthn'
 import { Buffer } from 'node:buffer'
+
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
 import {
   generateAuthenticationOptions,
@@ -8,6 +7,7 @@ import {
   verifyAuthenticationResponse,
   verifyRegistrationResponse,
 } from '@simplewebauthn/server'
+
 import { authMiddleware } from '../middleware/auth'
 import { getConfig } from '../services/config'
 import {
@@ -22,6 +22,8 @@ import {
   updateCredentialCounter,
   updateCredentialNickname,
 } from '../services/webauthn'
+import type { HonoEnv } from '../types'
+import type { StoredCredential } from '../types/webauthn'
 import { generateJWT, setTokenCookie } from '../utils/crypto'
 import * as logger from '../utils/logger'
 import { created, notFound, serverError, success, validationError } from '../utils/response'
@@ -68,8 +70,7 @@ const registerOptionsRoute = createRoute({
 // @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
 webauthn.openapi(registerOptionsRoute, async (c) => {
   const authResult = await authMiddleware(c, async () => {})
-  if (authResult)
-    return authResult
+  if (authResult) return authResult
 
   try {
     const user = c.get('user')
@@ -91,7 +92,7 @@ webauthn.openapi(registerOptionsRoute, async (c) => {
         residentKey: config.WEBAUTHN_RESIDENT_KEY || 'preferred',
         userVerification: config.WEBAUTHN_USER_VERIFICATION || 'preferred',
       },
-      excludeCredentials: existingCreds.map(cred => ({
+      excludeCredentials: existingCreds.map((cred) => ({
         id: cred.credentialID,
         transports: cred.transports,
       })),
@@ -102,8 +103,7 @@ webauthn.openapi(registerOptionsRoute, async (c) => {
     await storeChallenge(options.challenge, 'registration', c.env, user.username)
 
     return success(c, options)
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Failed to generate registration options', error, { prefix: 'WebAuthn' })
     return serverError(c, error instanceof Error ? error.message : '生成註冊選項失敗')
   }
@@ -145,8 +145,7 @@ const registerVerifyRoute = createRoute({
 // @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
 webauthn.openapi(registerVerifyRoute, async (c) => {
   const authResult = await authMiddleware(c, async () => {})
-  if (authResult)
-    return authResult
+  if (authResult) return authResult
 
   try {
     const user = c.get('user')
@@ -204,8 +203,7 @@ webauthn.openapi(registerVerifyRoute, async (c) => {
     }
 
     return validationError(c, '註冊驗證失敗')
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Failed to verify registration', error, { prefix: 'WebAuthn' })
     return serverError(c, error instanceof Error ? error.message : '註冊驗證失敗')
   }
@@ -257,7 +255,9 @@ webauthn.openapi(authenticateOptionsRoute, async (c) => {
     const userCredentials = await getUserCredentials(username, c.env)
 
     if (userCredentials.length === 0 || username !== config.ADMIN_USERNAME) {
-      logger.warning(`Authentication options requested for invalid user or user without passkey: ${username}`, { prefix: 'WebAuthn' })
+      logger.warning(`Authentication options requested for invalid user or user without passkey: ${username}`, {
+        prefix: 'WebAuthn',
+      })
       return validationError(c, '認證初始化失敗')
     }
 
@@ -265,7 +265,7 @@ webauthn.openapi(authenticateOptionsRoute, async (c) => {
 
     const options = await generateAuthenticationOptions({
       rpID,
-      allowCredentials: userCredentials.map(cred => ({
+      allowCredentials: userCredentials.map((cred) => ({
         id: cred.credentialID,
         transports: cred.transports,
       })),
@@ -276,8 +276,7 @@ webauthn.openapi(authenticateOptionsRoute, async (c) => {
     await storeChallenge(options.challenge, 'authentication', c.env, username)
 
     return success(c, options)
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Failed to generate authentication options', error, { prefix: 'WebAuthn' })
     return serverError(c, error instanceof Error ? error.message : '生成認證選項失敗')
   }
@@ -307,9 +306,11 @@ const authenticateVerifyRoute = createRoute({
         'application/json': {
           schema: z.object({
             success: z.boolean(),
-            data: z.object({
-              username: z.string(),
-            }).optional(),
+            data: z
+              .object({
+                username: z.string(),
+              })
+              .optional(),
             message: z.string().optional(),
           }),
         },
@@ -367,24 +368,22 @@ webauthn.openapi(authenticateVerifyRoute, async (c) => {
 
     if (verification.verified && verification.authenticationInfo) {
       // 更新 counter
-      await updateCredentialCounter(
-        credential.credentialID,
-        verification.authenticationInfo.newCounter,
-        c.env,
-      )
+      await updateCredentialCounter(credential.credentialID, verification.authenticationInfo.newCounter, c.env)
 
       // 生成 JWT token
       const token = await generateJWT(storedChallenge.username, config.JWT_SECRET)
       setTokenCookie(c, token)
 
-      logger.info('WebAuthn authentication successful', { prefix: 'WebAuthn', data: { username: storedChallenge.username } })
+      logger.info('WebAuthn authentication successful', {
+        prefix: 'WebAuthn',
+        data: { username: storedChallenge.username },
+      })
 
       return created(c, { username: storedChallenge.username }, '登入成功')
     }
 
     return validationError(c, '認證驗證失敗')
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Failed to verify authentication', error, { prefix: 'WebAuthn' })
     return serverError(c, error instanceof Error ? error.message : '認證驗證失敗')
   }
@@ -419,8 +418,7 @@ const listCredentialsRoute = createRoute({
 // @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
 webauthn.openapi(listCredentialsRoute, async (c) => {
   const authResult = await authMiddleware(c, async () => {})
-  if (authResult)
-    return authResult
+  if (authResult) return authResult
 
   try {
     const user = c.get('user')
@@ -430,8 +428,7 @@ webauthn.openapi(listCredentialsRoute, async (c) => {
     const safeCredentials = credentials.map(({ publicKey: _publicKey, ...cred }) => cred)
 
     return success(c, safeCredentials)
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Failed to list credentials', error, { prefix: 'WebAuthn' })
     return serverError(c, error instanceof Error ? error.message : '取得憑證列表失敗')
   }
@@ -469,8 +466,7 @@ const deleteCredentialRoute = createRoute({
 // @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
 webauthn.openapi(deleteCredentialRoute, async (c) => {
   const authResult = await authMiddleware(c, async () => {})
-  if (authResult)
-    return authResult
+  if (authResult) return authResult
 
   try {
     const user = c.get('user')
@@ -478,15 +474,14 @@ webauthn.openapi(deleteCredentialRoute, async (c) => {
 
     // 驗證所有權
     const userCreds = await getUserCredentials(user.username, c.env)
-    if (!userCreds.find(cred => cred.credentialID === credentialID)) {
+    if (!userCreds.find((cred) => cred.credentialID === credentialID)) {
       return validationError(c, '無權限刪除此憑證')
     }
 
     await deleteCredential(credentialID, user.username, c.env)
 
     return success(c, undefined, 'Passkey 刪除成功')
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Failed to delete credential', error, { prefix: 'WebAuthn' })
     return serverError(c, error instanceof Error ? error.message : '刪除憑證失敗')
   }
@@ -533,8 +528,7 @@ const updateCredentialRoute = createRoute({
 // @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
 webauthn.openapi(updateCredentialRoute, async (c) => {
   const authResult = await authMiddleware(c, async () => {})
-  if (authResult)
-    return authResult
+  if (authResult) return authResult
 
   try {
     const user = c.get('user')
@@ -543,15 +537,14 @@ webauthn.openapi(updateCredentialRoute, async (c) => {
 
     // 驗證所有權
     const userCreds = await getUserCredentials(user.username, c.env)
-    if (!userCreds.find(cred => cred.credentialID === credentialID)) {
+    if (!userCreds.find((cred) => cred.credentialID === credentialID)) {
       return validationError(c, '無權限更新此憑證')
     }
 
     await updateCredentialNickname(credentialID, nickname, c.env)
 
     return success(c, undefined, '暱稱更新成功')
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Failed to update credential nickname', error, { prefix: 'WebAuthn' })
     return serverError(c, error instanceof Error ? error.message : '更新暱稱失敗')
   }

@@ -8,11 +8,7 @@ import { renderErrorState, renderLoadingState, renderSubscriptionTable } from '.
 /**
  * 設置表單欄位的值（自動處理不同類型的元素）
  */
-function setFormValue(
-  form: HTMLFormElement,
-  name: string,
-  value: string | boolean | number | undefined,
-): void {
+function setFormValue(form: HTMLFormElement, name: string, value: string | boolean | number | undefined): void {
   const element = form.elements.namedItem(name)
   if (!element) {
     console.warn(`Form element "${name}" not found`)
@@ -21,11 +17,10 @@ function setFormValue(
 
   if (element instanceof HTMLInputElement && element.type === 'checkbox') {
     element.checked = Boolean(value)
-  }
-  else if (
-    element instanceof HTMLInputElement
-    || element instanceof HTMLSelectElement
-    || element instanceof HTMLTextAreaElement
+  } else if (
+    element instanceof HTMLInputElement ||
+    element instanceof HTMLSelectElement ||
+    element instanceof HTMLTextAreaElement
   ) {
     element.value = value !== undefined && value !== null ? String(value) : ''
   }
@@ -42,10 +37,7 @@ const tableHandlers = {
 /**
  * 批量設置表單欄位的值
  */
-function setFormValues(
-  form: HTMLFormElement,
-  data: Record<string, string | boolean | number | undefined>,
-): void {
+function setFormValues(form: HTMLFormElement, data: Record<string, string | boolean | number | undefined>): void {
   Object.entries(data).forEach(([name, value]) => {
     setFormValue(form, name, value)
   })
@@ -57,11 +49,11 @@ const subscriptionsCache: Subscription[] = []
 
 // ===== 快取管理工具 =====
 function getCacheItem(id: string): Subscription | undefined {
-  return subscriptionsCache.find(sub => sub.id === id)
+  return subscriptionsCache.find((sub) => sub.id === id)
 }
 
 function updateCacheItem(id: string, updates: Partial<Subscription>): void {
-  const index = subscriptionsCache.findIndex(sub => sub.id === id)
+  const index = subscriptionsCache.findIndex((sub) => sub.id === id)
   if (index !== -1) {
     subscriptionsCache[index] = { ...subscriptionsCache[index], ...updates }
     renderSubscriptionTable(subscriptionsCache, getSearchKeyword(), getCategoryFilter(), tableHandlers)
@@ -69,7 +61,7 @@ function updateCacheItem(id: string, updates: Partial<Subscription>): void {
 }
 
 function removeCacheItem(id: string): void {
-  const index = subscriptionsCache.findIndex(sub => sub.id === id)
+  const index = subscriptionsCache.findIndex((sub) => sub.id === id)
   if (index !== -1) {
     subscriptionsCache.splice(index, 1)
     renderSubscriptionTable(subscriptionsCache, getSearchKeyword(), getCategoryFilter(), tableHandlers)
@@ -84,18 +76,16 @@ async function loadSubscriptions(showLoading: boolean = true) {
     }
 
     const response = await fetch('/api/subscriptions')
-    if (!response.ok)
-      throw new Error('載入失敗')
+    if (!response.ok) throw new Error('載入失敗')
 
-    const data = await response.json() as Api.SuccessResponse<Subscription[]>
-    const _data = data.data && Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : [])
+    const data = (await response.json()) as Api.SuccessResponse<Subscription[]>
+    const _data = data.data && Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : []
     subscriptionsCache.length = 0
     subscriptionsCache.push(..._data)
 
     populateCategoryFilter(subscriptionsCache)
     renderSubscriptionTable(subscriptionsCache, getSearchKeyword(), getCategoryFilter(), tableHandlers)
-  }
-  catch (error) {
+  } catch (error) {
     // eslint-disable-next-line no-console
     console.error('載入訂閱失敗:', error)
     renderErrorState('載入失敗，請刷新頁面重試')
@@ -105,8 +95,7 @@ async function loadSubscriptions(showLoading: boolean = true) {
 
 function populateCategoryFilter(subscriptions: Subscription[]) {
   const select = document.getElementById('categoryFilter') as HTMLSelectElement | null
-  if (!select)
-    return
+  if (!select) return
 
   const previousValue = select.value
   const categories = new Set<string>()
@@ -115,8 +104,7 @@ function populateCategoryFilter(subscriptions: Subscription[]) {
     if (sub.category) {
       sub.category.split(/[\\/,\s]+/).forEach((token) => {
         const trimmed = token.trim()
-        if (trimmed)
-          categories.add(trimmed)
+        if (trimmed) categories.add(trimmed)
       })
     }
   })
@@ -189,7 +177,7 @@ function openAddModal() {
 }
 
 function closeModal() {
-  (document.getElementById('subscriptionModal') as HTMLDialogElement).close()
+  ;(document.getElementById('subscriptionModal') as HTMLDialogElement).close()
 }
 
 // ===== 操作處理函數 =====
@@ -201,12 +189,11 @@ async function handleEdit(id: string) {
     // 快取未命中時從 API 獲取
     if (!sub) {
       const response = await fetch('/api/subscriptions')
-      if (!response.ok)
-        throw new Error('獲取訂閱詳情失敗')
+      if (!response.ok) throw new Error('獲取訂閱詳情失敗')
 
-      const data = await response.json() as Api.SuccessResponse<Subscription[]>
-      const subscriptions = data.data && Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : [])
-      sub = subscriptions.find(s => s.id === id)
+      const data = (await response.json()) as Api.SuccessResponse<Subscription[]>
+      const subscriptions = data.data && Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : []
+      sub = subscriptions.find((s) => s.id === id)
     }
 
     if (!sub) {
@@ -237,8 +224,7 @@ async function handleEdit(id: string) {
     // 打開 modal
     const modal = document.getElementById('subscriptionModal') as HTMLDialogElement
     modal?.showModal()
-  }
-  catch (error) {
+  } catch (error) {
     // eslint-disable-next-line no-console
     console.error('編輯訂閱失敗:', error)
     toast.error('獲取訂閱詳情失敗')
@@ -246,11 +232,9 @@ async function handleEdit(id: string) {
 }
 
 async function handleDelete(id: string) {
-  const confirmed = await window.confirmDialog(
-    '刪除訂閱',
-    '確定要刪除這個訂閱嗎？此操作不可恢復。',
-    { variant: 'danger' },
-  )
+  const confirmed = await window.confirmDialog('刪除訂閱', '確定要刪除這個訂閱嗎？此操作不可恢復。', {
+    variant: 'danger',
+  })
   if (!confirmed) {
     return
   }
@@ -261,18 +245,19 @@ async function handleDelete(id: string) {
     })
 
     if (!response.ok) {
-      const error = await response.json() as { message?: string }
+      const error = (await response.json()) as { message?: string }
       throw new Error(error.message || '刪除失敗')
     }
 
     toast.success('刪除成功')
 
     // 派發刪除事件
-    document.dispatchEvent(new CustomEvent('subscription-deleted', {
-      detail: { subscriptionId: id },
-    }))
-  }
-  catch (error) {
+    document.dispatchEvent(
+      new CustomEvent('subscription-deleted', {
+        detail: { subscriptionId: id },
+      }),
+    )
+  } catch (error) {
     // eslint-disable-next-line no-console
     console.error('刪除失敗:', error)
     toast.error(error instanceof Error ? error.message : '刪除失敗，請稍後再試')
@@ -290,18 +275,19 @@ async function handleToggleStatus(id: string, targetStatus: boolean) {
     })
 
     if (!response.ok) {
-      const error = await response.json() as { message?: string }
+      const error = (await response.json()) as { message?: string }
       throw new Error(error.message || '操作失敗')
     }
 
     toast.success(targetStatus ? '啟用成功' : '停用成功')
 
     // 派發狀態變更事件
-    document.dispatchEvent(new CustomEvent('subscription-status-changed', {
-      detail: { subscriptionId: id, isActive: targetStatus },
-    }))
-  }
-  catch (error) {
+    document.dispatchEvent(
+      new CustomEvent('subscription-status-changed', {
+        detail: { subscriptionId: id, isActive: targetStatus },
+      }),
+    )
+  } catch (error) {
     // eslint-disable-next-line no-console
     console.error('切換狀態失敗:', error)
     toast.error(error instanceof Error ? error.message : '操作失敗，請稍後再試')
@@ -317,14 +303,13 @@ async function handleTestNotify(id: string) {
     })
 
     if (!response.ok) {
-      const error = await response.json() as { message?: string }
+      const error = (await response.json()) as { message?: string }
       throw new Error(error.message || '發送失敗')
     }
 
-    const result = await response.json() as { message?: string }
+    const result = (await response.json()) as { message?: string }
     toast.success(result.message || '測試通知已發送')
-  }
-  catch (error) {
+  } catch (error) {
     // eslint-disable-next-line no-console
     console.error('測試通知失敗:', error)
     toast.error(error instanceof Error ? error.message : '發送測試通知失敗')
@@ -379,7 +364,7 @@ function attachEventListeners() {
   })
 
   document.addEventListener('subscription-status-changed', (event) => {
-    const customEvent = event as CustomEvent<{ subscriptionId: string, isActive: boolean }>
+    const customEvent = event as CustomEvent<{ subscriptionId: string; isActive: boolean }>
     updateCacheItem(customEvent.detail.subscriptionId, {
       isActive: customEvent.detail.isActive,
     })

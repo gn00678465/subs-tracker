@@ -7,7 +7,9 @@ export function SubscriptionModal() {
         <div class="modal-box w-11/12 max-w-3xl max-h-[90vh] overflow-y-auto">
           {/* 頭部 - 標題與關閉按鈕 */}
           <div class="flex items-center justify-between mb-6">
-            <h3 id="modalTitle" class="font-bold text-lg">添加新訂閱</h3>
+            <h3 id="modalTitle" class="font-bold text-lg">
+              添加新訂閱
+            </h3>
             <form method="dialog">
               <button class="btn btn-sm btn-circle btn-ghost">✕</button>
             </form>
@@ -75,11 +77,9 @@ export function SubscriptionModal() {
                     <span class="label-text">預設貨幣</span>
                   </div>
                   <select id="currency" name="currency" class="select select-bordered w-full">
-                    {currencies.map(cur => (
+                    {currencies.map((cur) => (
                       <option value={cur.code} selected={cur.code === 'TWD'} title={cur.name}>
-                        {cur.symbol}
-                        {' '}
-                        {cur.code}
+                        {cur.symbol} {cur.code}
                       </option>
                     ))}
                   </select>
@@ -104,12 +104,7 @@ export function SubscriptionModal() {
 
               <div class="form-control">
                 <label class="label cursor-pointer justify-start gap-3">
-                  <input
-                    type="checkbox"
-                    id="isFreeTrial"
-                    name="isFreeTrial"
-                    class="checkbox checkbox-primary"
-                  />
+                  <input type="checkbox" id="isFreeTrial" name="isFreeTrial" class="checkbox checkbox-primary" />
                   <span class="label-text">是否有免費試用</span>
                 </label>
               </div>
@@ -121,13 +116,7 @@ export function SubscriptionModal() {
 
               <div class="form-control">
                 <label class="label cursor-pointer justify-start gap-3">
-                  <input
-                    type="checkbox"
-                    id="hasEndDate"
-                    name="hasEndDate"
-                    checked
-                    class="checkbox checkbox-primary"
-                  />
+                  <input type="checkbox" id="hasEndDate" name="hasEndDate" checked class="checkbox checkbox-primary" />
                   <span class="label-text">續訂/終止日期</span>
                 </label>
               </div>
@@ -166,26 +155,14 @@ export function SubscriptionModal() {
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="form-control">
                   <label class="label cursor-pointer justify-start gap-3">
-                    <input
-                      type="checkbox"
-                      id="isActive"
-                      name="isActive"
-                      checked
-                      class="checkbox checkbox-primary"
-                    />
+                    <input type="checkbox" id="isActive" name="isActive" checked class="checkbox checkbox-primary" />
                     <span class="label-text">啟用訂閱</span>
                   </label>
                 </div>
 
                 <div class="form-control">
                   <label class="label cursor-pointer justify-start gap-3">
-                    <input
-                      type="checkbox"
-                      id="autoRenew"
-                      name="autoRenew"
-                      checked
-                      class="checkbox checkbox-primary"
-                    />
+                    <input type="checkbox" id="autoRenew" name="autoRenew" checked class="checkbox checkbox-primary" />
                     <span class="label-text">自動續訂</span>
                   </label>
                 </div>
@@ -197,7 +174,7 @@ export function SubscriptionModal() {
                     <span class="label-text">付款週期</span>
                   </div>
                   <select id="periodUnit" name="periodUnit" class="select select-bordered w-full">
-                    {periodUnits.map(unit => (
+                    {periodUnits.map((unit) => (
                       <option value={unit.value} selected={unit.value === 'month'}>
                         {unit.label}
                       </option>
@@ -226,7 +203,7 @@ export function SubscriptionModal() {
                   <span class="label-text">付款方式</span>
                 </div>
                 <select id="periodMethod" name="periodMethod" class="select select-bordered w-full">
-                  {periodMethods.map(method => (
+                  {periodMethods.map((method) => (
                     <option value={method.value} selected={method.value === 'credit'}>
                       {method.label}
                     </option>
@@ -271,7 +248,7 @@ export function SubscriptionModal() {
                   <span class="label-text">提醒我</span>
                 </div>
                 <select id="reminderMe" name="reminderMe" class="select select-bordered w-full">
-                  {reminderOptions.map(option => (
+                  {reminderOptions.map((option) => (
                     <option value={option.value} selected={option.value === '1'}>
                       {option.label}
                     </option>
@@ -288,14 +265,15 @@ export function SubscriptionModal() {
                   name="notes"
                   placeholder="添加備註信息..."
                   class="textarea textarea-bordered h-24 w-full"
-                >
-                </textarea>
+                ></textarea>
               </label>
             </fieldset>
 
             {/* 提交按鈕 */}
             <div class="flex justify-end gap-3 pt-4">
-              <button type="button" id="cancelBtn" class="btn btn-ghost">取消</button>
+              <button type="button" id="cancelBtn" class="btn btn-ghost">
+                取消
+              </button>
               <button type="submit" class="btn btn-primary">
                 <span id="submitText">保存</span>
                 <span id="submitLoading" class="loading loading-spinner loading-sm hidden"></span>

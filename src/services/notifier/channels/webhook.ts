@@ -1,5 +1,5 @@
-import type { ChannelSender, ChannelValidator } from '../types'
 import * as logger from '../../../utils/logger'
+import type { ChannelSender, ChannelValidator } from '../types'
 import { renderTemplate } from '../utils/template'
 
 /**
@@ -8,8 +8,7 @@ import { renderTemplate } from '../utils/template'
 export const validateWebhookConfig: ChannelValidator = (config) => {
   const missingFields: string[] = []
 
-  if (!config.WEBHOOK_URL)
-    missingFields.push('WEBHOOK_URL')
+  if (!config.WEBHOOK_URL) missingFields.push('WEBHOOK_URL')
 
   return {
     isValid: missingFields.length === 0,
@@ -45,8 +44,7 @@ export const sendWebhookNotification: ChannelSender = async (options, config) =>
       try {
         const customHeaders = JSON.parse(config.WEBHOOK_HEADERS)
         headers = { ...headers, ...customHeaders }
-      }
-      catch (error) {
+      } catch (error) {
         logger.warning('Webhook Headers 解析失敗，使用預設值', { prefix: 'Notifier' })
       }
     }
@@ -54,7 +52,8 @@ export const sendWebhookNotification: ChannelSender = async (options, config) =>
     // 渲染請求體模板
     let body: string | undefined
     if (method !== 'GET' && method !== 'HEAD') {
-      const template = config.WEBHOOK_TEMPLATE || '{"title":"{{title}}","content":"{{content}}","timestamp":"{{timestamp}}"}'
+      const template =
+        config.WEBHOOK_TEMPLATE || '{"title":"{{title}}","content":"{{content}}","timestamp":"{{timestamp}}"}'
       const renderResult = renderTemplate(template, { title, content, timestamp })
 
       if (!renderResult.success) {
@@ -97,8 +96,7 @@ export const sendWebhookNotification: ChannelSender = async (options, config) =>
       message: '發送成功',
       details: { status: response.status, body: responseText },
     }
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Webhook 發送異常', error, { prefix: 'Notifier' })
     return {
       channel: channelName,

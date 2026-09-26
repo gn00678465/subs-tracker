@@ -21,10 +21,7 @@ export interface TemplateRenderResult {
  * @param variables 變數對象
  * @returns 渲染結果
  */
-export function renderTemplate(
-  template: string,
-  variables: TemplateVariables,
-): TemplateRenderResult {
+export function renderTemplate(template: string, variables: TemplateVariables): TemplateRenderResult {
   try {
     // 替換所有變數
     const rendered = template
@@ -35,8 +32,7 @@ export function renderTemplate(
     // 驗證 JSON 格式
     try {
       JSON.parse(rendered)
-    }
-    catch (jsonError) {
+    } catch (jsonError) {
       return {
         success: false,
         error: `渲染後的 JSON 無效: ${jsonError instanceof Error ? jsonError.message : 'Parse error'}`,
@@ -47,8 +43,7 @@ export function renderTemplate(
       success: true,
       rendered,
     }
-  }
-  catch (error) {
+  } catch (error) {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -74,13 +69,12 @@ function escapeJsonString(str: string): string {
 /**
  * 驗證模板格式（可選）
  */
-export function validateTemplate(template: string): { valid: boolean, error?: string } {
+export function validateTemplate(template: string): { valid: boolean; error?: string } {
   try {
     // 檢查是否為有效 JSON
     JSON.parse(template)
     return { valid: true }
-  }
-  catch (error) {
+  } catch (error) {
     return {
       valid: false,
       error: error instanceof Error ? error.message : 'Invalid JSON template',

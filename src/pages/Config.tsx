@@ -1,5 +1,6 @@
 import type { FC } from 'hono/jsx'
 import { Script } from 'vite-ssr-components/hono'
+
 import { Layout } from '../components/Layout'
 import { Navbar } from '../components/Navbar'
 
@@ -20,14 +21,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
             <form id="configForm">
               <div role="tablist" class="tabs tabs-border mb-6">
                 {/* Tab 1: 基本設定 */}
-                <input
-                  type="radio"
-                  name="config_tabs"
-                  role="tab"
-                  class="tab"
-                  aria-label="基本設定"
-                  checked
-                />
+                <input type="radio" name="config_tabs" role="tab" class="tab" aria-label="基本設定" checked />
                 <div role="tabpanel" class="tab-content p-6 px-2">
                   <h3 class="text-lg font-semibold mb-4">管理員帳號</h3>
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -57,9 +51,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                         autocomplete="new-password"
                       />
                       <label class="label">
-                        <span class="label-text-alt text-base-content/70">
-                          留空表示不修改當前密碼（至少 6 個字符）
-                        </span>
+                        <span class="label-text-alt text-base-content/70">留空表示不修改當前密碼（至少 6 個字符）</span>
                       </label>
                     </fieldset>
 
@@ -113,9 +105,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                         class="input input-bordered w-full"
                       />
                       <label class="label">
-                        <span class="text-wrap">
-                          可輸入多個小時（0-23），使用逗號或空格分隔，* 表示全天
-                        </span>
+                        <span class="text-wrap">可輸入多個小時（0-23），使用逗號或空格分隔，* 表示全天</span>
                       </label>
                     </fieldset>
 
@@ -131,8 +121,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                       <label class="label">
                         <span class="text-wrap text-base-content/70">
                           • 首次觸發：進入提醒窗口時發送一次，直到續期或過期
-                          <br />
-                          • 每日發送：在提醒窗口內每天都發送提醒通知
+                          <br />• 每日發送：在提醒窗口內每天都發送提醒通知
                         </span>
                       </label>
                     </fieldset>
@@ -204,9 +193,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                       </button>
                     </div>
                     <label class="label">
-                      <span class="text-wrap">
-                        調用 /api/notify/&#123;token&#125; 接口時需攜帶此令牌
-                      </span>
+                      <span class="text-wrap">調用 /api/notify/&#123;token&#125; 接口時需攜帶此令牌</span>
                     </label>
                   </fieldset>
                 </div>
@@ -268,11 +255,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                           <label class="label" for="webhookMethod">
                             <span class="label-text">HTTP 方法</span>
                           </label>
-                          <select
-                            id="webhookMethod"
-                            name="WEBHOOK_METHOD"
-                            class="select select-bordered w-full"
-                          >
+                          <select id="webhookMethod" name="WEBHOOK_METHOD" class="select select-bordered w-full">
                             <option value="POST">POST</option>
                             <option value="GET">GET</option>
                             <option value="PUT">PUT</option>
@@ -288,8 +271,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                             name="WEBHOOK_HEADERS"
                             placeholder='{"Authorization": "Bearer your-token"}'
                             class="textarea textarea-bordered h-24 w-full"
-                          >
-                          </textarea>
+                          ></textarea>
                         </fieldset>
                         <fieldset class="fieldset col-span-2">
                           <label class="label" for="webhookTemplate">
@@ -300,8 +282,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                             name="WEBHOOK_TEMPLATE"
                             placeholder='{"title": "{{title}}", "content": "{{content}}", "timestamp": "{{timestamp}}"}'
                             class="textarea textarea-bordered h-24 w-full"
-                          >
-                          </textarea>
+                          ></textarea>
                           <label class="label">
                             <span class="label-text-alt">
                               支持變數：&#123;&#123;title&#125;&#125;、&#123;&#123;content&#125;&#125;、&#123;&#123;timestamp&#125;&#125;
@@ -400,12 +381,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                         </fieldset>
                         <fieldset class="fieldset col-span-2">
                           <label class="label cursor-pointer justify-start gap-3">
-                            <input
-                              type="checkbox"
-                              id="barkSave"
-                              name="BARK_SAVE"
-                              class="checkbox checkbox-primary"
-                            />
+                            <input type="checkbox" id="barkSave" name="BARK_SAVE" class="checkbox checkbox-primary" />
                             <span class="label-text">保存推送消息到歷史記錄</span>
                           </label>
                         </fieldset>
@@ -434,9 +410,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                   {/* 提示信息 */}
                   <div class="alert alert-info">
                     <i data-lucide="info" class="size-6"></i>
-                    <span>
-                      渠道配置會根據「通知渠道」頁籤中的選擇自動顯示或隱藏
-                    </span>
+                    <span>渠道配置會根據「通知渠道」頁籤中的選擇自動顯示或隱藏</span>
                   </div>
                 </div>
 
@@ -477,9 +451,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                         class="input input-bordered w-full"
                       />
                       <label class="label">
-                        <span class="text-wrap text-base-content/70 text-sm">
-                          用戶在認證時看到的應用程式名稱
-                        </span>
+                        <span class="text-wrap text-base-content/70 text-sm">用戶在認證時看到的應用程式名稱</span>
                       </label>
                     </fieldset>
 
@@ -516,8 +488,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                         name="WEBAUTHN_RP_ORIGINS"
                         placeholder="https://app.example.com&#10;https://admin.example.com&#10;https://example.com"
                         class="textarea textarea-bordered h-32 w-full font-mono text-sm"
-                      >
-                      </textarea>
+                      ></textarea>
                       <label class="label">
                         <span class="text-wrap text-base-content/70 text-sm">
                           支援的完整來源 URL，每行一個（用於 Related Origin Requests，允許多網域共享 Passkey）
@@ -593,9 +564,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                         <option value="required">Required</option>
                       </select>
                       <label class="label">
-                        <span class="text-wrap text-base-content/70 text-sm">
-                          要求生物識別或 PIN 碼驗證
-                        </span>
+                        <span class="text-wrap text-base-content/70 text-sm">要求生物識別或 PIN 碼驗證</span>
                       </label>
                     </fieldset>
 
@@ -676,11 +645,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
 
                   <div class="mb-4 flex justify-between items-center">
                     <h4 class="text-base font-semibold">已註冊的 Passkey</h4>
-                    <button
-                      type="button"
-                      id="registerPasskeyBtn"
-                      class="btn btn-primary btn-sm"
-                    >
+                    <button type="button" id="registerPasskeyBtn" class="btn btn-primary btn-sm">
                       <i data-lucide="plus" class="size-4" id="registerPasskeyIcon"></i>
                       <span class="loading loading-spinner loading-sm hidden" id="registerPasskeyLoading"></span>
                       <span id="registerPasskeyText">註冊新 Passkey</span>
@@ -689,9 +654,7 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
 
                   {/* Passkey 列表 */}
                   <div id="passkeyList" class="space-y-2">
-                    <div class="text-center text-base-content/70 py-8">
-                      載入中...
-                    </div>
+                    <div class="text-center text-base-content/70 py-8">載入中...</div>
                   </div>
                 </div>
               </div>

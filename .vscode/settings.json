@@ -14,9 +14,5 @@
     "git rev-parse": true,
     "git commit": true
   },
-  "cSpell.words": [
-    "Creds",
-    "WEBAUTHN",
-    "simplewebauthn"
-  ],
+  "cSpell.words": ["Creds", "WEBAUTHN", "simplewebauthn"]
 }

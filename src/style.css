@@ -1,46 +1,48 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 @plugin "daisyui" {
-    themes: light --default, dark --prefersdark;
-    --color-primary: #36A45D;
+  themes:
+    light --default,
+    dark --prefersdark;
+  --color-primary: #36a45d;
 }
 
 @plugin "daisyui/theme" {
-    name: "light";
-    default: true;
-    --color-primary: #36A45D;
+  name: 'light';
+  default: true;
+  --color-primary: #36a45d;
 }
 
 @plugin "daisyui/theme" {
-    name: "dark";
-    --color-primary: #36A45D;
+  name: 'dark';
+  --color-primary: #36a45d;
 }
 
 /* 基礎 View Transition 設定 */
 ::view-transition-old(root),
 ::view-transition-new(root) {
-    animation: none;
-    mix-blend-mode: normal;
+  animation: none;
+  mix-blend-mode: normal;
 }
 
 /* 預設層級設定（淺色模式） */
 ::view-transition-old(root) {
-    z-index: 1;
+  z-index: 1;
 }
 
 ::view-transition-new(root) {
-    z-index: 2147483646;
+  z-index: 2147483646;
 }
 
 /* 深色模式時反轉層級 */
-[data-theme="dark"]::view-transition-old(root) {
-    z-index: 2147483646;
+[data-theme='dark']::view-transition-old(root) {
+  z-index: 2147483646;
 }
 
-[data-theme="dark"]::view-transition-new(root) {
-    z-index: 1;
+[data-theme='dark']::view-transition-new(root) {
+  z-index: 1;
 }
 
 /* 確保 root 元素有轉場名稱 */
 :root {
-    view-transition-name: root;
+  view-transition-name: root;
 }

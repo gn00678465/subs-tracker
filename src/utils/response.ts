@@ -4,6 +4,7 @@
  */
 
 import type { Context } from 'hono'
+
 import { ErrorCode } from '../types/error'
 
 /**
@@ -14,10 +15,8 @@ import { ErrorCode } from '../types/error'
  */
 export function success<T>(c: Context, data?: T, message?: string): Response {
   const response: Api.SuccessResponse<T> = { success: true }
-  if (data !== undefined)
-    response.data = data
-  if (message)
-    response.message = message
+  if (data !== undefined) response.data = data
+  if (message) response.message = message
   return c.json(response, 200)
 }
 
@@ -29,8 +28,7 @@ export function success<T>(c: Context, data?: T, message?: string): Response {
  */
 export function created<T>(c: Context, data: T, message?: string): Response {
   const response: Api.SuccessResponse<T> = { success: true, data }
-  if (message)
-    response.message = message
+  if (message) response.message = message
   return c.json(response, 201)
 }
 
@@ -43,15 +41,14 @@ export function created<T>(c: Context, data: T, message?: string): Response {
 export function validationError(
   c: Context,
   message: string,
-  errors?: Array<{ path: string, message: string }>,
+  errors?: Array<{ path: string; message: string }>,
 ): Response {
   const response: Api.ErrorResponse = {
     success: false,
     message,
     code: ErrorCode.VALIDATION_ERROR,
   }
-  if (errors)
-    response.errors = errors
+  if (errors) response.errors = errors
   return c.json(response, 400)
 }
 

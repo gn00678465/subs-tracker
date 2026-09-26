@@ -1,8 +1,8 @@
-import type { Config, HonoEnv } from '../types'
-
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
+
 import { authMiddleware } from '../middleware/auth'
 import { getConfig, updateConfig } from '../services/config'
+import type { Config, HonoEnv } from '../types'
 import * as logger from '../utils/logger'
 
 // 創建配置路由實例
@@ -82,17 +82,20 @@ const updateConfigSchema = z.object({
     example: 'sound=alarm&group=訂閱提醒',
     description: 'Bark URL 查詢參數（不含 ?）',
   }),
-  NOTIFICATION_HOURS: z.union([
-    z.array(z.number().int().min(0).max(23)),
-    z.string(),
-  ]).optional().openapi({
-    example: [9, 12, 18],
-    description: '允許發送通知的小時（0-23），空陣列表示所有小時',
-  }),
-  ENABLED_NOTIFIERS: z.array(z.string()).optional().openapi({
-    example: ['telegram', 'email', 'notifyx'],
-    description: '啟用的通知渠道',
-  }),
+  NOTIFICATION_HOURS: z
+    .union([z.array(z.number().int().min(0).max(23)), z.string()])
+    .optional()
+    .openapi({
+      example: [9, 12, 18],
+      description: '允許發送通知的小時（0-23），空陣列表示所有小時',
+    }),
+  ENABLED_NOTIFIERS: z
+    .array(z.string())
+    .optional()
+    .openapi({
+      example: ['telegram', 'email', 'notifyx'],
+      description: '啟用的通知渠道',
+    }),
   REMINDER_MODE: z.enum(['ONCE', 'DAILY']).optional().openapi({
     example: 'ONCE',
     description: '提醒頻率模式：ONCE=首次觸發，DAILY=每日發送',
@@ -111,13 +114,13 @@ const updateConfigSchema = z.object({
     example: 'example.com',
     description: 'Relying Party ID（主網域）',
   }),
-  WEBAUTHN_RP_ORIGINS: z.union([
-    z.array(z.string().url('Origin URL 格式無效')),
-    z.string(),
-  ]).optional().openapi({
-    example: ['https://example.com', 'https://app.example.com'],
-    description: '允許的來源 Origins（支援 Related Origin Requests）',
-  }),
+  WEBAUTHN_RP_ORIGINS: z
+    .union([z.array(z.string().url('Origin URL 格式無效')), z.string()])
+    .optional()
+    .openapi({
+      example: ['https://example.com', 'https://app.example.com'],
+      description: '允許的來源 Origins（支援 Related Origin Requests）',
+    }),
   WEBAUTHN_ATTESTATION: z.enum(['none', 'direct', 'enterprise']).optional().openapi({
     example: 'none',
     description: '認證類型（none=不驗證, direct=直接驗證, enterprise=企業驗證）',
@@ -134,14 +137,23 @@ const updateConfigSchema = z.object({
     example: 'preferred',
     description: '使用者驗證要求（required=必須生物識別, preferred=優先, discouraged=不建議）',
   }),
-  WEBAUTHN_TIMEOUT: z.number().int().min(10000, 'Timeout 不得小於 10 秒').max(600000, 'Timeout 不得大於 10 分鐘').optional().openapi({
-    example: 60000,
-    description: '認證超時時間（毫秒，範圍：10000-600000）',
-  }),
-  WEBAUTHN_HINTS: z.array(z.enum(['security-key', 'client-device', 'hybrid'])).optional().openapi({
-    example: ['security-key', 'client-device'],
-    description: 'WebAuthn 提示（引導使用者選擇驗證器類型）',
-  }),
+  WEBAUTHN_TIMEOUT: z
+    .number()
+    .int()
+    .min(10000, 'Timeout 不得小於 10 秒')
+    .max(600000, 'Timeout 不得大於 10 分鐘')
+    .optional()
+    .openapi({
+      example: 60000,
+      description: '認證超時時間（毫秒，範圍：10000-600000）',
+    }),
+  WEBAUTHN_HINTS: z
+    .array(z.enum(['security-key', 'client-device', 'hybrid']))
+    .optional()
+    .openapi({
+      example: ['security-key', 'client-device'],
+      description: 'WebAuthn 提示（引導使用者選擇驗證器類型）',
+    }),
 })
 
 /**
@@ -150,83 +162,89 @@ const updateConfigSchema = z.object({
 const ErrorResponseSchema = z.object({
   success: z.boolean().openapi({ example: false }),
   message: z.string().openapi({ example: '錯誤訊息' }),
-  errors: z.array(z.object({
-    path: z.string(),
-    message: z.string(),
-  })).optional(),
+  errors: z
+    .array(
+      z.object({
+        path: z.string(),
+        message: z.string(),
+      }),
+    )
+    .optional(),
   code: z.string().optional().openapi({ example: 'INTERNAL_ERROR' }),
 })
 
 /**
  * 配置數據 Schema（不包含敏感信息）
  */
-const ConfigDataSchema = z.object({
-  ADMIN_USERNAME: z.string(),
-  API_TOKEN: z.string().optional(),
-  TIMEZONE: z.string(),
-  TELEGRAM_BOT_TOKEN: z.string().optional(),
-  TELEGRAM_CHAT_ID: z.string().optional(),
-  WEBHOOK_URL: z.string().optional(),
-  WEBHOOK_METHOD: z.string().optional(),
-  WEBHOOK_HEADERS: z.string().optional(),
-  WEBHOOK_TEMPLATE: z.string().optional(),
-  RESEND_API_KEY: z.string().optional(),
-  EMAIL_FROM: z.string().optional(),
-  EMAIL_FROM_NAME: z.string().optional(),
-  EMAIL_TO: z.string().optional(),
-  BARK_SERVER: z.string().optional(),
-  BARK_KEY: z.string().optional(),
-  BARK_SAVE: z.string().optional(),
-  BARK_QUERY: z.string().optional(),
-  NOTIFICATION_HOURS: z.array(z.number()),
-  ENABLED_NOTIFIERS: z.array(z.string()),
-  REMINDER_MODE: z.string().optional(),
+const ConfigDataSchema = z
+  .object({
+    ADMIN_USERNAME: z.string(),
+    API_TOKEN: z.string().optional(),
+    TIMEZONE: z.string(),
+    TELEGRAM_BOT_TOKEN: z.string().optional(),
+    TELEGRAM_CHAT_ID: z.string().optional(),
+    WEBHOOK_URL: z.string().optional(),
+    WEBHOOK_METHOD: z.string().optional(),
+    WEBHOOK_HEADERS: z.string().optional(),
+    WEBHOOK_TEMPLATE: z.string().optional(),
+    RESEND_API_KEY: z.string().optional(),
+    EMAIL_FROM: z.string().optional(),
+    EMAIL_FROM_NAME: z.string().optional(),
+    EMAIL_TO: z.string().optional(),
+    BARK_SERVER: z.string().optional(),
+    BARK_KEY: z.string().optional(),
+    BARK_SAVE: z.string().optional(),
+    BARK_QUERY: z.string().optional(),
+    NOTIFICATION_HOURS: z.array(z.number()),
+    ENABLED_NOTIFIERS: z.array(z.string()),
+    REMINDER_MODE: z.string().optional(),
 
-  // WebAuthn 配置
-  WEBAUTHN_ENABLED: z.boolean().optional(),
-  WEBAUTHN_RP_NAME: z.string().optional(),
-  WEBAUTHN_RP_ID: z.string().optional(),
-  WEBAUTHN_RP_ORIGINS: z.array(z.string()).optional(),
-  WEBAUTHN_ATTESTATION: z.string().optional(),
-  WEBAUTHN_AUTHENTICATOR_ATTACHMENT: z.string().optional(),
-  WEBAUTHN_RESIDENT_KEY: z.string().optional(),
-  WEBAUTHN_USER_VERIFICATION: z.string().optional(),
-  WEBAUTHN_TIMEOUT: z.number().optional(),
-  WEBAUTHN_HINTS: z.array(z.string()).optional(),
-}).openapi({
-  example: {
-    ADMIN_USERNAME: 'admin',
-    API_TOKEN: '',
-    TIMEZONE: 'Asia/Taipei',
-    TELEGRAM_BOT_TOKEN: '',
-    TELEGRAM_CHAT_ID: '',
-    WEBHOOK_URL: '',
-    WEBHOOK_METHOD: 'POST',
-    WEBHOOK_HEADERS: '',
-    WEBHOOK_TEMPLATE: '',
-    RESEND_API_KEY: '',
-    EMAIL_FROM: '',
-    EMAIL_FROM_NAME: '',
-    EMAIL_TO: '',
-    BARK_SERVER: 'https://api.day.app',
-    BARK_KEY: '',
-    BARK_SAVE: '1',
-    BARK_QUERY: '',
-    NOTIFICATION_HOURS: [],
-    ENABLED_NOTIFIERS: ['notifyx'],
-    REMINDER_MODE: 'ONCE',
-    WEBAUTHN_ENABLED: false,
-    WEBAUTHN_RP_NAME: 'SubsTracker',
-    WEBAUTHN_RP_ID: '',
-    WEBAUTHN_RP_ORIGINS: [],
-    WEBAUTHN_ATTESTATION: 'none',
-    WEBAUTHN_AUTHENTICATOR_ATTACHMENT: undefined,
-    WEBAUTHN_RESIDENT_KEY: 'preferred',
-    WEBAUTHN_USER_VERIFICATION: 'preferred',
-    WEBAUTHN_TIMEOUT: 60000,
-    WEBAUTHN_HINTS: [],
-  },
-})
+    // WebAuthn 配置
+    WEBAUTHN_ENABLED: z.boolean().optional(),
+    WEBAUTHN_RP_NAME: z.string().optional(),
+    WEBAUTHN_RP_ID: z.string().optional(),
+    WEBAUTHN_RP_ORIGINS: z.array(z.string()).optional(),
+    WEBAUTHN_ATTESTATION: z.string().optional(),
+    WEBAUTHN_AUTHENTICATOR_ATTACHMENT: z.string().optional(),
+    WEBAUTHN_RESIDENT_KEY: z.string().optional(),
+    WEBAUTHN_USER_VERIFICATION: z.string().optional(),
+    WEBAUTHN_TIMEOUT: z.number().optional(),
+    WEBAUTHN_HINTS: z.array(z.string()).optional(),
+  })
+  .openapi({
+    example: {
+      ADMIN_USERNAME: 'admin',
+      API_TOKEN: '',
+      TIMEZONE: 'Asia/Taipei',
+      TELEGRAM_BOT_TOKEN: '',
+      TELEGRAM_CHAT_ID: '',
+      WEBHOOK_URL: '',
+      WEBHOOK_METHOD: 'POST',
+      WEBHOOK_HEADERS: '',
+      WEBHOOK_TEMPLATE: '',
+      RESEND_API_KEY: '',
+      EMAIL_FROM: '',
+      EMAIL_FROM_NAME: '',
+      EMAIL_TO: '',
+      BARK_SERVER: 'https://api.day.app',
+      BARK_KEY: '',
+      BARK_SAVE: '1',
+      BARK_QUERY: '',
+      NOTIFICATION_HOURS: [],
+      ENABLED_NOTIFIERS: ['notifyx'],
+      REMINDER_MODE: 'ONCE',
+      WEBAUTHN_ENABLED: false,
+      WEBAUTHN_RP_NAME: 'SubsTracker',
+      WEBAUTHN_RP_ID: '',
+      WEBAUTHN_RP_ORIGINS: [],
+      WEBAUTHN_ATTESTATION: 'none',
+      WEBAUTHN_AUTHENTICATOR_ATTACHMENT: undefined,
+      WEBAUTHN_RESIDENT_KEY: 'preferred',
+      WEBAUTHN_USER_VERIFICATION: 'preferred',
+      WEBAUTHN_TIMEOUT: 60000,
+      WEBAUTHN_HINTS: [],
+    },
+  })
 
 /**
  * 成功響應 Schema（含配置數據）
@@ -290,11 +308,14 @@ config.openapi(getConfigRoute, async (c) => {
   // 手動執行認證檢查
   const authResult = await authMiddleware(c, async () => {})
   if (authResult) {
-    return c.json({
-      success: false,
-      message: '未授權訪問，請先登入',
-      code: 'UNAUTHORIZED',
-    }, 401)
+    return c.json(
+      {
+        success: false,
+        message: '未授權訪問，請先登入',
+        code: 'UNAUTHORIZED',
+      },
+      401,
+    )
   }
 
   try {
@@ -306,18 +327,23 @@ config.openapi(getConfigRoute, async (c) => {
     // 過濾敏感信息
     const { JWT_SECRET, ADMIN_PASSWORD, ...safeConfig } = configData
 
-    return c.json({
-      success: true,
-      data: safeConfig,
-    }, 200)
-  }
-  catch (error) {
+    return c.json(
+      {
+        success: true,
+        data: safeConfig,
+      },
+      200,
+    )
+  } catch (error) {
     logger.error('獲取配置失敗', error, { prefix: 'Config' })
-    return c.json({
-      success: false,
-      message: '獲取配置失敗',
-      code: 'INTERNAL_ERROR',
-    }, 500)
+    return c.json(
+      {
+        success: false,
+        message: '獲取配置失敗',
+        code: 'INTERNAL_ERROR',
+      },
+      500,
+    )
   }
 })
 
@@ -383,11 +409,14 @@ config.openapi(updateConfigRoute, async (c) => {
   // 手動執行認證檢查
   const authResult = await authMiddleware(c, async () => {})
   if (authResult) {
-    return c.json({
-      success: false,
-      message: '未授權訪問，請先登入',
-      code: 'UNAUTHORIZED',
-    }, 401)
+    return c.json(
+      {
+        success: false,
+        message: '未授權訪問，請先登入',
+        code: 'UNAUTHORIZED',
+      },
+      401,
+    )
   }
 
   try {
@@ -400,25 +429,33 @@ config.openapi(updateConfigRoute, async (c) => {
     const result = await updateConfig(newConfig, c.env)
 
     if (!result.success) {
-      return c.json({
-        success: false,
-        message: result.message || '更新配置失敗',
-        code: 'VALIDATION_ERROR',
-      }, 400)
+      return c.json(
+        {
+          success: false,
+          message: result.message || '更新配置失敗',
+          code: 'VALIDATION_ERROR',
+        },
+        400,
+      )
     }
 
-    return c.json({
-      success: true,
-      message: '配置更新成功',
-    }, 200)
-  }
-  catch (error) {
+    return c.json(
+      {
+        success: true,
+        message: '配置更新成功',
+      },
+      200,
+    )
+  } catch (error) {
     logger.error('更新配置失敗', error, { prefix: 'Config' })
-    return c.json({
-      success: false,
-      message: '更新配置失敗',
-      code: 'INTERNAL_ERROR',
-    }, 500)
+    return c.json(
+      {
+        success: false,
+        message: '更新配置失敗',
+        code: 'INTERNAL_ERROR',
+      },
+      500,
+    )
   }
 })
 

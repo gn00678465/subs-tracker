@@ -1,6 +1,7 @@
-import type { HonoEnv } from '../types'
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
+
 import { getConfig } from '../services/config'
+import type { HonoEnv } from '../types'
 import { clearTokenCookie, generateJWT, setTokenCookie, verifyPassword } from '../utils/crypto'
 import * as logger from '../utils/logger'
 
@@ -20,9 +21,11 @@ const LoginSchema = z.object({
 // 登入響應 Schema（成功）
 const LoginResponseSchema = z.object({
   success: z.boolean().openapi({ example: true }),
-  data: z.object({
-    username: z.string(),
-  }).optional(),
+  data: z
+    .object({
+      username: z.string(),
+    })
+    .optional(),
   message: z.string().optional(),
 })
 
@@ -30,10 +33,14 @@ const LoginResponseSchema = z.object({
 const ErrorResponseSchema = z.object({
   success: z.boolean().openapi({ example: false }),
   message: z.string(),
-  errors: z.array(z.object({
-    path: z.string(),
-    message: z.string(),
-  })).optional(),
+  errors: z
+    .array(
+      z.object({
+        path: z.string(),
+        message: z.string(),
+      }),
+    )
+    .optional(),
   code: z.string().optional(),
 })
 
@@ -107,7 +114,8 @@ const loginRoute = createRoute({
 auth.openapi(loginRoute, async (c) => {
   try {
     const contentType = c.req.header('Content-Type') || ''
-    const isForm = contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')
+    const isForm =
+      contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')
     const { username, password } = isForm ? c.req.valid('form') : c.req.valid('json')
 
     const config = await getConfig(c.env)
@@ -116,22 +124,28 @@ auth.openapi(loginRoute, async (c) => {
     // 驗證用戶名
     if (username !== config.ADMIN_USERNAME) {
       logger.warning(`登入失敗: 用戶名錯誤 (${username})`, { prefix: 'Auth' })
-      return c.json({
-        success: false,
-        message: '用戶名或密碼錯誤',
-        code: 'UNAUTHORIZED',
-      }, 401)
+      return c.json(
+        {
+          success: false,
+          message: '用戶名或密碼錯誤',
+          code: 'UNAUTHORIZED',
+        },
+        401,
+      )
     }
 
     // 驗證密碼（使用 Hash 驗證）
     const passwordValid = await verifyPassword(password, config.ADMIN_PASSWORD, config.JWT_SECRET)
     if (!passwordValid) {
       logger.warning(`登入失敗: 密碼錯誤 (${username})`, { prefix: 'Auth' })
-      return c.json({
-        success: false,
-        message: '用戶名或密碼錯誤',
-        code: 'UNAUTHORIZED',
-      }, 401)
+      return c.json(
+        {
+          success: false,
+          message: '用戶名或密碼錯誤',
+          code: 'UNAUTHORIZED',
+        },
+        401,
+      )
     }
 
     // 生成 JWT Token
@@ -142,19 +156,24 @@ auth.openapi(loginRoute, async (c) => {
 
     logger.info(`登入成功: ${username}`, { prefix: 'Auth' })
 
-    return c.json({
-      success: true,
-      data: { username },
-      message: '登入成功',
-    }, 200)
-  }
-  catch (error) {
+    return c.json(
+      {
+        success: true,
+        data: { username },
+        message: '登入成功',
+      },
+      200,
+    )
+  } catch (error) {
     logger.error('登入處理失敗', error, { prefix: 'Auth' })
-    return c.json({
-      success: false,
-      message: '登入處理失敗，請稍後重試',
-      code: 'INTERNAL_ERROR',
-    }, 500)
+    return c.json(
+      {
+        success: false,
+        message: '登入處理失敗，請稍後重試',
+        code: 'INTERNAL_ERROR',
+      },
+      500,
+    )
   }
 })
 

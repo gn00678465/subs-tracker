@@ -34,36 +34,36 @@
 
 ### 1.3 版本與動作總表
 
-| 套件 | 目前版本（已安裝） | 目標版本 | 動作 | 風險 |
-| --- | --- | --- | --- | --- |
-| `hono` | 4.11.0 | 4.13.9 | 升級（含多項安全修正） | 低 |
-| `@hono/zod-openapi` | 1.1.5 | 1.6.3 | 升級，並修正登入路由的 media type | **中**（415 與錯誤回應格式改變） |
-| `@hono/zod-validator` | 0.7.5 | 0.9.1 | 升級（需要 `hono >=4.11.2`） | 低 |
-| `@hono/swagger-ui` | 0.5.2 | 0.6.1 | 升級 | 低 |
-| `vite` | 6.4.1 | 8.3.1 | 升級兩個 major | 中 |
-| `@cloudflare/vite-plugin` | 1.17.1 | 1.60.2 | 升級（Vite 8 需要 ≥1.29.0） | 中 |
-| `wrangler` | 4.54.0 | 4.141.0 | 與 Vite plugin 一起升級（peer `^4.141.0`） | 低 |
-| `vite-ssr-components` | 0.5.1 | 0.8.0 | 升級（Vite 8 需要 ≥0.5.2） | 低 |
-| `tailwindcss` / `@tailwindcss/vite` | 4.1.18 | 4.3.3 | 升級 | 低 |
-| `daisyui` | 5.5.14 | 5.7.46 | 升級 | 低 |
-| `zod` | 4.1.13 | 4.6.5 | 升級 | 低 |
-| `date-fns` | 4.1.0 | 4.4.0 | 升級 | 低 |
-| `resend` | 6.6.0 | 6.30.0 | 升級 | 低 |
-| `@simplewebauthn/browser` / `server` | 13.2.2 | 14.0.0 / 14.0.3 | 獨立步驟升級，修正型別 import | **中**（型別被移除、執行環境支援不明） |
-| `lucide` | 0.562.0 | 1.48.0 | 獨立步驟升級，檢查圖示外觀 | 中 |
-| `@cloudflare/workers-types` | 4.20251213.0 | 5.20260926.1 | 升級並改 `tsconfig.json` 的 `types` | 中 |
-| `typescript` | 5.9.3（間接安裝） | 明確加入 `devDependencies` | 新增 | **高**（不先做會讓 `typecheck` 失敗） |
-| `eslint` | 9.39.2 | — | 移除，改用 `oxlint` | 中 |
-| `@antfu/eslint-config` | 6.6.1 | — | 移除 | 中 |
-| `oxlint` | — | 1.85.0 | 新增 | 中 |
-| `oxlint-tsgolint` | — | 7.0.2003 | 選用，用於 type-aware 規則 | 中 |
-| `oxfmt` | — | 0.70.0 | 新增 | 中（大量格式差異） |
-| `@types/psl` | 1.1.3 | — | 移除（已棄用的 stub，`psl` 自帶型別） | 低 |
-| `conventional-changelog-cli` | 5.0.0 | `conventional-changelog` 8.1.3 | 替換（原套件已棄用） | 低 |
-| `bumpp` | 10.3.2 | 12.3.0 | 升級 | 低 |
-| `simple-git-hooks` | 2.13.1 | 2.14.0 | 升級並修正 hook 設定漂移 | 低 |
-| `@types/bun` | 1.3.4 | 1.4.2 | 升級 | 低 |
-| `vite-plus` | — | 1.0.0-rc.0 | 暫不採用，1.0 正式版後再評估 | 中 |
+| 套件                                 | 目前版本（已安裝） | 目標版本                       | 動作                                       | 風險                                   |
+| ------------------------------------ | ------------------ | ------------------------------ | ------------------------------------------ | -------------------------------------- |
+| `hono`                               | 4.11.0             | 4.13.9                         | 升級（含多項安全修正）                     | 低                                     |
+| `@hono/zod-openapi`                  | 1.1.5              | 1.6.3                          | 升級，並修正登入路由的 media type          | **中**（415 與錯誤回應格式改變）       |
+| `@hono/zod-validator`                | 0.7.5              | 0.9.1                          | 升級（需要 `hono >=4.11.2`）               | 低                                     |
+| `@hono/swagger-ui`                   | 0.5.2              | 0.6.1                          | 升級                                       | 低                                     |
+| `vite`                               | 6.4.1              | 8.3.1                          | 升級兩個 major                             | 中                                     |
+| `@cloudflare/vite-plugin`            | 1.17.1             | 1.60.2                         | 升級（Vite 8 需要 ≥1.29.0）                | 中                                     |
+| `wrangler`                           | 4.54.0             | 4.141.0                        | 與 Vite plugin 一起升級（peer `^4.141.0`） | 低                                     |
+| `vite-ssr-components`                | 0.5.1              | 0.8.0                          | 升級（Vite 8 需要 ≥0.5.2）                 | 低                                     |
+| `tailwindcss` / `@tailwindcss/vite`  | 4.1.18             | 4.3.3                          | 升級                                       | 低                                     |
+| `daisyui`                            | 5.5.14             | 5.7.46                         | 升級                                       | 低                                     |
+| `zod`                                | 4.1.13             | 4.6.5                          | 升級                                       | 低                                     |
+| `date-fns`                           | 4.1.0              | 4.4.0                          | 升級                                       | 低                                     |
+| `resend`                             | 6.6.0              | 6.30.0                         | 升級                                       | 低                                     |
+| `@simplewebauthn/browser` / `server` | 13.2.2             | 14.0.0 / 14.0.3                | 獨立步驟升級，修正型別 import              | **中**（型別被移除、執行環境支援不明） |
+| `lucide`                             | 0.562.0            | 1.48.0                         | 獨立步驟升級，檢查圖示外觀                 | 中                                     |
+| `@cloudflare/workers-types`          | 4.20251213.0       | 5.20260926.1                   | 升級並改 `tsconfig.json` 的 `types`        | 中                                     |
+| `typescript`                         | 5.9.3（間接安裝）  | 明確加入 `devDependencies`     | 新增                                       | **高**（不先做會讓 `typecheck` 失敗）  |
+| `eslint`                             | 9.39.2             | —                              | 移除，改用 `oxlint`                        | 中                                     |
+| `@antfu/eslint-config`               | 6.6.1              | —                              | 移除                                       | 中                                     |
+| `oxlint`                             | —                  | 1.85.0                         | 新增                                       | 中                                     |
+| `oxlint-tsgolint`                    | —                  | 7.0.2003                       | 選用，用於 type-aware 規則                 | 中                                     |
+| `oxfmt`                              | —                  | 0.70.0                         | 新增                                       | 中（大量格式差異）                     |
+| `@types/psl`                         | 1.1.3              | —                              | 移除（已棄用的 stub，`psl` 自帶型別）      | 低                                     |
+| `conventional-changelog-cli`         | 5.0.0              | `conventional-changelog` 8.1.3 | 替換（原套件已棄用）                       | 低                                     |
+| `bumpp`                              | 10.3.2             | 12.3.0                         | 升級                                       | 低                                     |
+| `simple-git-hooks`                   | 2.13.1             | 2.14.0                         | 升級並修正 hook 設定漂移                   | 低                                     |
+| `@types/bun`                         | 1.3.4              | 1.4.2                          | 升級                                       | 低                                     |
+| `vite-plus`                          | —                  | 1.0.0-rc.0                     | 暫不採用，1.0 正式版後再評估               | 中                                     |
 
 ---
 
@@ -73,35 +73,35 @@
 
 最新版本與發布日期來自 `npm view <pkg> version time`（2026-09-26 查詢）。已安裝版本來自 `node_modules/<pkg>/package.json`。
 
-| 套件 | `package.json` 範圍 | 已安裝 | 最新 | 最新版發布日 | 跨 major |
-| --- | --- | --- | --- | --- | --- |
-| `@hono/swagger-ui` | ^0.5.2 | 0.5.2 | 0.6.1 | 2026-03-11 | 0.x minor（`^0.5.2` 不會自動升級） |
-| `@hono/zod-openapi` | ^1.1.5 | 1.1.5 | 1.6.3 | 2026-09-04 | 否 |
-| `@hono/zod-validator` | ^0.7.5 | 0.7.5 | 0.9.1 | 2026-08-31 | 0.x minor |
-| `@simplewebauthn/browser` | ^13.2.2 | 13.2.2 | 14.0.0 | 2026-09-02 | **是** |
-| `@simplewebauthn/server` | ^13.2.2 | 13.2.2 | 14.0.3 | 2026-09-25 | **是** |
-| `@tailwindcss/vite` | ^4.1.18 | 4.1.18 | 4.3.3 | 2026-07-16 | 否 |
-| `date-fns` | ^4.1.0 | 4.1.0 | 4.4.0 | 2026-05-29 | 否 |
-| `hono` | ^4.11.0 | 4.11.0 | 4.13.9 | 2026-09-24 | 否 |
-| `lucide` | ^0.562.0 | 0.562.0 | 1.48.0 | 2026-09-24 | **是** |
-| `psl` | ^1.15.0 | 1.15.0 | 1.15.0 | 2024-12-02 | 否 |
-| `resend` | ^6.6.0 | 6.6.0 | 6.30.0 | 2026-09-25 | 否 |
-| `tailwindcss` | ^4.1.18 | 4.1.18 | 4.3.3 | 2026-07-16 | 否 |
-| `zod` | ^4.1.13 | 4.1.13 | 4.6.5 | 2026-09-13 | 否 |
-| `@antfu/eslint-config` | ^6.6.1 | 6.6.1 | 9.5.1 | 2026-09-02 | **是** |
-| `@cloudflare/vite-plugin` | ^1.2.3 | 1.17.1 | 1.60.2 | 2026-09-25 | 否 |
-| `@cloudflare/workers-types` | ^4.20251213.0 | 4.20251213.0 | 5.20260926.1 | 2026-09-26 | **是** |
-| `@types/bun` | ^1.3.4 | 1.3.4 | 1.4.2 | 2026-09-08 | 否 |
-| `bumpp` | ^10.3.2 | 10.3.2 | 12.3.0 | 2026-09-03 | **是** |
-| `conventional-changelog-cli` | ^5.0.0 | 5.0.0 | 5.0.0（已棄用） | 2024-05-03 | — |
-| `daisyui` | ^5.5.14 | 5.5.14 | 5.7.46 | 2026-09-24 | 否 |
-| `eslint` | ^9.39.2 | 9.39.2 | 10.11.0 | 2026-09-18 | **是** |
-| `simple-git-hooks` | ^2.13.1 | 2.13.1 | 2.14.0 | 2026-08-28 | 否 |
-| `vite` | ^6.3.5 | 6.4.1 | 8.3.1 | 2026-09-24 | **是（兩個 major）** |
-| `vite-ssr-components` | ^0.5.1 | 0.5.1 | 0.8.0 | 2026-09-15 | 0.x minor |
-| `wrangler` | ^4.54.0 | 4.54.0 | 4.141.0 | 2026-09-25 | 否 |
-| `@types/psl` | 1.1.3 | 1.1.3 | 1.11.0（已棄用） | 2025-07-29 | — |
-| `typescript`（未宣告） | — | 5.9.3 | 7.0.2 | — | **是** |
+| 套件                         | `package.json` 範圍 | 已安裝       | 最新             | 最新版發布日 | 跨 major                           |
+| ---------------------------- | ------------------- | ------------ | ---------------- | ------------ | ---------------------------------- |
+| `@hono/swagger-ui`           | ^0.5.2              | 0.5.2        | 0.6.1            | 2026-03-11   | 0.x minor（`^0.5.2` 不會自動升級） |
+| `@hono/zod-openapi`          | ^1.1.5              | 1.1.5        | 1.6.3            | 2026-09-04   | 否                                 |
+| `@hono/zod-validator`        | ^0.7.5              | 0.7.5        | 0.9.1            | 2026-08-31   | 0.x minor                          |
+| `@simplewebauthn/browser`    | ^13.2.2             | 13.2.2       | 14.0.0           | 2026-09-02   | **是**                             |
+| `@simplewebauthn/server`     | ^13.2.2             | 13.2.2       | 14.0.3           | 2026-09-25   | **是**                             |
+| `@tailwindcss/vite`          | ^4.1.18             | 4.1.18       | 4.3.3            | 2026-07-16   | 否                                 |
+| `date-fns`                   | ^4.1.0              | 4.1.0        | 4.4.0            | 2026-05-29   | 否                                 |
+| `hono`                       | ^4.11.0             | 4.11.0       | 4.13.9           | 2026-09-24   | 否                                 |
+| `lucide`                     | ^0.562.0            | 0.562.0      | 1.48.0           | 2026-09-24   | **是**                             |
+| `psl`                        | ^1.15.0             | 1.15.0       | 1.15.0           | 2024-12-02   | 否                                 |
+| `resend`                     | ^6.6.0              | 6.6.0        | 6.30.0           | 2026-09-25   | 否                                 |
+| `tailwindcss`                | ^4.1.18             | 4.1.18       | 4.3.3            | 2026-07-16   | 否                                 |
+| `zod`                        | ^4.1.13             | 4.1.13       | 4.6.5            | 2026-09-13   | 否                                 |
+| `@antfu/eslint-config`       | ^6.6.1              | 6.6.1        | 9.5.1            | 2026-09-02   | **是**                             |
+| `@cloudflare/vite-plugin`    | ^1.2.3              | 1.17.1       | 1.60.2           | 2026-09-25   | 否                                 |
+| `@cloudflare/workers-types`  | ^4.20251213.0       | 4.20251213.0 | 5.20260926.1     | 2026-09-26   | **是**                             |
+| `@types/bun`                 | ^1.3.4              | 1.3.4        | 1.4.2            | 2026-09-08   | 否                                 |
+| `bumpp`                      | ^10.3.2             | 10.3.2       | 12.3.0           | 2026-09-03   | **是**                             |
+| `conventional-changelog-cli` | ^5.0.0              | 5.0.0        | 5.0.0（已棄用）  | 2024-05-03   | —                                  |
+| `daisyui`                    | ^5.5.14             | 5.5.14       | 5.7.46           | 2026-09-24   | 否                                 |
+| `eslint`                     | ^9.39.2             | 9.39.2       | 10.11.0          | 2026-09-18   | **是**                             |
+| `simple-git-hooks`           | ^2.13.1             | 2.13.1       | 2.14.0           | 2026-08-28   | 否                                 |
+| `vite`                       | ^6.3.5              | 6.4.1        | 8.3.1            | 2026-09-24   | **是（兩個 major）**               |
+| `vite-ssr-components`        | ^0.5.1              | 0.5.1        | 0.8.0            | 2026-09-15   | 0.x minor                          |
+| `wrangler`                   | ^4.54.0             | 4.54.0       | 4.141.0          | 2026-09-25   | 否                                 |
+| `@types/psl`                 | 1.1.3               | 1.1.3        | 1.11.0（已棄用） | 2025-07-29   | —                                  |
+| `typescript`（未宣告）       | —                   | 5.9.3        | 7.0.2            | —            | **是**                             |
 
 注意事項：
 
@@ -115,15 +115,15 @@
 
 來源：Vite 7 migration guide、Vite 8 migration guide。
 
-| 變更 | 對本專案的影響 |
-| --- | --- |
-| Vite 7：Node.js 需要 20.19+ / 22.12+ | 本機 Node 是 v26.10.0，沒有影響。 |
-| Vite 7：`build.target` 預設改為 `baseline-widely-available` | 客戶端 JS 的瀏覽器下限提高。Vite 8 再提高到 Chrome 111、Safari 16.4 等。需要確認使用者的瀏覽器。 |
-| Vite 7：移除 Sass legacy API、`splitVendorChunkPlugin` | 專案沒有使用。 |
-| Vite 8：改用 Rolldown 與 Oxc，取代 esbuild 與 Rollup | `vite.config.ts` 沒有 `esbuild`、`rollupOptions` 設定。 |
-| Vite 8：CommonJS default import 行為改變 | 唯一的 default import 是 `import psl from 'psl'`（`src/services/webauthn.ts:5`）。`psl` 有 ESM 進入點（`exports.import: ./dist/psl.mjs`），實測建置成功。 |
-| Vite 8：CSS 壓縮預設改用 Lightning CSS | 實測建置成功。沒有比對 CSS 內容差異。 |
-| Vite 8：設定檔使用 `__dirname` 會出現警告 | 實測出現警告：`__dirname (vite.config.ts:11:20). Use import.meta.dirname instead`。建議改為 `import.meta.dirname`。 |
+| 變更                                                        | 對本專案的影響                                                                                                                                            |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vite 7：Node.js 需要 20.19+ / 22.12+                        | 本機 Node 是 v26.10.0，沒有影響。                                                                                                                         |
+| Vite 7：`build.target` 預設改為 `baseline-widely-available` | 客戶端 JS 的瀏覽器下限提高。Vite 8 再提高到 Chrome 111、Safari 16.4 等。需要確認使用者的瀏覽器。                                                          |
+| Vite 7：移除 Sass legacy API、`splitVendorChunkPlugin`      | 專案沒有使用。                                                                                                                                            |
+| Vite 8：改用 Rolldown 與 Oxc，取代 esbuild 與 Rollup        | `vite.config.ts` 沒有 `esbuild`、`rollupOptions` 設定。                                                                                                   |
+| Vite 8：CommonJS default import 行為改變                    | 唯一的 default import 是 `import psl from 'psl'`（`src/services/webauthn.ts:5`）。`psl` 有 ESM 進入點（`exports.import: ./dist/psl.mjs`），實測建置成功。 |
+| Vite 8：CSS 壓縮預設改用 Lightning CSS                      | 實測建置成功。沒有比對 CSS 內容差異。                                                                                                                     |
+| Vite 8：設定檔使用 `__dirname` 會出現警告                   | 實測出現警告：`__dirname (vite.config.ts:11:20). Use import.meta.dirname instead`。建議改為 `import.meta.dirname`。                                       |
 
 實測（scratchpad 複本，Vite 8.3.1 + `@cloudflare/vite-plugin` 1.60.2 + `wrangler` 4.141.0 + `vite-ssr-components` 0.8.0 + Tailwind 4.3.3 + Hono 4.13.9）：
 
@@ -201,28 +201,28 @@
 
 沒有標示為 breaking 的變更。下列項目與本專案有關：
 
-| 版本 | 變更 | 對本專案 |
-| --- | --- | --- |
-| 4.11.4 | JWT middleware 必須明確指定 `alg`（GHSA-f67f-6cw9-8mq4） | 專案直接呼叫 `sign`/`verify` 並傳入 `'HS256'`，沒有使用 `jwt()` middleware。沒有影響。 |
-| 4.11.7 | 多項安全修正，包含 `ErrorBoundary` XSS | 專案沒有使用 `ErrorBoundary`。 |
-| 4.12.4、4.12.12、4.12.21 | `setCookie()` 驗證 cookie 名稱與屬性 | 專案使用 `setCookie`。只要名稱與屬性合法，就沒有影響。 |
-| 4.12.6 | JSX `<link>` hoisting 行為對齊 React 19 | 實測 dev 與 preview 的 `<head>` 內容與目前相同（只多出 hot-reload script）。 |
-| 4.12.14、4.12.16、4.12.27、4.12.34、4.13.7 | `hono/jsx` SSR 的多項安全修正（屬性名稱、標籤名稱、per-request context、`memo()`、boundary 元件字串跳脫） | 專案使用 `hono/jsx` SSR，應升級。 |
-| 4.12.25 | `cors()` 在 `credentials: true` 且沒有 `origin` 時會反射任意 Origin | 專案的 `cors()` 沒有 `credentials`，沒有直接影響。 |
-| 4.12.34 | `cors()` 預設解析 `Access-Control-Request-Headers` 時的 ReDoS | 專案使用預設 `cors()`，應升級。 |
-| 4.13.0 | `RegExpRouter` 在註冊路由時就丟出 `UnsupportedPathError` | 實測啟動成功。 |
-| 4.13.0 | CORS 預設 `Allow-Methods` 加入 `QUERY` | 回應標頭多一個值，沒有功能影響。 |
-| 4.13.0 | `useRef`/`RefObject` 型別對齊 React 19 | 專案沒有使用 `useRef`。 |
-| 4.13.5 | query 解析在 `#` 之後停止；`parseBody()` 點號巢狀限制 | 專案使用 `parseBody()` 但沒有 `dot: true`。 |
+| 版本                                       | 變更                                                                                                      | 對本專案                                                                               |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| 4.11.4                                     | JWT middleware 必須明確指定 `alg`（GHSA-f67f-6cw9-8mq4）                                                  | 專案直接呼叫 `sign`/`verify` 並傳入 `'HS256'`，沒有使用 `jwt()` middleware。沒有影響。 |
+| 4.11.7                                     | 多項安全修正，包含 `ErrorBoundary` XSS                                                                    | 專案沒有使用 `ErrorBoundary`。                                                         |
+| 4.12.4、4.12.12、4.12.21                   | `setCookie()` 驗證 cookie 名稱與屬性                                                                      | 專案使用 `setCookie`。只要名稱與屬性合法，就沒有影響。                                 |
+| 4.12.6                                     | JSX `<link>` hoisting 行為對齊 React 19                                                                   | 實測 dev 與 preview 的 `<head>` 內容與目前相同（只多出 hot-reload script）。           |
+| 4.12.14、4.12.16、4.12.27、4.12.34、4.13.7 | `hono/jsx` SSR 的多項安全修正（屬性名稱、標籤名稱、per-request context、`memo()`、boundary 元件字串跳脫） | 專案使用 `hono/jsx` SSR，應升級。                                                      |
+| 4.12.25                                    | `cors()` 在 `credentials: true` 且沒有 `origin` 時會反射任意 Origin                                       | 專案的 `cors()` 沒有 `credentials`，沒有直接影響。                                     |
+| 4.12.34                                    | `cors()` 預設解析 `Access-Control-Request-Headers` 時的 ReDoS                                             | 專案使用預設 `cors()`，應升級。                                                        |
+| 4.13.0                                     | `RegExpRouter` 在註冊路由時就丟出 `UnsupportedPathError`                                                  | 實測啟動成功。                                                                         |
+| 4.13.0                                     | CORS 預設 `Allow-Methods` 加入 `QUERY`                                                                    | 回應標頭多一個值，沒有功能影響。                                                       |
+| 4.13.0                                     | `useRef`/`RefObject` 型別對齊 React 19                                                                    | 專案沒有使用 `useRef`。                                                                |
+| 4.13.5                                     | query 解析在 `#` 之後停止；`parseBody()` 點號巢狀限制                                                     | 專案使用 `parseBody()` 但沒有 `dot: true`。                                            |
 
 ### 3.4 周邊套件相容性
 
-| 套件 | 目標版本 | `peerDependencies.hono` | 結果 |
-| --- | --- | --- | --- |
-| `@hono/zod-openapi` | 1.6.3 | `>=4.10.0`（另需 `zod ^4.0.0`） | 相容 |
-| `@hono/zod-validator` | 0.9.1 | `>=4.11.2` | 相容。本專案程式碼沒有直接 import 它，它是 `@hono/zod-openapi` 的相依套件。 |
-| `@hono/swagger-ui` | 0.6.1 | `>=4.0.0` | 相容 |
-| `vite-ssr-components` | 0.8.0 | 沒有 peer | 0.5.2 加入 Vite 8 支援，0.7.1 修正 Vite 6/7 的 `rollupOptions` 讀取。實測可用。 |
+| 套件                  | 目標版本 | `peerDependencies.hono`         | 結果                                                                            |
+| --------------------- | -------- | ------------------------------- | ------------------------------------------------------------------------------- |
+| `@hono/zod-openapi`   | 1.6.3    | `>=4.10.0`（另需 `zod ^4.0.0`） | 相容                                                                            |
+| `@hono/zod-validator` | 0.9.1    | `>=4.11.2`                      | 相容。本專案程式碼沒有直接 import 它，它是 `@hono/zod-openapi` 的相依套件。     |
+| `@hono/swagger-ui`    | 0.6.1    | `>=4.0.0`                       | 相容                                                                            |
+| `vite-ssr-components` | 0.8.0    | 沒有 peer                       | 0.5.2 加入 Vite 8 支援，0.7.1 修正 Vite 6/7 的 `rollupOptions` 讀取。實測可用。 |
 
 ### 3.5 `@hono/zod-openapi` 的行為變更（會影響 API 呼叫端）
 
@@ -251,13 +251,13 @@
 
 ### 4.2 版本狀態與授權
 
-| 項目 | 狀態 | 來源 |
-| --- | --- | --- |
-| 最新版 | `1.0.0-rc.0`，2026-09-22 | npm registry |
-| 發展歷程 | 2025-10-13 公布，當時規劃為商業授權（source-available，個人與小型企業免費）；2026-03-13 alpha，改為 MIT；2026-07-02 beta；2026-09-22 1.0 RC | VoidZero 部落格 |
-| 授權 | MIT。`vite-plus` 與 `@voidzero-dev/vite-plus-core` 的 `LICENSE` 都是 MIT | 套件 tarball |
-| 公司狀態 | VoidZero 於 2026-06-04 宣布加入 Cloudflare。公告寫明 Vite、Vitest、Rolldown、Oxc、Vite+ 維持 MIT | VoidZero 部落格 |
-| 文件中的狀態文字 | rc.0 的 `troubleshooting.md` 仍寫「Vite+ is in beta」 | 套件內文件 |
+| 項目             | 狀態                                                                                                                                        | 來源            |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| 最新版           | `1.0.0-rc.0`，2026-09-22                                                                                                                    | npm registry    |
+| 發展歷程         | 2025-10-13 公布，當時規劃為商業授權（source-available，個人與小型企業免費）；2026-03-13 alpha，改為 MIT；2026-07-02 beta；2026-09-22 1.0 RC | VoidZero 部落格 |
+| 授權             | MIT。`vite-plus` 與 `@voidzero-dev/vite-plus-core` 的 `LICENSE` 都是 MIT                                                                    | 套件 tarball    |
+| 公司狀態         | VoidZero 於 2026-06-04 宣布加入 Cloudflare。公告寫明 Vite、Vitest、Rolldown、Oxc、Vite+ 維持 MIT                                            | VoidZero 部落格 |
+| 文件中的狀態文字 | rc.0 的 `troubleshooting.md` 仍寫「Vite+ is in beta」                                                                                       | 套件內文件      |
 
 ### 4.3 綁定的工具版本
 
@@ -276,13 +276,13 @@
 
 ### 4.5 相容性
 
-| 項目 | 文件說明 | 實測 |
-| --- | --- | --- |
-| bun | 文件寫明支援 pnpm、npm、Yarn、Bun，會依 `bun.lock` 偵測（`docs/guide/why.md`、`docs/guide/install.md`）。`vp migrate` 對 bun 有特別規則（`docs/guide/migrate-rules.md`） | `vp migrate` 偵測到 `bun 1.4.2`，在 `package.json` 加入 `overrides.vite` 與 `devEngines.packageManager: bun` |
-| `@cloudflare/vite-plugin` | 文件沒有提到。Vite+ 有開放中的 issue #2481：dev server 重啟時若有請求進行中，會永久卡住，只在 Vite+ 下重現 | `vp dev`：`/` 200；`vp build` 成功；`vp preview`：`/` 200 |
-| `vite-ssr-components` | 文件沒有提到 | `vp dev` 的 HTML 與一般 Vite 8 相同 |
-| `@tailwindcss/vite` | 文件沒有提到。`@tailwindcss/vite@4.3.3` 的 peer 包含 `^8` | `vp dev` 的 `/src/style.css` 200 |
-| Vite 版本前提 | 遷移前必須先升級到 Vite 8+（`docs/guide/migrate.md`） | 已在 Vite 8 複本上執行 |
+| 項目                      | 文件說明                                                                                                                                                                 | 實測                                                                                                         |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| bun                       | 文件寫明支援 pnpm、npm、Yarn、Bun，會依 `bun.lock` 偵測（`docs/guide/why.md`、`docs/guide/install.md`）。`vp migrate` 對 bun 有特別規則（`docs/guide/migrate-rules.md`） | `vp migrate` 偵測到 `bun 1.4.2`，在 `package.json` 加入 `overrides.vite` 與 `devEngines.packageManager: bun` |
+| `@cloudflare/vite-plugin` | 文件沒有提到。Vite+ 有開放中的 issue #2481：dev server 重啟時若有請求進行中，會永久卡住，只在 Vite+ 下重現                                                               | `vp dev`：`/` 200；`vp build` 成功；`vp preview`：`/` 200                                                    |
+| `vite-ssr-components`     | 文件沒有提到                                                                                                                                                             | `vp dev` 的 HTML 與一般 Vite 8 相同                                                                          |
+| `@tailwindcss/vite`       | 文件沒有提到。`@tailwindcss/vite@4.3.3` 的 peer 包含 `^8`                                                                                                                | `vp dev` 的 `/src/style.css` 200                                                                             |
+| Vite 版本前提             | 遷移前必須先升級到 Vite 8+（`docs/guide/migrate.md`）                                                                                                                    | 已在 Vite 8 複本上執行                                                                                       |
 
 其他開放中的相關 issue：#1671（TanStack Start + `@cloudflare/vite-plugin` 的 React 模組重複）、#1063（`esmExternalRequirePlugin` 在 `vp run` 下無效）。本專案沒有使用 React 與這個 plugin。
 
@@ -300,15 +300,15 @@
 
 ### 4.7 比較：一般 Vite 8 與 Vite+
 
-| 項目 | 一般 Vite 8 | Vite+ 1.0.0-rc.0 |
-| --- | --- | --- |
-| 狀態 | Vite 8.3.1 正式版 | 1.0 RC，文件仍稱 beta |
-| 與 `@cloudflare/vite-plugin` | peer 範圍明列 `^8.0.0`（≥1.29.0） | 沒有官方說明；有開放中的 dev 問題 #2481 |
-| 實測 | `tsc`、build、preview、dev 通過 | build、preview、dev 通過；`vp lint` 需要手動修正 |
-| lint / format | 需要另外安裝 `oxlint`、`oxfmt` | 內建，版本與獨立套件相同 |
-| 型別檢查 | `tsc --noEmit` | 可以用 `vp check`（tsgolint）取代，需要移除 `baseUrl` |
-| Git hooks | 繼續使用 `simple-git-hooks` | `vp migrate` 不會轉換 `simple-git-hooks`，需要手動遷移到 `vp staged` |
-| 退出成本 | 低 | 中（`vite` 被 alias 到 `vite-plus-core`，設定集中在 `vite.config.ts`） |
+| 項目                         | 一般 Vite 8                       | Vite+ 1.0.0-rc.0                                                       |
+| ---------------------------- | --------------------------------- | ---------------------------------------------------------------------- |
+| 狀態                         | Vite 8.3.1 正式版                 | 1.0 RC，文件仍稱 beta                                                  |
+| 與 `@cloudflare/vite-plugin` | peer 範圍明列 `^8.0.0`（≥1.29.0） | 沒有官方說明；有開放中的 dev 問題 #2481                                |
+| 實測                         | `tsc`、build、preview、dev 通過   | build、preview、dev 通過；`vp lint` 需要手動修正                       |
+| lint / format                | 需要另外安裝 `oxlint`、`oxfmt`    | 內建，版本與獨立套件相同                                               |
+| 型別檢查                     | `tsc --noEmit`                    | 可以用 `vp check`（tsgolint）取代，需要移除 `baseUrl`                  |
+| Git hooks                    | 繼續使用 `simple-git-hooks`       | `vp migrate` 不會轉換 `simple-git-hooks`，需要手動遷移到 `vp staged`   |
+| 退出成本                     | 低                                | 中（`vite` 被 alias 到 `vite-plus-core`，設定集中在 `vite.config.ts`） |
 
 建議：先做一般 Vite 8 升級。Vite+ 等 1.0 正式版，並確認 #2481 的狀態後再評估。
 
@@ -329,21 +329,21 @@
 
 資料來源：`eslint --print-config` 取得 `src/index.tsx` 與 `src/utils/time.ts` 的有效規則，共 297 條；與 `oxlint --rules` 比對。
 
-| 前綴（antfu 命名） | 啟用數 | oxlint 原生支援 | 缺少的規則 |
-| --- | --- | --- | --- |
-| ESLint 核心 | 80 | 75 | `no-restricted-syntax`、`no-octal`、`no-octal-escape`、`no-undef-init`、`dot-notation`（oxlint 只有 type-aware 的 `typescript/dot-notation`） |
-| `ts/`（typescript-eslint） | 26 | 26 | 無（其中 5 條在 oxlint 為 `eslint/` 範圍） |
-| `unicorn/` | 15 | 15 | 無 |
-| `import/` | 6 | 6 | 無 |
-| `jsdoc/` | 17 | 10 | `check-param-names`、`check-types`、`no-multi-asterisks`、`require-returns-check`、`require-yields-check`、`check-alignment`、`multiline-blocks` |
-| `node/`（eslint-plugin-n） | 8 | 4 | `no-deprecated-api`、`prefer-global/buffer`、`prefer-global/process`、`process-exit-as-throw` |
-| `unused-imports/` | 2 | 0 | 由 `eslint/no-unused-vars` 取代偵測。自動移除未使用 import 的修正類型為 `conditional_dangerous_fix_or_suggestion`，一般 `--fix` 是否會移除：未驗證 |
-| `perfectionist/` | 4 | 0 | 由 oxfmt 的 `sortImports` 取代（`@oxlint/migrate` 的警告訊息） |
-| `style/`（@stylistic） | 65 | 0 | 由 oxfmt 取代 |
-| `regexp/` | 60 | 0 | 全部遺失，除非用 JS plugin 載入 `eslint-plugin-regexp` |
-| `antfu/` | 9 | 0 | 全部遺失（`top-level-function`、`if-newline`、`import-dedupe`、`no-import-dist` 等） |
-| `eslint-comments/` | 4 | 0 | 遺失。oxlint 有 `--report-unused-disable-directives` 可部分替代 |
-| `command/` | 1 | 0 | 遺失 |
+| 前綴（antfu 命名）         | 啟用數 | oxlint 原生支援 | 缺少的規則                                                                                                                                         |
+| -------------------------- | ------ | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ESLint 核心                | 80     | 75              | `no-restricted-syntax`、`no-octal`、`no-octal-escape`、`no-undef-init`、`dot-notation`（oxlint 只有 type-aware 的 `typescript/dot-notation`）      |
+| `ts/`（typescript-eslint） | 26     | 26              | 無（其中 5 條在 oxlint 為 `eslint/` 範圍）                                                                                                         |
+| `unicorn/`                 | 15     | 15              | 無                                                                                                                                                 |
+| `import/`                  | 6      | 6               | 無                                                                                                                                                 |
+| `jsdoc/`                   | 17     | 10              | `check-param-names`、`check-types`、`no-multi-asterisks`、`require-returns-check`、`require-yields-check`、`check-alignment`、`multiline-blocks`   |
+| `node/`（eslint-plugin-n） | 8      | 4               | `no-deprecated-api`、`prefer-global/buffer`、`prefer-global/process`、`process-exit-as-throw`                                                      |
+| `unused-imports/`          | 2      | 0               | 由 `eslint/no-unused-vars` 取代偵測。自動移除未使用 import 的修正類型為 `conditional_dangerous_fix_or_suggestion`，一般 `--fix` 是否會移除：未驗證 |
+| `perfectionist/`           | 4      | 0               | 由 oxfmt 的 `sortImports` 取代（`@oxlint/migrate` 的警告訊息）                                                                                     |
+| `style/`（@stylistic）     | 65     | 0               | 由 oxfmt 取代                                                                                                                                      |
+| `regexp/`                  | 60     | 0               | 全部遺失，除非用 JS plugin 載入 `eslint-plugin-regexp`                                                                                             |
+| `antfu/`                   | 9      | 0               | 全部遺失（`top-level-function`、`if-newline`、`import-dedupe`、`no-import-dist` 等）                                                               |
+| `eslint-comments/`         | 4      | 0               | 遺失。oxlint 有 `--report-unused-disable-directives` 可部分替代                                                                                    |
+| `command/`                 | 1      | 0               | 遺失                                                                                                                                               |
 
 目前程式碼的實際檢查結果（實測）：
 
@@ -394,18 +394,18 @@
 
 目前有效的 @stylistic 設定（`eslint --print-config`）：
 
-| 規則 | 目前設定 | oxfmt 可對應的選項 |
-| --- | --- | --- |
-| `style/semi` | `never` | `semi: false` ✔ |
-| `style/quotes` | `single` | `singleQuote: true` ✔ |
-| `style/indent` | 2 | `tabWidth: 2` ✔ |
-| `style/comma-dangle` | `always-multiline` | `trailingComma: "all"` ✔ |
-| `style/arrow-parens` | `as-needed` + `requireForBlockBody` | 只有 `always` / `avoid`，**無法完全對應** |
-| `style/brace-style` | `stroustrup`（`}` 與 `else` 分行） | **沒有選項**，固定為 `} else {` |
-| `style/member-delimiter-style` | 多行不加分隔符號，單行用逗號 | **沒有選項**，固定用 `;` |
-| `style/quote-props` | `consistent-as-needed` | `quoteProps: "consistent"`，行為接近但不一定相同 |
-| 行寬 | antfu 沒有行寬限制 | `printWidth` 一定會生效，會重新斷行 |
-| `antfu/if-newline` | 單行 `if` 的主體換行 | **沒有選項**，oxfmt 會併成一行 |
+| 規則                           | 目前設定                            | oxfmt 可對應的選項                               |
+| ------------------------------ | ----------------------------------- | ------------------------------------------------ |
+| `style/semi`                   | `never`                             | `semi: false` ✔                                  |
+| `style/quotes`                 | `single`                            | `singleQuote: true` ✔                            |
+| `style/indent`                 | 2                                   | `tabWidth: 2` ✔                                  |
+| `style/comma-dangle`           | `always-multiline`                  | `trailingComma: "all"` ✔                         |
+| `style/arrow-parens`           | `as-needed` + `requireForBlockBody` | 只有 `always` / `avoid`，**無法完全對應**        |
+| `style/brace-style`            | `stroustrup`（`}` 與 `else` 分行）  | **沒有選項**，固定為 `} else {`                  |
+| `style/member-delimiter-style` | 多行不加分隔符號，單行用逗號        | **沒有選項**，固定用 `;`                         |
+| `style/quote-props`            | `consistent-as-needed`              | `quoteProps: "consistent"`，行為接近但不一定相同 |
+| 行寬                           | antfu 沒有行寬限制                  | `printWidth` 一定會生效，會重新斷行              |
+| `antfu/if-newline`             | 單行 `if` 的主體換行                | **沒有選項**，oxfmt 會併成一行                   |
 
 結論：oxfmt **無法重現**目前的風格。首次執行會產生大量差異。
 
@@ -414,12 +414,12 @@
 設定 `semi: false`、`singleQuote: true`、`trailingComma: "all"`、`quoteProps: "consistent"`，對 `src/`（58 個檔案）執行 oxfmt 0.70.0：
 
 | `arrowParens` | `printWidth` | 變更檔案數 | 新增行 | 刪除行 |
-| --- | --- | --- | --- | --- |
-| `always` | 100 | 46 | 1,071 | 975 |
-| `always` | 120 | 48 | 902 | 1,170 |
-| `avoid` | 100 | 46 | 1,078 | 982 |
-| `avoid` | 120 | 48 | 913 | 1,183 |
-| `avoid` | 80 | 47 | 1,928 | 1,164 |
+| ------------- | ------------ | ---------- | ------ | ------ |
+| `always`      | 100          | 46         | 1,071  | 975    |
+| `always`      | 120          | 48         | 902    | 1,170  |
+| `avoid`       | 100          | 46         | 1,078  | 982    |
+| `avoid`       | 120          | 48         | 913    | 1,183  |
+| `avoid`       | 80           | 47         | 1,928  | 1,164  |
 
 `src/index.tsx` 的差異範例：`}\n else {` 改為 `} else {`；三行的 `if ... \n stats.x++` 併為一行；`{ success: boolean, data?: any }` 改為 `{ success: boolean; data?: any }`。
 
@@ -455,10 +455,10 @@
 
 現況（本機 `.git/hooks` 與 repo 設定不一致）：
 
-| Hook | `.simple-git-hooks.mjs` | 實際安裝的 `.git/hooks/*` |
-| --- | --- | --- |
-| pre-commit | `bun run lint:fix` | gitleaks 掃描，接著 `bun run lint:fix` |
-| pre-push | `bun run typecheck` | `bun run typecheck && bun run test` |
+| Hook       | `.simple-git-hooks.mjs` | 實際安裝的 `.git/hooks/*`              |
+| ---------- | ----------------------- | -------------------------------------- |
+| pre-commit | `bun run lint:fix`      | gitleaks 掃描，接著 `bun run lint:fix` |
+| pre-push   | `bun run typecheck`     | `bun run typecheck && bun run test`    |
 
 - `package.json` 沒有 `test` script。實測 `bun run test` 會執行 `/bin/test` 並以 exit code 1 結束，所以目前安裝的 pre-push hook 會擋下所有 push。
 - 重新執行 `simple-git-hooks` 會用 repo 設定覆蓋本機 hook，gitleaks 掃描會消失。
@@ -497,17 +497,17 @@ export default {
 
 ### 7.4 `AGENTS.md` 需要更新的段落
 
-| 行號 | 段落 | 更新內容 |
-| --- | --- | --- |
-| 29–47 | Dev Environment Tips | Vite 8；`vite.config.ts` 改用 `import.meta.dirname` |
-| 60–92 | Build and Test Commands | `lint` 改為 oxlint；新增 `fmt`、`fmt:check`、`check`；刪除「Uses `@antfu/eslint-config`」 |
-| 62–64 | Full Check Suite | 改為 `bun run check && bun run build` |
-| 96–98 | Code style | 註明 `any` 由 `typescript/no-explicit-any` 強制；格式由 oxfmt 負責 |
-| 140–147 | PR Checklist | 加入 `bun run fmt:check` |
-| 227–230 | Release Best Practices | 同上 |
-| 298–301 | Why Vite for Workers? | 更新為 Vite 8（Rolldown） |
-| 310–317 | Adding New Features | 更新驗證指令 |
-| 364–381 | Quick Reference | 更新 lint、fmt 指令 |
+| 行號    | 段落                    | 更新內容                                                                                  |
+| ------- | ----------------------- | ----------------------------------------------------------------------------------------- |
+| 29–47   | Dev Environment Tips    | Vite 8；`vite.config.ts` 改用 `import.meta.dirname`                                       |
+| 60–92   | Build and Test Commands | `lint` 改為 oxlint；新增 `fmt`、`fmt:check`、`check`；刪除「Uses `@antfu/eslint-config`」 |
+| 62–64   | Full Check Suite        | 改為 `bun run check && bun run build`                                                     |
+| 96–98   | Code style              | 註明 `any` 由 `typescript/no-explicit-any` 強制；格式由 oxfmt 負責                        |
+| 140–147 | PR Checklist            | 加入 `bun run fmt:check`                                                                  |
+| 227–230 | Release Best Practices  | 同上                                                                                      |
+| 298–301 | Why Vite for Workers?   | 更新為 Vite 8（Rolldown）                                                                 |
+| 310–317 | Adding New Features     | 更新驗證指令                                                                              |
+| 364–381 | Quick Reference         | 更新 lint、fmt 指令                                                                       |
 
 新增段落：pre-commit hook 的實際行為（gitleaks + fmt:check + lint）。
 
@@ -533,16 +533,16 @@ export default {
 
 ### 風險清單
 
-| 風險 | 步驟 | 等級 | 對策 |
-| --- | --- | --- | --- |
-| 移除 ESLint 後 `tsc` 消失 | 8 | 高 | 先做步驟 1 |
-| 表單登入回傳 415 | 3 | 中 | 補上 media type 宣告 |
-| 驗證錯誤回應格式改變，影響第三方 `/api/notify` 呼叫端 | 3 | 中 | 在 changelog 說明 |
-| 大量格式差異造成分支衝突 | 7 | 中 | 先合併進行中的分支，再格式化 |
-| 步驟 7 與 8 之間 ESLint 與 oxfmt 互相改寫 | 7 | 中 | 步驟 7 同時關閉 ESLint stylistic |
-| SimpleWebAuthn v14 在 workerd 上的行為未知 | 10 | 中 | staging 測試 |
-| 太新的套件版本（供應鏈） | 全部 | 中 | 等待數天，或設定 `minimumReleaseAge` |
-| Vite 8 預設瀏覽器下限提高 | 4 | 低 | 確認使用者的瀏覽器 |
+| 風險                                                  | 步驟 | 等級 | 對策                                 |
+| ----------------------------------------------------- | ---- | ---- | ------------------------------------ |
+| 移除 ESLint 後 `tsc` 消失                             | 8    | 高   | 先做步驟 1                           |
+| 表單登入回傳 415                                      | 3    | 中   | 補上 media type 宣告                 |
+| 驗證錯誤回應格式改變，影響第三方 `/api/notify` 呼叫端 | 3    | 中   | 在 changelog 說明                    |
+| 大量格式差異造成分支衝突                              | 7    | 中   | 先合併進行中的分支，再格式化         |
+| 步驟 7 與 8 之間 ESLint 與 oxfmt 互相改寫             | 7    | 中   | 步驟 7 同時關閉 ESLint stylistic     |
+| SimpleWebAuthn v14 在 workerd 上的行為未知            | 10   | 中   | staging 測試                         |
+| 太新的套件版本（供應鏈）                              | 全部 | 中   | 等待數天，或設定 `minimumReleaseAge` |
+| Vite 8 預設瀏覽器下限提高                             | 4    | 低   | 確認使用者的瀏覽器                   |
 
 ---
 

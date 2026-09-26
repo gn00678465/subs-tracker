@@ -20,7 +20,7 @@ declare namespace Api {
     success: false
     message: string // 必需：錯誤訊息
     errors?: Array<{
-    // 可選：驗證錯誤詳情
+      // 可選：驗證錯誤詳情
       path: string
       message: string
     }>
@@ -32,6 +32,5 @@ declare namespace Api {
    */
   type Response<T = any> = SuccessResponse<T> | ErrorResponse
 
-  type ErrorCodeType = typeof ErrorCode[keyof typeof ErrorCode]
-
+  type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode]
 }

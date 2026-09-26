@@ -1,6 +1,7 @@
-import type { Subscription } from '../../types/index'
 /** @jsxImportSource hono/jsx/dom */
 import { useMemo } from 'hono/jsx/dom'
+
+import type { Subscription } from '../../types/index'
 import { SubscriptionTableRow } from './SubscriptionTableRow'
 import { EmptyState } from './SubscriptionTableStates'
 
@@ -16,12 +17,7 @@ interface SubscriptionTableProps {
   }
 }
 
-export function SubscriptionTable({
-  subscriptions,
-  searchKeyword,
-  categoryFilter,
-  handlers,
-}: SubscriptionTableProps) {
+export function SubscriptionTable({ subscriptions, searchKeyword, categoryFilter, handlers }: SubscriptionTableProps) {
   // 使用 useMemo 優化過濾和排序（避免每次渲染重新計算）
   const filteredSubscriptions = useMemo(() => {
     let filtered = subscriptions.slice()
@@ -29,9 +25,8 @@ export function SubscriptionTable({
     // 分類過濾（保留原有邏輯 index.ts:153-162）
     if (categoryFilter) {
       filtered = filtered.filter((sub) => {
-        if (!sub.category)
-          return false
-        const tokens = sub.category.split(/[/,\s]+/).map(t => t.trim().toLowerCase())
+        if (!sub.category) return false
+        const tokens = sub.category.split(/[/,\s]+/).map((t) => t.trim().toLowerCase())
         return tokens.includes(categoryFilter)
       })
     }
@@ -39,10 +34,7 @@ export function SubscriptionTable({
     // 關鍵字搜尋（保留原有邏輯 index.ts:164-172）
     if (searchKeyword) {
       filtered = filtered.filter((sub) => {
-        const haystack = [sub.name, sub.customType, sub.notes, sub.category]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase()
+        const haystack = [sub.name, sub.customType, sub.notes, sub.category].filter(Boolean).join(' ').toLowerCase()
         return haystack.includes(searchKeyword)
       })
     }
@@ -61,7 +53,7 @@ export function SubscriptionTable({
   // 渲染行
   return (
     <>
-      {filteredSubscriptions.map(sub => (
+      {filteredSubscriptions.map((sub) => (
         <SubscriptionTableRow
           key={sub.id}
           subscription={sub}

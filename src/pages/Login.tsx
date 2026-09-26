@@ -1,5 +1,6 @@
 import type { FC } from 'hono/jsx'
 import { Script } from 'vite-ssr-components/hono'
+
 import { Layout } from '../components/Layout'
 import ThemeToggle from '../components/ToggleTheme'
 
@@ -13,11 +14,7 @@ export const LoginPage: FC = () => {
             {/* 標題 */}
             <div class="text-center mb-6">
               <div class="flex justify-center mb-4">
-                <img
-                  src="/icon.svg"
-                  alt="SubsTracker Logo"
-                  class="w-16 h-16"
-                />
+                <img src="/icon.svg" alt="SubsTracker Logo" class="w-16 h-16" />
               </div>
               <h1 class="text-3xl font-bold text-base-content">SubsTracker</h1>
               <p class="text-base-content/70 mt-2">登入管理您的訂閱提醒</p>
@@ -89,11 +86,7 @@ export const LoginPage: FC = () => {
             <div class="divider">或</div>
 
             {/* WebAuthn 登入按鈕 */}
-            <button
-              type="button"
-              id="webauthnLoginBtn"
-              class="btn btn-outline btn-primary w-full"
-            >
+            <button type="button" id="webauthnLoginBtn" class="btn btn-outline btn-primary w-full">
               <i data-lucide="fingerprint" class="size-5" id="webauthnLoginIcon"></i>
               <span class="loading loading-spinner loading-sm hidden" id="webauthnLoginLoading"></span>
               <span id="webauthnLoginText">使用 Passkey 登入</span>

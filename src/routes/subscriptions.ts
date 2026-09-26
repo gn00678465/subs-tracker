@@ -1,5 +1,5 @@
-import type { HonoEnv } from '../types'
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
+
 import { authMiddleware } from '../middleware/auth'
 import { getConfig } from '../services/config'
 import { sendNotificationToAllChannels } from '../services/notifier'
@@ -11,6 +11,7 @@ import {
   toggleSubscriptionStatus,
   updateSubscription,
 } from '../services/subscription'
+import type { HonoEnv } from '../types'
 import * as logger from '../utils/logger'
 import { created, notFound, serverError, success, validationError } from '../utils/response'
 
@@ -22,7 +23,8 @@ subscriptions.use('*', authMiddleware)
 
 // ID 路徑參數驗證 Schema
 const idParamSchema = z.object({
-  id: z.string()
+  id: z
+    .string()
     .regex(/^\d+$/, 'ID 必須為數字字串')
     .refine(
       (id) => {
@@ -79,31 +81,33 @@ const toggleStatusSchema = z.object({
 })
 
 // 訂閱響應 Schema
-const SubscriptionResponseSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  expiryDate: z.string(),
-  autoRenew: z.boolean(),
-  isActive: z.boolean(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-  customType: z.string().optional(),
-  category: z.string().optional(),
-  currency: z.string().optional(),
-  price: z.string().optional(),
-  startDate: z.string().optional(),
-  hasEndDate: z.boolean().optional(),
-  isFreeTrial: z.boolean().optional(),
-  periodValue: z.number().optional(),
-  periodUnit: z.enum(['day', 'month', 'year']).optional(),
-  periodMethod: z.enum(['credit', 'apple', 'google', 'paypal', 'other']).optional(),
-  website: z.string().optional(),
-  isReminderSet: z.boolean().optional(),
-  reminderMe: z.number().optional(),
-  notes: z.string().optional(),
-  lastReminderSentAt: z.string().optional(),
-  lastCheckedExpiryDate: z.string().optional(),
-}).openapi('Subscription')
+const SubscriptionResponseSchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    expiryDate: z.string(),
+    autoRenew: z.boolean(),
+    isActive: z.boolean(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+    customType: z.string().optional(),
+    category: z.string().optional(),
+    currency: z.string().optional(),
+    price: z.string().optional(),
+    startDate: z.string().optional(),
+    hasEndDate: z.boolean().optional(),
+    isFreeTrial: z.boolean().optional(),
+    periodValue: z.number().optional(),
+    periodUnit: z.enum(['day', 'month', 'year']).optional(),
+    periodMethod: z.enum(['credit', 'apple', 'google', 'paypal', 'other']).optional(),
+    website: z.string().optional(),
+    isReminderSet: z.boolean().optional(),
+    reminderMe: z.number().optional(),
+    notes: z.string().optional(),
+    lastReminderSentAt: z.string().optional(),
+    lastCheckedExpiryDate: z.string().optional(),
+  })
+  .openapi('Subscription')
 
 // 成功響應 Schema
 const SuccessResponseSchema = z.object({
@@ -116,10 +120,14 @@ const SuccessResponseSchema = z.object({
 const ErrorResponseSchema = z.object({
   success: z.boolean().openapi({ example: false }),
   message: z.string(),
-  errors: z.array(z.object({
-    path: z.string(),
-    message: z.string(),
-  })).optional(),
+  errors: z
+    .array(
+      z.object({
+        path: z.string(),
+        message: z.string(),
+      }),
+    )
+    .optional(),
   code: z.string().optional(),
 })
 
@@ -167,8 +175,7 @@ subscriptions.openapi(listSubscriptionsRoute, async (c) => {
     const subscriptions = await getAllSubscriptions(c.env)
 
     return success(c, subscriptions)
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('獲取訂閱列表失敗', error, { prefix: 'Subscriptions' })
     return serverError(c, '獲取訂閱列表失敗')
   }
@@ -241,8 +248,7 @@ subscriptions.openapi(createSubscriptionRoute, async (c) => {
     }
 
     return created(c, result.subscription, '訂閱創建成功')
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('創建訂閱失敗', error, { prefix: 'Subscriptions' })
     return serverError(c, '創建訂閱失敗')
   }
@@ -309,8 +315,7 @@ subscriptions.openapi(getSubscriptionRoute, async (c) => {
     }
 
     return success(c, subscription)
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('獲取訂閱詳情失敗', error, { prefix: 'Subscriptions' })
     return serverError(c, '獲取訂閱詳情失敗')
   }
@@ -397,8 +402,7 @@ subscriptions.openapi(updateSubscriptionRoute, async (c) => {
     }
 
     return success(c, result.subscription, '訂閱更新成功')
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('更新訂閱失敗', error, { prefix: 'Subscriptions' })
     return serverError(c, '更新訂閱失敗')
   }
@@ -466,8 +470,7 @@ subscriptions.openapi(deleteSubscriptionRoute, async (c) => {
     }
 
     return success(c, undefined, '訂閱刪除成功')
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('刪除訂閱失敗', error, { prefix: 'Subscriptions' })
     return serverError(c, '刪除訂閱失敗')
   }
@@ -553,8 +556,7 @@ subscriptions.openapi(toggleSubscriptionRoute, async (c) => {
     }
 
     return success(c, result.subscription, `訂閱已${isActive ? '啟用' : '停用'}`)
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('切換訂閱狀態失敗', error, { prefix: 'Subscriptions' })
     return serverError(c, '切換訂閱狀態失敗')
   }
@@ -662,18 +664,21 @@ subscriptions.openapi(testNotificationRoute, async (c) => {
     }
 
     if (result.successCount === 0) {
-      const errorDetails = result.results.map(r => `${r.channel}: ${r.error}`).join('; ')
+      const errorDetails = result.results.map((r) => `${r.channel}: ${r.error}`).join('; ')
       return serverError(c, `所有通知渠道發送失敗，詳情: ${errorDetails}`)
     }
 
-    return success(c, {
-      totalChannels: result.totalChannels,
-      successCount: result.successCount,
-      failureCount: result.failureCount,
-      details: result.results,
-    }, `測試通知發送完成 (成功 ${result.successCount}/${result.totalChannels})`)
-  }
-  catch (error) {
+    return success(
+      c,
+      {
+        totalChannels: result.totalChannels,
+        successCount: result.successCount,
+        failureCount: result.failureCount,
+        details: result.results,
+      },
+      `測試通知發送完成 (成功 ${result.successCount}/${result.totalChannels})`,
+    )
+  } catch (error) {
     logger.error('測試訂閱通知失敗', error, { prefix: 'Subscriptions' })
     return serverError(c, '測試訂閱通知失敗')
   }

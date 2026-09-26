@@ -10,16 +10,14 @@ const errorMsg = document.getElementById('errorMsg') as HTMLElement | null
 const errorText = document.getElementById('errorText') as HTMLElement | null
 
 function resetButtonState() {
-  if (!btn || !btnText || !btnLoading)
-    return
+  if (!btn || !btnText || !btnLoading) return
   btn.disabled = false
   btnText.classList.remove('hidden')
   btnLoading.classList.add('hidden')
 }
 
 function showError(message: string) {
-  if (!errorMsg || !errorText)
-    return
+  if (!errorMsg || !errorText) return
   errorText.textContent = message
   errorMsg.classList.remove('hidden')
 }
@@ -38,8 +36,7 @@ form?.addEventListener('submit', async (evt: Event) => {
 
   errorMsg?.classList.add('hidden')
 
-  if (!btn || !btnText || !btnLoading)
-    return
+  if (!btn || !btnText || !btnLoading) return
   btn.disabled = true
   btnText.classList.add('hidden')
   btnLoading.classList.remove('hidden')
@@ -54,19 +51,17 @@ form?.addEventListener('submit', async (evt: Event) => {
       }),
     })
 
-    const data = await response.json() as Api.Response<{ username: string }>
+    const data = (await response.json()) as Api.Response<{ username: string }>
 
     if (data.success) {
       const params = new URLSearchParams(window.location.search)
       const redirectTo = getSafeRedirectUrl(params.get('redirect_to'))
       window.location.href = redirectTo
-    }
-    else {
+    } else {
       showError(data.message || '登入失敗，請檢查用戶名和密碼')
       resetButtonState()
     }
-  }
-  catch {
+  } catch {
     showError('發生錯誤，請稍後再試')
     resetButtonState()
   }

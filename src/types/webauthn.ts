@@ -1,8 +1,4 @@
-import type {
-  AuthenticatorTransportFuture,
-  Base64URLString,
-  CredentialDeviceType,
-} from '@simplewebauthn/server'
+import type { AuthenticatorTransportFuture, Base64URLString, CredentialDeviceType } from '@simplewebauthn/server'
 
 /**
  * KV 中儲存的憑證資料結構

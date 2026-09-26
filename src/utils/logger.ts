@@ -3,7 +3,17 @@
  * 提供統一的日誌記錄功能，支援不同級別的日誌分類
  */
 
-export type LogLevel = 'DEBUG' | 'INFO' | 'WARNING' | 'ERROR' | 'REQUEST' | 'CONFIG' | 'KV' | 'JWT' | 'SUBSCRIPTION' | 'NOTIFICATION'
+export type LogLevel =
+  | 'DEBUG'
+  | 'INFO'
+  | 'WARNING'
+  | 'ERROR'
+  | 'REQUEST'
+  | 'CONFIG'
+  | 'KV'
+  | 'JWT'
+  | 'SUBSCRIPTION'
+  | 'NOTIFICATION'
 
 interface LogOptions {
   timestamp?: boolean
@@ -126,9 +136,7 @@ export function warning(message: string, options?: LogOptions): void {
  * ERROR 級別日誌（錯誤）
  */
 export function error(message: string, error?: any, options?: LogOptions): void {
-  const errorData = error instanceof Error
-    ? { message: error.message, stack: error.stack }
-    : error
+  const errorData = error instanceof Error ? { message: error.message, stack: error.stack } : error
 
   log('ERROR', message, { ...options, data: errorData })
 }
@@ -191,11 +199,9 @@ export function logRequestEnd(method: string, path: string, duration: number, st
   const message = `${method} ${path} - ${status} (${duration}ms)`
   if (status >= 500) {
     error(message)
-  }
-  else if (status >= 400) {
+  } else if (status >= 400) {
     warning(message)
-  }
-  else {
+  } else {
     info(message)
   }
 }
@@ -207,8 +213,7 @@ export function logKvOperation(operation: 'get' | 'put' | 'delete', key: string,
   const message = `KV ${operation.toUpperCase()} '${key}' - ${success ? '成功' : '失敗'}`
   if (success) {
     kv(message)
-  }
-  else {
+  } else {
     error(message)
   }
 }
@@ -218,12 +223,9 @@ export function logKvOperation(operation: 'get' | 'put' | 'delete', key: string,
  */
 export function createLogger(prefix: string) {
   return {
-    debug: (message: string, options?: Omit<LogOptions, 'prefix'>) =>
-      debug(message, { ...options, prefix }),
-    info: (message: string, options?: Omit<LogOptions, 'prefix'>) =>
-      info(message, { ...options, prefix }),
-    warning: (message: string, options?: Omit<LogOptions, 'prefix'>) =>
-      warning(message, { ...options, prefix }),
+    debug: (message: string, options?: Omit<LogOptions, 'prefix'>) => debug(message, { ...options, prefix }),
+    info: (message: string, options?: Omit<LogOptions, 'prefix'>) => info(message, { ...options, prefix }),
+    warning: (message: string, options?: Omit<LogOptions, 'prefix'>) => warning(message, { ...options, prefix }),
     error: (message: string, err?: any, options?: Omit<LogOptions, 'prefix'>) =>
       error(message, err, { ...options, prefix }),
     request: (method: string, path: string, options?: Omit<LogOptions, 'prefix'>) =>

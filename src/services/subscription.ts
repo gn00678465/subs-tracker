@@ -16,8 +16,7 @@ export async function getAllSubscriptions(env: Bindings): Promise<Subscription[]
   try {
     const data = await env.SUBSCRIPTIONS_KV.get('subscriptions')
     return data ? JSON.parse(data) : []
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('獲取訂閱列表失敗', error, { prefix: 'Subscription' })
     return []
   }
@@ -26,12 +25,9 @@ export async function getAllSubscriptions(env: Bindings): Promise<Subscription[]
 /**
  * 根據 ID 獲取單個訂閱
  */
-export async function getSubscription(
-  id: string,
-  env: Bindings,
-): Promise<Subscription | undefined> {
+export async function getSubscription(id: string, env: Bindings): Promise<Subscription | undefined> {
   const subscriptions = await getAllSubscriptions(env)
-  return subscriptions.find(s => s.id === id)
+  return subscriptions.find((s) => s.id === id)
 }
 
 /**
@@ -44,7 +40,7 @@ export async function getSubscription(
 export async function batchUpdateSubscriptions(
   updates: Map<string, Subscription>,
   env: Bindings,
-): Promise<{ success: boolean, updatedCount: number, message?: string }> {
+): Promise<{ success: boolean; updatedCount: number; message?: string }> {
   try {
     if (updates.size === 0) {
       return { success: true, updatedCount: 0 }
@@ -68,8 +64,7 @@ export async function batchUpdateSubscriptions(
 
     logger.info(`批量更新 ${updatedCount} 個訂閱`, { prefix: 'Subscription' })
     return { success: true, updatedCount }
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('批量更新訂閱失敗', error, { prefix: 'Subscription' })
     return {
       success: false,
@@ -88,15 +83,14 @@ export async function batchUpdateSubscriptions(
  * @param hoursDiff 距離到期的小時數
  */
 export function shouldTriggerReminder(
-  reminder: { unit: 'day' | 'hour', value: number },
+  reminder: { unit: 'day' | 'hour'; value: number },
   daysDiff: number,
   hoursDiff: number,
 ): boolean {
   if (reminder.unit === 'hour') {
     // 小時級提醒：hoursDiff 在 0 到 reminderValue 之間
     return hoursDiff >= 0 && hoursDiff <= reminder.value
-  }
-  else {
+  } else {
     // 天級提醒：daysDiff 在 0 到 reminderValue 之間
     return daysDiff >= 0 && daysDiff <= reminder.value
   }
@@ -111,7 +105,7 @@ export function shouldTriggerReminder(
 export function applyAutoRenewal(
   subscription: Subscription,
   currentTime: Date,
-): { renewed: boolean, newExpiryDate?: string } {
+): { renewed: boolean; newExpiryDate?: string } {
   if (!subscription.autoRenew || !subscription.periodValue || !subscription.periodUnit) {
     return { renewed: false }
   }
@@ -151,7 +145,7 @@ export function applyAutoRenewal(
 export async function createSubscription(
   data: Partial<Subscription>,
   env: Bindings,
-): Promise<{ success: boolean, subscription?: Subscription, message?: string }> {
+): Promise<{ success: boolean; subscription?: Subscription; message?: string }> {
   try {
     // 驗證必填字段
     if (!data.name || !data.expiryDate) {
@@ -193,8 +187,7 @@ export async function createSubscription(
     await env.SUBSCRIPTIONS_KV.put('subscriptions', JSON.stringify(subscriptions))
 
     return { success: true, subscription: newSubscription }
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('創建訂閱失敗', error, { prefix: 'Subscription' })
     return {
       success: false,
@@ -210,10 +203,10 @@ export async function updateSubscription(
   id: string,
   data: Partial<Subscription>,
   env: Bindings,
-): Promise<{ success: boolean, subscription?: Subscription, message?: string }> {
+): Promise<{ success: boolean; subscription?: Subscription; message?: string }> {
   try {
     const subscriptions = await getAllSubscriptions(env)
-    const index = subscriptions.findIndex(s => s.id === id)
+    const index = subscriptions.findIndex((s) => s.id === id)
 
     if (index === -1) {
       return { success: false, message: '訂閱不存在' }
@@ -230,10 +223,7 @@ export async function updateSubscription(
 
     // 如果到期且有週期設定，自動續期
     if (expiryDate < currentTime && data.periodValue && data.periodUnit) {
-      const renewal = applyAutoRenewal(
-        { ...data, expiryDate: data.expiryDate } as Subscription,
-        currentTime,
-      )
+      const renewal = applyAutoRenewal({ ...data, expiryDate: data.expiryDate } as Subscription, currentTime)
       if (renewal.renewed && renewal.newExpiryDate) {
         expiryDate = new Date(renewal.newExpiryDate)
       }
@@ -268,8 +258,7 @@ export async function updateSubscription(
     await env.SUBSCRIPTIONS_KV.put('subscriptions', JSON.stringify(subscriptions))
 
     return { success: true, subscription: updatedSubscription }
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('更新訂閱失敗', error, { prefix: 'Subscription' })
     return {
       success: false,
@@ -281,13 +270,10 @@ export async function updateSubscription(
 /**
  * 刪除訂閱
  */
-export async function deleteSubscription(
-  id: string,
-  env: Bindings,
-): Promise<{ success: boolean, message?: string }> {
+export async function deleteSubscription(id: string, env: Bindings): Promise<{ success: boolean; message?: string }> {
   try {
     const subscriptions = await getAllSubscriptions(env)
-    const index = subscriptions.findIndex(s => s.id === id)
+    const index = subscriptions.findIndex((s) => s.id === id)
 
     if (index === -1) {
       return { success: false, message: '訂閱不存在' }
@@ -298,8 +284,7 @@ export async function deleteSubscription(
     await env.SUBSCRIPTIONS_KV.put('subscriptions', JSON.stringify(subscriptions))
 
     return { success: true }
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('刪除訂閱失敗', error, { prefix: 'Subscription' })
     return {
       success: false,
@@ -315,10 +300,10 @@ export async function toggleSubscriptionStatus(
   id: string,
   isActive: boolean,
   env: Bindings,
-): Promise<{ success: boolean, subscription?: Subscription, message?: string }> {
+): Promise<{ success: boolean; subscription?: Subscription; message?: string }> {
   try {
     const subscriptions = await getAllSubscriptions(env)
-    const index = subscriptions.findIndex(s => s.id === id)
+    const index = subscriptions.findIndex((s) => s.id === id)
 
     if (index === -1) {
       return { success: false, message: '訂閱不存在' }
@@ -330,8 +315,7 @@ export async function toggleSubscriptionStatus(
     await env.SUBSCRIPTIONS_KV.put('subscriptions', JSON.stringify(subscriptions))
 
     return { success: true, subscription: subscriptions[index] }
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('切換狀態失敗', error, { prefix: 'Subscription' })
     return {
       success: false,

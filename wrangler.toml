@@ -22,4 +22,4 @@ crons = ["0 0 * * *"]
 # 環境變數（可選，也可以在 Cloudflare Dashboard 內設定）
 [vars]
 ENVIRONMENT = "production"
-VERSION = "1.0.0"  # Will be overridden by --var during deployment
+VERSION = "1.0.0" # Will be overridden by --var during deployment

@@ -1,4 +1,5 @@
 import { resolve } from 'node:path'
+
 import { cloudflare } from '@cloudflare/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vite'
