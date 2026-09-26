@@ -1,8 +1,10 @@
 {
   "prettier.enable": false,
-  "editor.formatOnSave": false,
 
-  // oxlint via the oxc extension (oxc.oxc-vscode)
+  // oxfmt and oxlint via the oxc extension; oxfmt cannot format a range, so format the whole file
+  "editor.defaultFormatter": "oxc.oxc-vscode",
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "file",
   "editor.codeActionsOnSave": {
     "source.fixAll.oxc": "explicit",
     "source.organizeImports": "never"

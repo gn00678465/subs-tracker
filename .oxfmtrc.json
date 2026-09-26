@@ -1,0 +1,11 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "semi": false,
+  "singleQuote": true,
+  "printWidth": 120,
+  "arrowParens": "always",
+  "trailingComma": "all",
+  "quoteProps": "consistent",
+  "sortImports": true,
+  "ignorePatterns": ["worker-configuration.d.ts", "CHANGELOG.md", ".claude/skills/gitnexus-*/"]
+}
