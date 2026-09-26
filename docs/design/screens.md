@@ -14,7 +14,7 @@
 
 - 手機優先。桌機是放大的版本，順序與流程相同，只增加欄位與側欄。
 - 字體：Noto Sans TC（中文）、Barlow Semi Condensed（數字），都從 Google Fonts 載入。
-- 不用 UI 套件，移除 daisyUI（2026-09-26，依據 `docs/research/2026-09-26-ui-kit.md`）。使用 Tailwind CSS v4：原型的元件樣式放在 `src/style.css` 的 `@layer components`，顏色與字型對應到 `@theme`，新的樣式可以用 utility class。元件樣式以 `docs/design/subs-tracker-design.html` 為準；對話框、下拉提示、日期欄位用瀏覽器原生的 `<dialog>`、`<datalist>`、`type="date"`。
+- 不用 UI 套件，移除 daisyUI（2026-09-26，依據 `docs/research/2026-09-26-ui-kit.md`）。使用 Tailwind CSS v4：原型的元件樣式放在 `src/style.css` 的 `@layer components`，顏色與字型對應到 `@theme`，新的樣式可以用 utility class。元件樣式以 `docs/design/subs-tracker-design.html` 為準；對話框、下拉提示用瀏覽器原生的 `<dialog>`、`<datalist>`。日期欄位用自製的月曆（`src/client/home/DatePicker.tsx`，樣式參考 shadcn 的 Calendar），展開在欄位下方；原生 `type="date"` 的外觀無法配合設計（2026-09-26）。
 - 介面用語：「通知管道」（取代「渠道」）、「下次扣款日」（取代「到期日期」）。
 - 主題：預設跟隨系統，可在設定頁切換。只存在瀏覽器，不存到伺服器。
 - 確認刪除用頁面內的確認，不用瀏覽器的 `confirm()`。

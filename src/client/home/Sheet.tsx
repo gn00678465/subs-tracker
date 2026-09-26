@@ -7,6 +7,7 @@ import type { CalendarDate } from '../../utils/calendarDate'
 import { api, ApiError, errorMessage } from '../shared/api'
 import { toast } from '../shared/toast'
 import { Card } from './Card'
+import { DatePicker } from './DatePicker'
 import type { Draft, DraftErrors, DraftField } from './draft'
 import { CURRENCIES, draftOf, emptyDraft, lastCurrency, previewOf, toRequest, validate } from './draft'
 import { statusOf } from './model'
@@ -207,14 +208,14 @@ export const Sheet = ({ sub, subs, today, defaultDays, onSaved, onDeleted, onClo
             </div>
             <div class="field">
               <label for="f-date">{dateLabel}</label>
-              <input
-                class="input num"
+              <DatePicker
                 id="f-date"
                 name="expiryDate"
-                type="date"
+                label={dateLabel}
                 value={draft.expiryDate}
-                onInput={text('expiryDate')}
-                {...invalid('expiryDate')}
+                today={today}
+                invalid={invalid('expiryDate')}
+                onChange={(value) => set('expiryDate', value)}
               />
               {error('expiryDate')}
             </div>
@@ -256,13 +257,14 @@ export const Sheet = ({ sub, subs, today, defaultDays, onSaved, onDeleted, onClo
             </div>
             <div class="field">
               <label for="f-cancel">取消期限（選填）</label>
-              <input
-                class="input num"
+              <DatePicker
                 id="f-cancel"
                 name="cancelByDate"
-                type="date"
+                label="取消期限"
                 value={draft.cancelByDate}
-                onInput={text('cancelByDate')}
+                today={today}
+                optional
+                onChange={(value) => set('cancelByDate', value)}
               />
               <span class="hint">要在這天之前取消才不會扣款。設了這個日期時，提醒依它計算。</span>
             </div>
@@ -323,13 +325,14 @@ export const Sheet = ({ sub, subs, today, defaultDays, onSaved, onDeleted, onClo
               </div>
               <div class="field">
                 <label for="f-start">開始日</label>
-                <input
-                  class="input num"
+                <DatePicker
                   id="f-start"
                   name="startDate"
-                  type="date"
+                  label="開始日"
                   value={draft.startDate}
-                  onInput={text('startDate')}
+                  today={today}
+                  optional
+                  onChange={(value) => set('startDate', value)}
                 />
               </div>
               <div class="field">

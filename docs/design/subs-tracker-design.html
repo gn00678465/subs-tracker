@@ -560,6 +560,186 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   .input[aria-invalid='true'] {
     border-color: var(--danger);
   }
+  .date-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    text-align: left;
+    cursor: pointer;
+  }
+  .date-trigger:hover {
+    background: color-mix(in srgb, var(--ink) 3%, var(--surface));
+  }
+  .date-trigger[aria-expanded='true'] {
+    outline: 2px solid var(--focus);
+    outline-offset: -1px;
+    border-color: transparent;
+  }
+  .date-trigger .num {
+    font-size: 16px;
+  }
+  .date-trigger .placeholder {
+    color: var(--ink-3);
+  }
+  .date-trigger svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    color: var(--ink-3);
+  }
+  /* 展開在欄位下方，不浮在內容上：浮動的月曆會被表單底部固定的儲存列蓋住，表單也捲不到它的底部 */
+  .calendar {
+    max-width: 360px;
+    margin-top: 6px;
+    padding: 12px;
+    /* 捲動定位時月曆還在進場動畫的縮小狀態，留白補足差距 */
+    scroll-margin-block: 16px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    transform-origin: top left;
+    animation: calendar-in 160ms var(--ease);
+  }
+  @keyframes calendar-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.98);
+    }
+  }
+  .cal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .cal-nav {
+    all: unset;
+    box-sizing: border-box;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+  .cal-nav:hover {
+    background: color-mix(in srgb, var(--ink) 6%, var(--surface));
+    color: var(--ink);
+  }
+  .cal-nav:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+  }
+  .cal-nav svg {
+    width: 16px;
+    height: 16px;
+  }
+  .cal-caption {
+    display: flex;
+  }
+  .cal-caption select {
+    appearance: none;
+    padding: 6px 8px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .cal-caption select:hover {
+    background: color-mix(in srgb, var(--ink) 6%, var(--surface));
+  }
+  .cal-caption select:focus-visible {
+    outline: 2px solid var(--focus);
+  }
+  .cal-grid {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  .cal-grid th {
+    height: 32px;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--ink-3);
+  }
+  .cal-grid td {
+    padding: 1px;
+  }
+  .cal-day {
+    all: unset;
+    box-sizing: border-box;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    font-size: 15px;
+    color: var(--ink);
+    cursor: pointer;
+    transition: background 120ms var(--ease);
+  }
+  .cal-day:hover {
+    background: color-mix(in srgb, var(--ink) 7%, var(--surface));
+  }
+  .cal-day:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+  }
+  .cal-day[data-outside] {
+    color: var(--ink-3);
+  }
+  /* 今天用首頁今天線的顏色 */
+  .cal-day[aria-current='date'] {
+    color: var(--today);
+    font-weight: 700;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--today) 45%, transparent);
+  }
+  .cal-grid td[aria-selected='true'] .cal-day {
+    background: var(--ink);
+    color: var(--ground);
+    font-weight: 700;
+    box-shadow: none;
+  }
+  .cal-foot {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--line);
+  }
+  .cal-foot button {
+    all: unset;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .cal-foot button:hover {
+    background: color-mix(in srgb, var(--ink) 6%, var(--surface));
+  }
+  .cal-foot button:focus-visible {
+    outline: 2px solid var(--focus);
+  }
+  .cal-foot .clear {
+    color: var(--ink-2);
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
   .segmented {
     display: inline-grid;
     grid-auto-flow: column;
@@ -2068,6 +2248,100 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 
   const TODAY = '2026-09-26'
   const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
+
+  // 日期選擇器：結構、樣式與鍵盤操作和 src/client/home/DatePicker.tsx 相同
+  const dpParts = (d) => d.split('-').map(Number)
+  const dpOf = (ms) => new Date(ms).toISOString().slice(0, 10)
+  const dpAddDays = (d, n) => {
+    const [y, m, day] = dpParts(d)
+    return dpOf(Date.UTC(y, m - 1, day + n))
+  }
+  const dpAddMonths = (d, n) => {
+    const [y, m, day] = dpParts(d)
+    const last = new Date(Date.UTC(y, m - 1 + n + 1, 0)).getUTCDate()
+    return dpOf(Date.UTC(y, m - 1 + n, Math.min(day, last)))
+  }
+  const dpWeekday = (d) => {
+    const [y, m, day] = dpParts(d)
+    return new Date(Date.UTC(y, m - 1, day)).getUTCDay()
+  }
+  const longDate = (d) => {
+    const [y, m, day] = dpParts(d)
+    return `${y} 年 ${m} 月 ${day} 日（${WEEKDAYS[dpWeekday(d)]}）`
+  }
+  const triggerHTML = (value) =>
+    `${value ? `<span class="num">${longDate(value)}</span>` : '<span class="placeholder">選擇日期</span>'}<i data-lucide="calendar"></i>`
+
+  function datePicker(id, name, label, value, optional) {
+    return `<div class="date-picker" data-label="${label}"${optional ? ' data-optional' : ''}>
+      <input type="hidden" name="${name}" value="${value || ''}" />
+      <button class="input date-trigger" type="button" id="${id}" aria-haspopup="dialog" aria-expanded="false" aria-label="${label}：${value ? longDate(value) : '未選擇'}">${triggerHTML(value)}</button>
+    </div>`
+  }
+
+  function calendarHTML(picker) {
+    const id = picker.querySelector('.date-trigger').id
+    const value = picker.querySelector('input').value
+    const focus = picker.dataset.focus
+    const [year, month] = dpParts(focus)
+    const first = focus.slice(0, 8) + '01'
+    const start = dpAddDays(first, -dpWeekday(first))
+    const todayYear = dpParts(TODAY)[0]
+    const years = []
+    for (let y = Math.min(todayYear - 30, year); y <= Math.max(todayYear + 10, year); y++) years.push(y)
+    const cell = (date) =>
+      `<td aria-selected="${date === value}"><button class="cal-day num" type="button" data-date="${date}"${dpParts(date)[1] !== month ? ' data-outside' : ''}${date === TODAY ? ' aria-current="date"' : ''} aria-label="${longDate(date)}" tabindex="${date === focus ? 0 : -1}">${dpParts(date)[2]}</button></td>`
+    const rows = [0, 1, 2, 3, 4, 5]
+      .map((week) => `<tr>${[0, 1, 2, 3, 4, 5, 6].map((day) => cell(dpAddDays(start, week * 7 + day))).join('')}</tr>`)
+      .join('')
+    return `<div class="calendar" role="dialog" aria-label="選擇${picker.dataset.label}">
+      <div class="cal-head">
+        <button class="cal-nav" type="button" data-shift="-1" aria-label="上個月"><i data-lucide="chevron-left"></i></button>
+        <div class="cal-caption">
+          <select aria-label="年" data-part="year">${years.map((y) => `<option value="${y}" ${y === year ? 'selected' : ''}>${y} 年</option>`).join('')}</select>
+          <select aria-label="月" data-part="month">${Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}" ${i + 1 === month ? 'selected' : ''}>${i + 1} 月</option>`).join('')}</select>
+        </div>
+        <button class="cal-nav" type="button" data-shift="1" aria-label="下個月"><i data-lucide="chevron-right"></i></button>
+      </div>
+      <span class="sr-only" id="${id}-month" aria-live="polite">${year} 年 ${month} 月</span>
+      <table class="cal-grid" role="grid" aria-labelledby="${id}-month">
+        <thead><tr>${WEEKDAYS.map((d) => `<th scope="col" abbr="星期${d}">${d}</th>`).join('')}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="cal-foot">
+        <button type="button" data-pick="${TODAY}">今天</button>
+        ${picker.hasAttribute('data-optional') && value ? '<button type="button" class="clear" data-pick="">清除</button>' : ''}
+      </div>
+    </div>`
+  }
+
+  function renderCalendar(picker, focusDay) {
+    picker.querySelector('.calendar')?.remove()
+    picker.insertAdjacentHTML('beforeend', calendarHTML(picker))
+    picker.querySelector('.date-trigger').setAttribute('aria-expanded', 'true')
+    window.lucide?.createIcons()
+    if (!focusDay) return
+    picker.querySelector('.calendar').scrollIntoView({ block: 'nearest' })
+    picker.querySelector(`[data-date="${picker.dataset.focus}"]`).focus({ preventScroll: true })
+  }
+
+  function closeCalendar(picker, refocus = true) {
+    picker.querySelector('.calendar')?.remove()
+    const trigger = picker.querySelector('.date-trigger')
+    trigger.setAttribute('aria-expanded', 'false')
+    if (refocus) trigger.focus()
+  }
+
+  function pickDate(picker, date) {
+    const input = picker.querySelector('input')
+    const trigger = picker.querySelector('.date-trigger')
+    input.value = date
+    trigger.innerHTML = triggerHTML(date)
+    trigger.setAttribute('aria-label', `${picker.dataset.label}：${date ? longDate(date) : '未選擇'}`)
+    window.lucide?.createIcons()
+    closeCalendar(picker)
+    input.dispatchEvent(new Event('change', { bubbles: true }))
+  }
   const UNIT_LABEL = { day: '天', week: '週', month: '月', year: '年' }
   const PER_YEAR = { day: 365, week: 52, month: 12, year: 1 }
   const CATEGORY_TONE = {
@@ -2614,7 +2888,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
             </div>
             <div class="field">
               <label for="f-date" id="l-date">${v.trial ? '試用結束日' : '下次扣款日'}</label>
-              <input class="input num" id="f-date" name="nextDate" type="date" value="${v.nextDate}" />
+              ${datePicker('f-date', 'nextDate', v.trial ? '試用結束日' : '下次扣款日', v.nextDate)}
               <span class="error" id="e-date" hidden></span>
             </div>
           </div>
@@ -2635,7 +2909,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
             </div>
             <div class="field">
               <label for="f-cancel">取消期限（選填）</label>
-              <input class="input num" id="f-cancel" name="cancelBy" type="date" value="${v.cancelBy || ''}" />
+              ${datePicker('f-cancel', 'cancelBy', '取消期限', v.cancelBy, true)}
               <span class="hint">要在這天之前取消才不會扣款。設了這個日期時，提醒依它計算。</span>
             </div>
           </div>
@@ -2658,7 +2932,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
               </div>
               <div class="field">
                 <label for="f-start">開始日</label>
-                <input class="input num" id="f-start" name="startDate" type="date" />
+                ${datePicker('f-start', 'startDate', '開始日', '', true)}
               </div>
               <div class="field">
                 <label for="f-notes">備註</label>
@@ -3158,6 +3432,71 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && document.querySelector('.sheet')) location.hash = 'home'
+  })
+
+  document.addEventListener('click', (event) => {
+    const picker = event.target.closest('.date-picker')
+    if (!picker) return
+    if (event.target.closest('.date-trigger')) {
+      if (picker.querySelector('.calendar')) return closeCalendar(picker, false)
+      picker.dataset.focus = picker.querySelector('input').value || TODAY
+      return renderCalendar(picker, true)
+    }
+    const pick = event.target.closest('[data-date], [data-pick]')
+    if (pick) return pickDate(picker, pick.dataset.date ?? pick.dataset.pick)
+    const shift = event.target.closest('[data-shift]')
+    if (!shift) return
+    picker.dataset.focus = dpAddMonths(picker.dataset.focus, Number(shift.dataset.shift))
+    renderCalendar(picker)
+    picker.querySelector(`[data-shift="${shift.dataset.shift}"]`).focus()
+  })
+
+  document.addEventListener('change', (event) => {
+    const select = event.target.closest('.cal-caption select')
+    if (!select) return
+    const picker = select.closest('.date-picker')
+    const [y, m] = dpParts(picker.dataset.focus)
+    const months = select.dataset.part === 'year' ? (Number(select.value) - y) * 12 : Number(select.value) - m
+    picker.dataset.focus = dpAddMonths(picker.dataset.focus, months)
+    renderCalendar(picker)
+    picker.querySelector(`select[data-part="${select.dataset.part}"]`).focus()
+  })
+
+  // capture：先於表單的 Esc 處理，Esc 只關閉月曆
+  document.addEventListener(
+    'keydown',
+    (event) => {
+      const picker = event.target.closest?.('.date-picker')
+      if (!picker?.querySelector('.calendar')) return
+      if (event.key === 'Escape') {
+        event.stopPropagation()
+        return closeCalendar(picker)
+      }
+      const from = event.target.closest('[data-date]')?.dataset.date
+      if (!from) return
+      const months = event.shiftKey ? 12 : 1
+      const moves = {
+        ArrowLeft: () => dpAddDays(from, -1),
+        ArrowRight: () => dpAddDays(from, 1),
+        ArrowUp: () => dpAddDays(from, -7),
+        ArrowDown: () => dpAddDays(from, 7),
+        Home: () => dpAddDays(from, -dpWeekday(from)),
+        End: () => dpAddDays(from, 6 - dpWeekday(from)),
+        PageUp: () => dpAddMonths(from, -months),
+        PageDown: () => dpAddMonths(from, months),
+      }
+      if (!moves[event.key]) return
+      event.preventDefault()
+      picker.dataset.focus = moves[event.key]()
+      renderCalendar(picker, true)
+    },
+    true,
+  )
+
+  document.addEventListener('pointerdown', (event) => {
+    document.querySelectorAll('.date-picker').forEach((picker) => {
+      if (picker.querySelector('.calendar') && !picker.contains(event.target)) closeCalendar(picker, false)
+    })
   })
 
   window.addEventListener('hashchange', route)
