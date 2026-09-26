@@ -46,12 +46,12 @@ UI 重構、流程調整、套件升級之後，以及每次發布之前，照�
 - [ ] 在訂閱列表按「測試通知」：每個已啟用的渠道都收到訊息。
 - [ ] 新增一筆即將到期並開啟提醒的訂閱，再開啟 `/cdn-cgi/handler/scheduled`：log 顯示任務開始、讀到訂閱、任務完成，已啟用的渠道收到提醒。
 
-## 6. Staging
+## 6. 部署
 
-- [ ] 部署到 staging。使用 `@cloudflare/vite-plugin` 時，環境可能要在 build 時用 `CLOUDFLARE_ENV=staging` 指定；`wrangler deploy --env staging` 能否使用還沒驗證。
-- [ ] 在 staging 網址重新執行第 1–5 節。
+- [ ] `bun run deploy`：輸出顯示 D1 migration 已套用，Worker 部署成功。
+- [ ] 在 workers.dev 網址重新執行第 1–5 節。
 - [ ] 在 Cloudflare Dashboard → Workers → Triggers → Cron Triggers 按「Trigger Now」：已啟用的渠道收到提醒。
-- [ ] `wrangler tail --env staging` 沒有未捕捉的錯誤。
+- [ ] `wrangler tail` 沒有未捕捉的錯誤。
 
 ## 7. 目標瀏覽器
 

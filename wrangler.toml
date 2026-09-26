@@ -3,12 +3,6 @@ main = "src/index.tsx"
 compatibility_date = "2025-12-10"
 compatibility_flags = ["nodejs_compat"]
 
-[env.production]
-name = "subscription-manager"
-
-[env.staging]
-name = "subscription-manager-staging"
-
 # KV：只作為舊版資料的匯入來源，不再寫入
 [[kv_namespaces]]
 binding = "SUBSCRIPTIONS_KV"
@@ -24,8 +18,3 @@ migrations_dir = "migrations"
 # Cron 每小時執行；scheduled handler 只在設定的 REMINDER_HOUR（使用者時區）處理提醒
 [triggers]
 crons = ["0 * * * *"]
-
-# 環境變數（可選，也可以在 Cloudflare Dashboard 內設定）
-[vars]
-ENVIRONMENT = "production"
-VERSION = "1.0.0" # Will be overridden by --var during deployment

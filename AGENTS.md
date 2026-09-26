@@ -4,13 +4,14 @@
 
 ## Project Overview
 
-Subscription tracker on Cloudflare Workers: Hono (API, JSX SSR, OpenAPI via `@hono/zod-openapi`), Vite 8 with `@cloudflare/vite-plugin`, TypeScript, Tailwind CSS v4 + daisyUI. Package manager: bun. Storage: KV (`SUBSCRIPTIONS_KV`). A daily Cron Trigger sends renewal reminders.
+Subscription tracker on Cloudflare Workers: Hono (API, JSX SSR, OpenAPI via `@hono/zod-openapi`), Vite 8 with `@cloudflare/vite-plugin`, TypeScript, Tailwind CSS v4 + daisyUI. Package manager: bun. Storage: D1 (`DB`); KV (`SUBSCRIPTIONS_KV`) is read only once, to import data from older versions. An hourly Cron Trigger sends reminders at the user's reminder hour.
 
 **Layout**:
 
 - `src/index.tsx` - Worker entry (`main` in wrangler.toml); exports `fetch` and the cron `scheduled` handler
 - `src/routes/` - API routes (`OpenAPIHono` sub-apps mounted by `src/openapi.ts`)
-- `src/services/` - business logic and KV access
+- `src/db/` - D1 row mapping and queries; `src/services/` - business logic
+- `migrations/` - D1 schema (`wrangler d1 migrations apply`)
 - `src/pages/`, `src/components/` - server-rendered JSX; `src/client/` - browser scripts
 - `src/middleware/`, `src/types/`, `src/utils/`
 - `public/` - static assets (service worker)
@@ -20,14 +21,14 @@ Subscription tracker on Cloudflare Workers: Hono (API, JSX SSR, OpenAPI via `@ho
 
 Scripts live in `package.json`. The ones with non-obvious behavior:
 
-- `bun run dev` - Vite dev server; `@cloudflare/vite-plugin` runs the Worker in workerd with local KV.
+- `bun run dev` - Vite dev server; `@cloudflare/vite-plugin` runs the Worker in workerd with local D1 and KV. Run `bun run db:migrate:local` first.
 - `bun run check` - `fmt:check` + `lint` (oxlint) + `typecheck` (tsc) + `bun test`. Run it with `bun run build` before a PR.
 - `bun run fmt` - oxfmt writes formatting in place.
 - `bun run preview` - build, then serve the production bundle locally. Use it for UI changes and dependency upgrades: some failures appear only in the bundled Worker.
 - `bun run cf-typegen` - regenerate `worker-configuration.d.ts` after changing `wrangler.toml`.
-- `bun run deploy` - `wrangler deploy` without `--env`, so it deploys the top-level `subs-tracker` Worker, not `production`.
+- `bun run deploy` - build, apply D1 migrations to the remote database, then `wrangler deploy`. `wrangler deploy` does not apply migrations by itself.
 
-Tests use `bun test` (`*.test.ts` next to the module) and cover pure logic such as calendar dates and stored-data migration. `docs/dogfood.md` is the manual walkthrough of the app; run it after UI, flow, or dependency changes and before a release, then add a row to its run log.
+Tests use `bun test` (`*.test.ts` next to the module). Tests that touch storage call `createTestDb()` from `src/test/d1.ts`, which gives each test an empty local D1 with all migrations applied. `docs/dogfood.md` is the manual walkthrough of the app; run it after UI, flow, or dependency changes and before a release, then add a row to its run log.
 
 ## Code Style
 
@@ -66,19 +67,19 @@ Angular convention: `<type>(<scope>): <summary>`, with scopes such as `subscript
 
 ## Cloudflare Workers
 
-Environments in `wrangler.toml`: top-level `subs-tracker`, `production` (`subscription-manager`), `staging` (`subscription-manager-staging`).
+`wrangler.toml` defines one Worker, `subs-tracker`, with no `[env.*]` sections. With `@cloudflare/vite-plugin`, the environment is chosen at build time (`CLOUDFLARE_ENV`) and `wrangler deploy --env` has no effect; bindings are not inherited by environments either (`docs/research/2026-09-26-kv-vs-d1.md` §5.7).
 
-- Secrets: `wrangler secret put <NAME> --env production`. Keep KV namespace IDs and API keys out of the repository.
-- Local KV: `wrangler kv key list --binding SUBSCRIPTIONS_KV --local`. The subscription list is under the key `subscriptions`; passkeys are under `webauthn:credential:<id>` (see `src/services/webauthn.ts`). For production KV, replace `--local` with `--env production`.
-- Cron: the `scheduled` handler runs on the `crons` schedule. Trigger it in production from Cloudflare Dashboard → Workers → Triggers → Cron Triggers → "Trigger Now".
-- Logs: `wrangler tail --env production`.
+- D1: the binding is `DB`. A new deployment runs `wrangler d1 create subs-tracker --binding DB --update-config` once to add `database_id`. Migrations only add: change a table with a new migration file, never by editing an applied one.
+- Local data: `wrangler d1 execute DB --local --command "<SQL>"`. Seed legacy KV data for import tests with `wrangler kv key put <key> --path <file> --binding SUBSCRIPTIONS_KV --local --preview`; `vite preview` reads the `preview_id` namespace.
+- Legacy import: when `settings` has no row, the first read (a request or the Cron) imports KV `config`, `subscriptions`, and `webauthn:*` into D1 in one `batch()` (`src/services/legacyImport.ts`). KV is never written.
+- Cron: runs every hour; `runReminders()` returns unless the hour in the user's timezone equals `REMINDER_HOUR`. Locally, open `/cdn-cgi/handler/scheduled`. In production, use Cloudflare Dashboard → Workers → Triggers → Cron Triggers → "Trigger Now".
+- Secrets: `wrangler secret put <NAME>`. Keep API keys out of the repository.
+- Logs: `wrangler tail`.
 - Crypto: use `src/utils/crypto.ts` (Web Crypto API).
 
 ## Architecture Decisions
 
-KV holds subscription data for fast global reads. Consider D1 if the data needs SQL queries or relationships. Durable Objects are not used: they cost more and this app does not need coordination.
-
-<!-- gitnexus:start -->
+D1 is the only store (`docs/research/2026-09-26-kv-vs-d1.md`). `batch()` is a transaction, and Cron writes use conditional `UPDATE`s so they never overwrite a change the user made during the run. Durable Objects are not used: they cost more and this app does not need coordination.
 
 # GitNexus — Code Intelligence
 
