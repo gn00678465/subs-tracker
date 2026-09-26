@@ -45,7 +45,6 @@ UI 重構、流程調整、套件升級之後，以及每次發布之前，照�
 - [ ] 在設定頁設定測試用的通知渠道（Telegram、Bark、Webhook、Email）。
 - [ ] 在訂閱列表按「測試通知」：每個已啟用的渠道都收到訊息。
 - [ ] 新增一筆即將到期並開啟提醒的訂閱，再開啟 `/cdn-cgi/handler/scheduled`：log 顯示任務開始、讀到訂閱、任務完成，已啟用的渠道收到提醒。
-- [ ] 設定 `API_TOKEN` 後呼叫 `POST /api/notify/{token}`：正確的 token 會發送通知，錯誤的 token 被拒絕。沒有設定 `API_TOKEN` 時，這個 API 停用。
 
 ## 6. Staging
 

@@ -42,7 +42,6 @@ async function loadConfig(): Promise<void> {
     if (reminderModeEl) (reminderModeEl as unknown as HTMLSelectElement).value = config.REMINDER_MODE || 'ONCE'
 
     // 第三方 API Token
-    ;(document.getElementById('apiToken') as HTMLInputElement).value = config.API_TOKEN || ''
 
     // 啟用的渠道
     const enabled = config.ENABLED_NOTIFIERS || ['notifyx']
@@ -274,17 +273,6 @@ document.addEventListener('DOMContentLoaded', () => {
       submitText.classList.remove('hidden')
       submitLoading.classList.add('hidden')
     }
-  })
-
-  // 生成 Token 按鈕
-  document.getElementById('generateToken')?.addEventListener('click', () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-    let token = ''
-    for (let i = 0; i < 32; i++) {
-      token += chars[Math.floor(Math.random() * chars.length)]
-    }
-    ;(document.getElementById('apiToken') as HTMLInputElement).value = token
-    toast.success('令牌已生成')
   })
 
   // 重置按鈕

@@ -37,7 +37,6 @@
   - JWT Token 認證機制
   - 管理員密碼保護
   - CSRF 防護
-  - API Token 驗證（第三方觸發）
 
 - **🎨 現代化介面**：美觀且易用的管理介面
   - 響應式設計，支援行動裝置
@@ -310,7 +309,6 @@ subs-tracker/
 │   │   ├── auth.ts              # 登入/登出端點
 │   │   ├── subscriptions.ts     # 訂閱 CRUD API
 │   │   ├── config.ts            # 系統設定 API
-│   │   ├── notify.ts            # 第三方通知觸發
 │   │   └── webauthn.ts          # Passkey 註冊與登入
 │   ├── services/                # 業務邏輯層
 │   │   ├── subscription.ts      # 訂閱 CRUD + 自動續期

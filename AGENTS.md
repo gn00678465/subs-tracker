@@ -54,7 +54,7 @@ Angular convention: `<type>(<scope>): <summary>`, with scopes such as `subscript
 ## API Contracts
 
 - `@hono/zod-openapi` returns 415 for a Content-Type the route does not declare. A route that accepts form posts must declare `application/x-www-form-urlencoded` and `multipart/form-data` in `request.body.content` (see `loginRoute` in `src/routes/auth.ts`).
-- Validation errors from every sub-app use the parent `defaultHook` in `src/openapi.ts`: `{ success: false, message, errors: [{ path, message }] }` with status 400. External callers of `/api/notify/{token}` depend on this shape.
+- Validation errors from every sub-app use the parent `defaultHook` in `src/openapi.ts`: `{ success: false, message, errors: [{ path, message }] }` with status 400.
 
 ## Dependency Notes
 

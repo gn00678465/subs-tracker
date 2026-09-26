@@ -173,29 +173,6 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                       </label>
                     </div>
                   </div>
-
-                  {/* 第三方 API Token */}
-                  <fieldset class="fieldset">
-                    <label class="label" for="apiToken">
-                      <span class="label-text">第三方 API 訪問令牌</span>
-                    </label>
-                    <div class="join w-full">
-                      <input
-                        type="text"
-                        id="apiToken"
-                        name="API_TOKEN"
-                        placeholder="建議使用隨機字符串"
-                        class="input input-bordered join-item flex-1"
-                      />
-                      <button type="button" id="generateToken" class="btn btn-primary join-item">
-                        <i data-lucide="ticket" class="size-5"></i>
-                        生成令牌
-                      </button>
-                    </div>
-                    <label class="label">
-                      <span class="text-wrap">調用 /api/notify/&#123;token&#125; 接口時需攜帶此令牌</span>
-                    </label>
-                  </fieldset>
                 </div>
 
                 {/* Tab 3: 渠道配置 */}

@@ -18,10 +18,6 @@ const updateConfigSchema = z.object({
     example: 'newpassword123',
     description: '管理員密碼（至少 6 個字符）',
   }),
-  API_TOKEN: z.string().optional().openapi({
-    example: 'your-api-token-here',
-    description: '第三方 API 訪問令牌',
-  }),
   TIMEZONE: z.string().optional().openapi({
     example: 'Asia/Taipei',
     description: '時區設定',
@@ -179,7 +175,6 @@ const ErrorResponseSchema = z.object({
 const ConfigDataSchema = z
   .object({
     ADMIN_USERNAME: z.string(),
-    API_TOKEN: z.string().optional(),
     TIMEZONE: z.string(),
     TELEGRAM_BOT_TOKEN: z.string().optional(),
     TELEGRAM_CHAT_ID: z.string().optional(),
@@ -214,7 +209,6 @@ const ConfigDataSchema = z
   .openapi({
     example: {
       ADMIN_USERNAME: 'admin',
-      API_TOKEN: '',
       TIMEZONE: 'Asia/Taipei',
       TELEGRAM_BOT_TOKEN: '',
       TELEGRAM_CHAT_ID: '',

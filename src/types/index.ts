@@ -6,7 +6,6 @@ export interface Bindings {
   ADMIN_USERNAME?: string
   ADMIN_PASSWORD?: string
   JWT_SECRET?: string
-  API_TOKEN?: string
 
   // 時區配置
   TIMEZONE?: string
@@ -71,7 +70,6 @@ export interface Config {
   ADMIN_USERNAME: string
   ADMIN_PASSWORD: string
   JWT_SECRET: string
-  API_TOKEN?: string
   TIMEZONE: string
   TELEGRAM_BOT_TOKEN?: string
   TELEGRAM_CHAT_ID?: string
