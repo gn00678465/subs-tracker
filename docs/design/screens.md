@@ -204,6 +204,8 @@
 - `manifest.webmanifest` 的 `theme_color`、`background_color` 改成新設計的顏色。
 - App 圖示改用 `docs/design/icons/` 的新圖示：`icon.svg`、`favicon.svg`、`icon-192.png`、`icon-512.png`、`apple-touch-icon.png`，取代 `public/` 的舊檔。
 - `public/sw.js` 對 `GET /api/subscriptions` 與 `GET /api/settings` 改用「先網路，失敗時用快取」，並記錄快取時間。
+  - 快取的回應帶 `X-Cached-At` 標頭（快取時間）；網路的回應沒有這個標頭。
+  - `GET /api/settings` 含通知管道的憑證，登出（`/api/logout`）時刪除這兩個快取。
 - 頁面依回應是否來自快取，顯示離線提示並停用修改。
 
 ### 合計的算法
