@@ -1,6 +1,70 @@
-# SubsTracker
+<p align="center">
+  <img src="./assets/readme/hero.svg" width="100%" alt="SubsTracker：自架在 Cloudflare Workers 的訂閱管理工具，在扣款前提醒你">
+</p>
 
-SubsTracker 是一個執行在 Cloudflare Workers 上的訂閱管理工具。它記錄每個訂閱的下次扣款日，並在扣款前透過通知管道提醒你。資料存在 Cloudflare D1。
+SubsTracker 記錄每個訂閱的下次扣款日，並在扣款前透過 Telegram、Email、Bark 或 Webhook 提醒你。它部署在你自己的 Cloudflare 帳號：程式執行在 Workers，資料存在 D1，不經過第三方訂閱服務。
+
+<p align="center">
+  <img src="./assets/readme/showcase.png" width="100%" alt="首頁畫面：桌機淺色、手機淺色與深色。卡片依下次扣款日排序，紅線標出今天，右側是每月平均花費與提醒狀態">
+</p>
+<p align="center"><sub>首頁的桌機與手機畫面（淺色與深色）。畫面使用範例資料。</sub></p>
+
+## 運作方式
+
+1. 新增訂閱：金額、付款週期、下次扣款日。首頁依扣款日把卡片排成「需要處理」「7 天內」「30 天內」「之後」。
+2. Cron 每小時執行一次。到了你的時區中的每日提醒時間，它找出在提醒天數內的訂閱。
+3. 提醒送到你啟用的每個通知管道。自動續訂的訂閱在扣款日過後推進到下一個週期。
+
+你用手機或桌機開啟同一個網址。app 可以安裝成 PWA，離線時顯示最後一次取得的資料。
+
+## 部署
+
+### 需求
+
+- [Bun](https://bun.sh/)
+- Node.js 22.18 以上（`bumpp` 的需求；Vite 8 與 Wrangler 4 的需求較低）
+- Cloudflare 帳號
+
+### 新安裝
+
+1. 取得原始碼並安裝套件。
+
+   ```bash
+   git clone https://github.com/gn00678465/subs-tracker.git
+   cd subs-tracker
+   bun install
+   ```
+
+2. 建立 D1 資料庫。這個指令把 `database_id` 寫入 `wrangler.toml`。
+
+   ```bash
+   bunx wrangler d1 create subs-tracker --binding DB --update-config
+   ```
+
+3. 部署。`bun run deploy` 先建置，再把 D1 migration 套用到遠端資料庫，最後執行 `wrangler deploy`。
+
+   ```bash
+   bun run deploy
+   ```
+
+4. 開啟 Worker 的網址，用 `admin` / `password` 登入。
+5. 到設定頁的「帳號與登入」修改密碼。新密碼至少 8 個字元。
+
+全新安裝的預設值：時區 `UTC`、每日提醒時間 09:00、預設提前 3 天、只提醒一次。到設定頁的「提醒」修改。
+
+`wrangler.toml` 只定義一個 Worker，沒有 `[env.*]` 區段。
+
+也可以改用 Cloudflare Workers Builds 自動部署：連結 GitHub repo 後，推送到指定的分支就建置與部署。本 repo 的設定（只在發布時部署）見 [`docs/research/2026-09-26-workers-builds-tag-deploy.md`](docs/research/2026-09-26-workers-builds-tag-deploy.md)。
+
+### 從 KV 版本升級
+
+舊版把資料存在 KV（`SUBSCRIPTIONS_KV`）。新版只從 KV 讀取一次，把資料匯入 D1。
+
+1. 保留 `wrangler.toml` 的 `[[kv_namespaces]]`。`id` 必須是舊版使用的 namespace。
+2. 執行「新安裝」的步驟 2 與 3。
+3. 開啟 app 一次，或等下一次排程。D1 的 `settings` 沒有資料時，Worker 在一個 `batch()` 內匯入 KV 的 `config`、`subscriptions` 與 passkey（`webauthn:*`）。
+
+匯入不修改、不刪除 KV 的資料。匯入後，舊的帳號與密碼仍然可以使用。匯入的程式在 `src/services/legacyImport.ts`。
 
 ## 功能
 
@@ -48,85 +112,6 @@ SubsTracker 是一個執行在 Cloudflare Workers 上的訂閱管理工具。它
 ### 離線
 
 Service worker（`public/sw.js`）快取 `GET /api/subscriptions` 與 `GET /api/settings` 的回應。離線時，頁面顯示最後一次取得的資料，並停用新增、編輯、刪除與儲存。登出時，service worker 刪除這兩個快取。
-
-## 部署
-
-### 需求
-
-- [Bun](https://bun.sh/)
-- Node.js 22.18 以上（`bumpp` 的需求；Vite 8 與 Wrangler 4 的需求較低）
-- Cloudflare 帳號
-
-### 新安裝
-
-1. 取得原始碼並安裝套件。
-
-   ```bash
-   git clone https://github.com/gn00678465/subs-tracker.git
-   cd subs-tracker
-   bun install
-   ```
-
-2. 建立 D1 資料庫。這個指令把 `database_id` 寫入 `wrangler.toml`。
-
-   ```bash
-   bunx wrangler d1 create subs-tracker --binding DB --update-config
-   ```
-
-3. 部署。`bun run deploy` 先建置，再把 D1 migration 套用到遠端資料庫，最後執行 `wrangler deploy`。
-
-   ```bash
-   bun run deploy
-   ```
-
-4. 開啟 Worker 的網址，用 `admin` / `password` 登入。
-5. 到設定頁的「帳號與登入」修改密碼。新密碼至少 8 個字元。
-
-全新安裝的預設值：時區 `UTC`、每日提醒時間 09:00、預設提前 3 天、只提醒一次。到設定頁的「提醒」修改。
-
-`wrangler.toml` 只定義一個 Worker，沒有 `[env.*]` 區段。
-
-### 從 KV 版本升級
-
-舊版把資料存在 KV（`SUBSCRIPTIONS_KV`）。新版只從 KV 讀取一次，把資料匯入 D1。
-
-1. 保留 `wrangler.toml` 的 `[[kv_namespaces]]`。`id` 必須是舊版使用的 namespace。
-2. 執行「新安裝」的步驟 2 與 3。
-3. 開啟 app 一次，或等下一次排程。D1 的 `settings` 沒有資料時，Worker 在一個 `batch()` 內匯入 KV 的 `config`、`subscriptions` 與 passkey（`webauthn:*`）。
-
-匯入不修改、不刪除 KV 的資料。匯入後，舊的帳號與密碼仍然可以使用。匯入的程式在 `src/services/legacyImport.ts`。
-
-## 本機開發
-
-```bash
-# 安裝套件
-bun install
-
-# 在本機 D1 套用 migration
-bun run db:migrate:local
-
-# 啟動開發伺服器（Vite，預設 http://localhost:5173）
-bun run dev
-```
-
-其他指令：
-
-| 指令                 | 用途                                                            |
-| -------------------- | --------------------------------------------------------------- |
-| `bun run check`      | 格式檢查（oxfmt）、lint（oxlint）、型別檢查（tsc）與 `bun test` |
-| `bun run fmt`        | 用 oxfmt 格式化                                                 |
-| `bun run lint:fix`   | 用 oxlint 檢查，並修正可以自動修正的問題                        |
-| `bun run build`      | 建置                                                            |
-| `bun run preview`    | 建置後在本機執行打包後的 Worker                                 |
-| `bun run cf-typegen` | 修改 `wrangler.toml` 後，重新產生 `worker-configuration.d.ts`   |
-
-在本機觸發排程：開啟 `/cdn-cgi/handler/scheduled`。
-
-在本機 D1 執行 SQL：
-
-```bash
-bunx wrangler d1 execute DB --local --command "SELECT * FROM subscriptions"
-```
 
 ## 通知管道設定
 
@@ -190,6 +175,38 @@ bunx wrangler d1 execute DB --local --command "SELECT * FROM subscriptions"
 排程只用帶條件的 `UPDATE` 修改訂閱。排程執行時你修改了某筆訂閱，排程就不覆蓋你的修改。
 
 在正式環境手動觸發：Cloudflare Dashboard → Workers → Triggers → Cron Triggers →「Trigger Now」。查看記錄：`bunx wrangler tail`。
+
+## 本機開發
+
+```bash
+# 安裝套件
+bun install
+
+# 在本機 D1 套用 migration
+bun run db:migrate:local
+
+# 啟動開發伺服器（Vite，預設 http://localhost:5173）
+bun run dev
+```
+
+其他指令：
+
+| 指令                 | 用途                                                            |
+| -------------------- | --------------------------------------------------------------- |
+| `bun run check`      | 格式檢查（oxfmt）、lint（oxlint）、型別檢查（tsc）與 `bun test` |
+| `bun run fmt`        | 用 oxfmt 格式化                                                 |
+| `bun run lint:fix`   | 用 oxlint 檢查，並修正可以自動修正的問題                        |
+| `bun run build`      | 建置                                                            |
+| `bun run preview`    | 建置後在本機執行打包後的 Worker                                 |
+| `bun run cf-typegen` | 修改 `wrangler.toml` 後，重新產生 `worker-configuration.d.ts`   |
+
+在本機觸發排程：開啟 `/cdn-cgi/handler/scheduled`。
+
+在本機 D1 執行 SQL：
+
+```bash
+bunx wrangler d1 execute DB --local --command "SELECT * FROM subscriptions"
+```
 
 ## API
 
