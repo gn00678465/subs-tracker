@@ -9,11 +9,17 @@ name = "subscription-manager"
 [env.staging]
 name = "subscription-manager-staging"
 
-# KV 命名空間設定
+# KV：只作為舊版資料的匯入來源，不再寫入
 [[kv_namespaces]]
 binding = "SUBSCRIPTIONS_KV"
 preview_id = "2bae9e931ea04772b5e4dd39adb191f6"
 id = "3129bff9412741b48668ba99e7b507cd"
+
+# D1：所有持久資料的儲存。自架時執行 `wrangler d1 create subs-tracker --binding DB --update-config` 補上 database_id
+[[d1_databases]]
+binding = "DB"
+database_name = "subs-tracker"
+migrations_dir = "migrations"
 
 # Cron 每小時執行；scheduled handler 只在設定的 REMINDER_HOUR（使用者時區）處理提醒
 [triggers]

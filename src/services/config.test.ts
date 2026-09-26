@@ -9,7 +9,7 @@ function envWith(stored: Record<string, unknown>): Bindings {
     get: async (key: string) => data.get(key) ?? null,
     put: async (key: string, value: string) => void data.set(key, value),
   }
-  return { SUBSCRIPTIONS_KV: kv as unknown as KVNamespace }
+  return { DB: {} as D1Database, SUBSCRIPTIONS_KV: kv as unknown as KVNamespace }
 }
 
 describe('REMINDER_HOUR', () => {

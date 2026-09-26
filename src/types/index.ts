@@ -2,6 +2,8 @@ import type { CalendarDate } from '../utils/calendarDate'
 
 // 通用環境變數綁定類型
 export interface Bindings {
+  DB: D1Database
+  /** 只作為舊版資料的匯入來源 */
   SUBSCRIPTIONS_KV: KVNamespace
 
   // 認證相關
