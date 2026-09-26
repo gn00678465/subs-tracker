@@ -22,9 +22,9 @@
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "changelog": "conventional-changelog -p conventionalcommits -i CHANGELOG.md",
-    "release": "bumpp",
-    "release:minor": "bumpp minor",
-    "release:major": "bumpp major",
+    "release": "bumpp && git push origin HEAD:release",
+    "release:minor": "bumpp minor && git push origin HEAD:release",
+    "release:major": "bumpp major && git push origin HEAD:release",
     "release:dry": "bumpp --no-commit --no-tag --no-push"
   },
   "dependencies": {
