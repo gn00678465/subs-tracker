@@ -51,7 +51,7 @@ test('reminder settings save only the given fields', async () => {
 
 test('a channel cannot be enabled without its required fields', async () => {
   await expect(saveChannel(env, 'telegram', true, { TELEGRAM_BOT_TOKEN: '123:abc' })).rejects.toThrow(
-    '啟用前請填寫：TELEGRAM_CHAT_ID',
+    '啟用前請填寫：Chat ID',
   )
   expect(await telegram()).toMatchObject({ enabled: false, config: {} })
 

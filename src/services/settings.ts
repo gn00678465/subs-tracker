@@ -1,5 +1,14 @@
-import type { ChannelConfig, ChannelId, ChannelState, CronRun, ReminderMode, Settings } from '../db/settings'
+import type {
+  ChannelConfig,
+  ChannelField,
+  ChannelId,
+  ChannelState,
+  CronRun,
+  ReminderMode,
+  Settings,
+} from '../db/settings'
 import {
+  CHANNEL_FIELD_LABELS,
   CHANNEL_FIELDS,
   readChannels,
   readLastCronRun,
@@ -97,7 +106,10 @@ export async function saveChannel(
   await loadSettings(env)
   const cleaned = cleanChannelConfig(channel, config)
   const missing = missingFields(channel, cleaned)
-  if (enabled && missing.length > 0) throw new UserError(`啟用前請填寫：${missing.join('、')}`)
+  if (enabled && missing.length > 0) {
+    const labels = missing.map((field) => CHANNEL_FIELD_LABELS[field as ChannelField] ?? field)
+    throw new UserError(`啟用前請填寫：${labels.join('、')}`)
+  }
 
   await upsertChannel(env.DB, channel, enabled, cleaned, new Date().toISOString()).run()
   const saved = (await readChannels(env.DB)).find((c) => c.channel === channel)

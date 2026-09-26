@@ -7,6 +7,7 @@ import { optionalAuthMiddleware, pageAuthMiddleware } from './middleware/auth'
 import { createOpenAPIApp } from './openapi'
 import { HomePage } from './pages/Home'
 import { LoginPage } from './pages/Login'
+import { SettingsPage } from './pages/Settings'
 import auth from './routes/auth'
 import settings from './routes/settings'
 import subscriptions from './routes/subscriptions'
@@ -51,6 +52,7 @@ app.get('/', optionalAuthMiddleware, async (c) => {
 })
 
 app.get('/admin', pageAuthMiddleware, (c) => c.html(<HomePage />))
+app.get('/admin/config', pageAuthMiddleware, (c) => c.html(<SettingsPage />))
 
 export default {
   fetch: app.fetch,

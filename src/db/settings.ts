@@ -24,6 +24,24 @@ export const CHANNEL_FIELDS = {
 
 export type ChannelField = (typeof CHANNEL_FIELDS)[ChannelId][number]
 
+/** 設定頁的欄位名稱，也用在伺服器的錯誤訊息 */
+export const CHANNEL_FIELD_LABELS: Record<ChannelField, string> = {
+  TELEGRAM_BOT_TOKEN: 'Bot Token',
+  TELEGRAM_CHAT_ID: 'Chat ID',
+  RESEND_API_KEY: 'Resend API Key',
+  EMAIL_FROM: '寄件地址',
+  EMAIL_FROM_NAME: '寄件人名稱',
+  EMAIL_TO: '收件地址',
+  WEBHOOK_URL: '網址',
+  WEBHOOK_METHOD: '方法',
+  WEBHOOK_HEADERS: '標頭（JSON）',
+  WEBHOOK_TEMPLATE: '內容範本（JSON）',
+  BARK_SERVER: '伺服器',
+  BARK_KEY: '裝置 Key',
+  BARK_SAVE: '保存到 Bark 歷史紀錄',
+  BARK_QUERY: '查詢參數',
+}
+
 export type ChannelConfig = Partial<Record<ChannelField, string>>
 
 export interface ChannelState {

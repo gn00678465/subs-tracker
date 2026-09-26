@@ -75,7 +75,6 @@ passkeyButton?.addEventListener('click', async () => {
 if (passkeyButton) {
   browserSupportsWebAuthnAutofill()
     .then((supported) => (supported ? signInWithPasskey(true) : undefined))
-    .catch((caught: unknown) => {
-      if (!isCancel(caught)) showError(caught instanceof Error ? caught.message : String(caught))
-    })
+    // 自動填入是背景的請求，使用者沒有操作；失敗時仍可用密碼或按鈕登入，不顯示錯誤
+    .catch(() => undefined)
 }

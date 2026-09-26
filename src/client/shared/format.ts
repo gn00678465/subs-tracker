@@ -25,3 +25,14 @@ export function timezoneName(timezone: string): string {
   const parts = new Intl.DateTimeFormat('zh-TW', { timeZone: timezone, timeZoneName: 'shortGeneric' }).formatToParts()
   return parts.find((part) => part.type === 'timeZoneName')?.value ?? timezone
 }
+
+/** 今年的日期省略年份，例如 9/25；其他年份寫出年份，例如 2025/11/9 */
+export function formatDate(iso: string, timezone: string, now = new Date()): string {
+  const parts = (date: Date) =>
+    new Intl.DateTimeFormat('en-US', { timeZone: timezone, year: 'numeric', month: 'numeric', day: 'numeric' })
+      .formatToParts(date)
+      .reduce<Record<string, string>>((found, part) => ({ ...found, [part.type]: part.value }), {})
+  const date = parts(new Date(iso))
+  const monthDay = `${date.month}/${date.day}`
+  return date.year === parts(now).year ? monthDay : `${date.year}/${monthDay}`
+}
