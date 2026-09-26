@@ -27,7 +27,7 @@ Scripts live in `package.json`. The ones with non-obvious behavior:
 - `bun run cf-typegen` - regenerate `worker-configuration.d.ts` after changing `wrangler.toml`.
 - `bun run deploy` - `wrangler deploy` without `--env`, so it deploys the top-level `subs-tracker` Worker, not `production`.
 
-No test runner is configured.
+No test runner is configured. `docs/pending-verification.md` lists checks still owed since the toolchain upgrade; before a release, or when a change touches a listed file, run them against `bun run preview` and delete each one that passes.
 
 ## Code Style
 
