@@ -60,7 +60,7 @@ Angular convention: `<type>(<scope>): <summary>`, with scopes such as `subscript
 
 ## Dependency Notes
 
-- `@simplewebauthn/*` stays on 13.2.2. Versions 13.3.x and 14.x pull in `@peculiar/x509`, and the bundled Worker then fails at startup with `Cannot get schema for 'AlgorithmIdentifier' target` (issue #9). Verify any upgrade with `bun run preview`, not only `tsc`.
+- `@simplewebauthn/server` pulls in `@peculiar/asn1-*`, which must share one copy of `@peculiar/asn1-schema`. Each copy keeps its own schema registry, so a class registered through one copy is unknown to another, and the Worker fails at startup with `Cannot get schema for 'AlgorithmIdentifier' target` (issue #9). bun nests extra copies when `bun.lock` keeps an older hoisted version that still satisfies one range. `find node_modules -path '*@peculiar/asn1-schema/package.json'` must print one path; `bun install` does not delete stale nested copies, so remove `node_modules` first. `bun test` imports the package and fails the same way.
 - `@types/psl` is required: the `psl` package ships types, but its `exports` map does not expose them to `tsc`.
 - `@cloudflare/workers-types` v5 has no dated entry points; `tsconfig.json` uses the package root.
 - `typescript` is a direct dev dependency; nothing else installs `tsc`.

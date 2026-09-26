@@ -227,7 +227,7 @@ bunx wrangler d1 execute DB --local --command "SELECT * FROM subscriptions"
 | 頁面       | Hono JSX 伺服器端渲染；瀏覽器端用 `hono/jsx/dom`                                            |
 | 樣式       | Tailwind CSS 4；元件樣式在 `src/style.css`，取自原型 `docs/design/subs-tracker-design.html` |
 | 圖示       | Lucide                                                                                      |
-| Passkey    | SimpleWebAuthn 13.2.2                                                                       |
+| Passkey    | SimpleWebAuthn 14                                                                           |
 | Email      | Resend                                                                                      |
 | 建置       | Vite 8、`@cloudflare/vite-plugin`、Wrangler 4                                               |
 | 程式語言   | TypeScript 5.9（strict）                                                                    |
