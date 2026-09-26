@@ -37,3 +37,5 @@ lerna-debug.log*
 .claude/*.local.json
 .claude/skills/ui-ux-pro-max/
 .shared/ui-ux-pro-max/
+# gitnexus local index
+.gitnexus/
