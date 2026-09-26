@@ -48,15 +48,6 @@
     "pcss",
     "postcss"
   ],
-  "chat.promptFilesLocations": {
-    ".github/prompts": true,
-    ".github/copilot-common/prompts": true
-  },
-  "github.copilot.chat.commitMessageGeneration.instructions": [
-    {
-      "file": ".github/copilot-common/instructions/commit-message-generation.instructions.md"
-    }
-  ],
   "chat.useAgentsMdFile": true,
   "chat.tools.terminal.autoApprove": {
     "git rev-parse": true,
