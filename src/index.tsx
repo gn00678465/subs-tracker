@@ -13,10 +13,11 @@ import auth from './routes/auth'
 import config from './routes/config'
 import subscriptions from './routes/subscriptions'
 import webauthn from './routes/webauthn'
-import { getConfig, isNotificationAllowedAtHour } from './services/config'
+import { getConfig } from './services/config'
 import { batchUpdateSubscriptions, getAllSubscriptions } from './services/subscription'
 import { processSubscriptionReminder } from './services/subscription_cron'
 import type { Bindings, Subscription } from './types'
+import { hourIn } from './utils/calendarDate'
 import * as loggerUtil from './utils/logger'
 
 // 使用支持 OpenAPI 的 Hono 實例
@@ -92,13 +93,9 @@ export default {
       // 1. 獲取配置
       const config = await getConfig(env)
 
-      // 2. 檢查通知時段（UTC）
-      const currentHour = new Date().getUTCHours()
-      if (!isNotificationAllowedAtHour(config, currentHour)) {
-        loggerUtil.info(`[Cron] 當前時段 UTC ${currentHour}時 不在允許範圍，跳過`, {
-          prefix: 'Cron',
-          data: { allowedHours: config.NOTIFICATION_HOURS },
-        })
+      // 2. Cron 每小時執行，只在使用者時區的提醒小時處理
+      const currentTime = new Date()
+      if (hourIn(config.TIMEZONE, currentTime) !== config.REMINDER_HOUR) {
         return
       }
 
@@ -112,7 +109,6 @@ export default {
       }
 
       // 4. 並行處理所有訂閱（僅讀取和計算，不寫入 KV）
-      const currentTime = new Date()
       const processPromises = subscriptions.map((sub) => processSubscriptionReminder(sub, currentTime, config))
 
       const results = await Promise.allSettled(processPromises)

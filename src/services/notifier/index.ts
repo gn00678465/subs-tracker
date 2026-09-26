@@ -1,6 +1,5 @@
 import type { Config } from '../../types'
 import * as logger from '../../utils/logger'
-import { isNotificationAllowedAtHour } from '../config'
 import { sendBarkNotification } from './channels/bark'
 import { sendResendNotification } from './channels/resend'
 import { sendTelegramNotification } from './channels/telegram'
@@ -31,23 +30,7 @@ export async function sendNotificationToAllChannels(
 ): Promise<NotificationResult> {
   const { title, content } = options
 
-  // 1. 檢查通知時段
-  const currentHour = new Date().getHours()
-  const isAllowed = isNotificationAllowedAtHour(config, currentHour)
-
-  if (!isAllowed) {
-    logger.notification(`當前時段（${currentHour}時）不在允許的通知時段內，跳過發送`, {
-      data: { allowedHours: config.NOTIFICATION_HOURS },
-    })
-    return {
-      totalChannels: 0,
-      successCount: 0,
-      failureCount: 0,
-      results: [],
-    }
-  }
-
-  // 2. 獲取啟用的渠道列表
+  // 1. 獲取啟用的渠道列表
   const enabledChannels = config.ENABLED_NOTIFIERS || []
 
   if (enabledChannels.length === 0) {

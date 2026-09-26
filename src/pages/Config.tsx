@@ -92,20 +92,18 @@ export const ConfigPage: FC<ConfigPageProps> = ({ username }) => {
                       </select>
                     </fieldset>
 
-                    {/* 通知時段 */}
+                    {/* 每日提醒時間 */}
                     <fieldset class="fieldset">
-                      <label class="label" for="notificationHours">
-                        <span class="label-text">通知時段</span>
+                      <label class="label" for="reminderHour">
+                        <span class="label-text">每日提醒時間</span>
                       </label>
-                      <input
-                        type="text"
-                        id="notificationHours"
-                        name="NOTIFICATION_HOURS"
-                        placeholder="例如：08, 12, 20 或輸入 * 表示全天"
-                        class="input input-bordered w-full"
-                      />
+                      <select id="reminderHour" name="REMINDER_HOUR" class="select select-bordered w-full">
+                        {Array.from({ length: 24 }, (_, hour) => (
+                          <option value={String(hour)}>{`${String(hour).padStart(2, '0')}:00`}</option>
+                        ))}
+                      </select>
                       <label class="label">
-                        <span class="text-wrap">可輸入多個小時（0-23），使用逗號或空格分隔，* 表示全天</span>
+                        <span class="text-wrap">依上方的時區計算</span>
                       </label>
                     </fieldset>
 

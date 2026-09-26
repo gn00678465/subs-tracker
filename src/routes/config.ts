@@ -78,13 +78,10 @@ const updateConfigSchema = z.object({
     example: 'sound=alarm&group=訂閱提醒',
     description: 'Bark URL 查詢參數（不含 ?）',
   }),
-  NOTIFICATION_HOURS: z
-    .union([z.array(z.number().int().min(0).max(23)), z.string()])
-    .optional()
-    .openapi({
-      example: [9, 12, 18],
-      description: '允許發送通知的小時（0-23），空陣列表示所有小時',
-    }),
+  REMINDER_HOUR: z.number().int().min(0).max(23).optional().openapi({
+    example: 9,
+    description: '每日發送提醒的小時（0-23），以 TIMEZONE 計算',
+  }),
   ENABLED_NOTIFIERS: z
     .array(z.string())
     .optional()
@@ -190,7 +187,7 @@ const ConfigDataSchema = z
     BARK_KEY: z.string().optional(),
     BARK_SAVE: z.string().optional(),
     BARK_QUERY: z.string().optional(),
-    NOTIFICATION_HOURS: z.array(z.number()),
+    REMINDER_HOUR: z.number(),
     ENABLED_NOTIFIERS: z.array(z.string()),
     REMINDER_MODE: z.string().optional(),
 
@@ -224,7 +221,7 @@ const ConfigDataSchema = z
       BARK_KEY: '',
       BARK_SAVE: '1',
       BARK_QUERY: '',
-      NOTIFICATION_HOURS: [],
+      REMINDER_HOUR: 9,
       ENABLED_NOTIFIERS: ['notifyx'],
       REMINDER_MODE: 'ONCE',
       WEBAUTHN_ENABLED: false,
@@ -419,7 +416,6 @@ config.openapi(updateConfigRoute, async (c) => {
 
     logger.info(`更新配置: ${user.username}`, { prefix: 'Config', data: Object.keys(newConfig) })
 
-    // 類型斷言，因為 updateConfig 會在內部處理 NOTIFICATION_HOURS 的規範化
     const result = await updateConfig(newConfig, c.env)
 
     if (!result.success) {

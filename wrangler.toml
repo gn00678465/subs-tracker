@@ -15,9 +15,9 @@ binding = "SUBSCRIPTIONS_KV"
 preview_id = "2bae9e931ea04772b5e4dd39adb191f6"
 id = "3129bff9412741b48668ba99e7b507cd"
 
-# Cron 任務設定 - 每天 UTC 0:00 檢查(台北時間 08:00)
+# Cron 每小時執行；scheduled handler 只在設定的 REMINDER_HOUR（使用者時區）處理提醒
 [triggers]
-crons = ["0 0 * * *"]
+crons = ["0 * * * *"]
 
 # 環境變數（可選，也可以在 Cloudflare Dashboard 內設定）
 [vars]

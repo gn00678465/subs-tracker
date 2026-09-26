@@ -1,4 +1,5 @@
 import type { Bindings, Config } from '../types'
+import { hourIn } from '../utils/calendarDate'
 import { generateRandomSecret, hashPassword } from '../utils/crypto'
 import * as logger from '../utils/logger'
 
@@ -32,7 +33,7 @@ export const DEFAULT_CONFIG: Config = {
   BARK_KEY: '',
   BARK_SAVE: 'false',
   BARK_QUERY: '',
-  NOTIFICATION_HOURS: [], // 空陣列表示允許所有小時
+  REMINDER_HOUR: 0,
   ENABLED_NOTIFIERS: [],
   REMINDER_MODE: 'ONCE', // 默認為首次觸發模式
 
@@ -78,12 +79,14 @@ export async function getConfig(env: Bindings): Promise<Config> {
       await env.SUBSCRIPTIONS_KV.put('config', JSON.stringify(updatedConfig))
     }
 
+    const timezone: string = stored.TIMEZONE || DEFAULT_CONFIG.TIMEZONE
+
     // 合併預設值與存儲值
     const config: Config = {
       ADMIN_USERNAME: stored.ADMIN_USERNAME || DEFAULT_CONFIG.ADMIN_USERNAME,
       ADMIN_PASSWORD: stored.ADMIN_PASSWORD || DEFAULT_CONFIG.ADMIN_PASSWORD,
       JWT_SECRET: jwtSecret,
-      TIMEZONE: stored.TIMEZONE || DEFAULT_CONFIG.TIMEZONE,
+      TIMEZONE: timezone,
       TELEGRAM_BOT_TOKEN: stored.TELEGRAM_BOT_TOKEN || stored.TG_BOT_TOKEN || DEFAULT_CONFIG.TELEGRAM_BOT_TOKEN,
       TELEGRAM_CHAT_ID: stored.TELEGRAM_CHAT_ID || stored.TG_CHAT_ID || DEFAULT_CONFIG.TELEGRAM_CHAT_ID,
       WEBHOOK_URL: stored.WEBHOOK_URL || DEFAULT_CONFIG.WEBHOOK_URL,
@@ -98,7 +101,7 @@ export async function getConfig(env: Bindings): Promise<Config> {
       BARK_KEY: stored.BARK_KEY || stored.BARK_DEVICE_KEY || DEFAULT_CONFIG.BARK_KEY,
       BARK_SAVE: stored.BARK_SAVE || stored.BARK_IS_ARCHIVE || DEFAULT_CONFIG.BARK_SAVE,
       BARK_QUERY: stored.BARK_QUERY || DEFAULT_CONFIG.BARK_QUERY,
-      NOTIFICATION_HOURS: normalizeNotificationHours(stored.NOTIFICATION_HOURS),
+      REMINDER_HOUR: isReminderHour(stored.REMINDER_HOUR) ? stored.REMINDER_HOUR : legacyReminderHour(timezone),
       ENABLED_NOTIFIERS: Array.isArray(stored.ENABLED_NOTIFIERS)
         ? stored.ENABLED_NOTIFIERS
         : DEFAULT_CONFIG.ENABLED_NOTIFIERS,
@@ -178,11 +181,6 @@ export async function updateConfig(
       logger.config('管理員密碼已成功加密並更新')
     }
 
-    // 特殊處理：NOTIFICATION_HOURS 需要規範化
-    if (newConfig.NOTIFICATION_HOURS !== undefined) {
-      updatedConfig.NOTIFICATION_HOURS = normalizeNotificationHours(newConfig.NOTIFICATION_HOURS)
-    }
-
     // 特殊處理：WEBAUTHN_RP_ORIGINS（textarea 轉陣列）
     if (newConfig.WEBAUTHN_RP_ORIGINS !== undefined) {
       const origins = Array.isArray(newConfig.WEBAUTHN_RP_ORIGINS)
@@ -218,52 +216,15 @@ export function getSafeConfig(config: Config): Omit<Config, 'JWT_SECRET' | 'ADMI
 
 // ==================== Helper Functions ====================
 
-/**
- * 規範化通知小時設定
- * 支援格式：
- * - [] 或 undefined：表示所有小時
- * - ['*'] 或 ['ALL']：表示所有小時
- * - [0, 1, 2, ...]：數字陣列
- * - ['0', '1', '2', ...]：字串陣列（轉為數字）
- */
-function normalizeNotificationHours(hours: unknown): number[] {
-  // 未設定或空陣列：允許所有小時
-  if (!hours || (Array.isArray(hours) && hours.length === 0)) {
-    return []
-  }
-
-  // 特殊值：'*' 或 'ALL'
-  if (Array.isArray(hours) && (hours.includes('*') || hours.includes('ALL'))) {
-    return []
-  }
-
-  // 字串或數字陣列：轉為數字並過濾有效值
-  if (Array.isArray(hours)) {
-    return hours
-      .map((h) => (typeof h === 'string' ? Number.parseInt(h, 10) : h))
-      .filter((h) => !Number.isNaN(h) && h >= 0 && h <= 23)
-  }
-
-  // 無效格式：回退到預設
-  logger.warning(`無效的 NOTIFICATION_HOURS 格式: ${JSON.stringify(hours)}`, { prefix: 'Config' })
-  return []
+function isReminderHour(value: unknown): value is number {
+  return Number.isInteger(value) && (value as number) >= 0 && (value as number) <= 23
 }
 
-/**
- * 檢查當前小時是否允許發送通知
- * @param config 配置對象
- * @param currentHour 當前小時 (0-23)
- */
-export function isNotificationAllowedAtHour(config: Config, currentHour: number): boolean {
-  const { NOTIFICATION_HOURS } = config
-
-  // 空陣列表示允許所有小時
-  if (NOTIFICATION_HOURS.length === 0) {
-    return true
-  }
-
-  // 檢查當前小時是否在允許列表中
-  return NOTIFICATION_HOURS.includes(currentHour)
+// 舊版沒有 REMINDER_HOUR，Cron 固定在 UTC 00:00 發送；換算成使用者時區的小時以維持原本的發送時間
+function legacyReminderHour(timezone: string): number {
+  const utcMidnight = new Date()
+  utcMidnight.setUTCHours(0, 0, 0, 0)
+  return hourIn(timezone, utcMidnight)
 }
 
 /**

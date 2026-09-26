@@ -32,10 +32,8 @@ async function loadConfig(): Promise<void> {
     const timezoneEl = document.getElementById('timezone')
     if (timezoneEl) (timezoneEl as unknown as HTMLSelectElement).value = config.TIMEZONE || 'UTC'
 
-    // 通知時段
-    const hours = config.NOTIFICATION_HOURS || []
-    ;(document.getElementById('notificationHours') as HTMLInputElement).value =
-      hours.length === 0 ? '*' : hours.join(', ')
+    const reminderHourEl = document.getElementById('reminderHour')
+    if (reminderHourEl) (reminderHourEl as unknown as HTMLSelectElement).value = String(config.REMINDER_HOUR)
 
     // 提醒通知頻率
     const reminderModeEl = document.getElementById('reminderMode')
@@ -223,16 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll<HTMLInputElement>('[name="ENABLED_NOTIFIERS"]:checked'),
       ).map((el) => el.value)
 
-      // 處理通知時段
-      const hoursInput = (document.getElementById('notificationHours') as HTMLInputElement).value.trim()
-      if (hoursInput === '*' || !hoursInput) {
-        data.NOTIFICATION_HOURS = []
-      } else {
-        data.NOTIFICATION_HOURS = hoursInput
-          .split(/[,\s]+/)
-          .map((h) => Number.parseInt(h, 10))
-          .filter((h) => !Number.isNaN(h) && h >= 0 && h <= 23)
-      }
+      data.REMINDER_HOUR = Number(data.REMINDER_HOUR)
 
       // 處理 Bark Save checkbox
       data.BARK_SAVE = (document.getElementById('barkSave') as HTMLInputElement).checked ? 'true' : 'false'

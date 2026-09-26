@@ -29,7 +29,6 @@ export interface Bindings {
   BARK_QUERY?: string
 
   // 其他配置
-  NOTIFICATION_HOURS?: string
   ENABLED_NOTIFIERS?: string
 }
 
@@ -86,7 +85,8 @@ export interface Config {
   BARK_KEY?: string
   BARK_SAVE?: string
   BARK_QUERY?: string
-  NOTIFICATION_HOURS: number[]
+  /** 每日發送提醒的小時（0-23），以 TIMEZONE 計算 */
+  REMINDER_HOUR: number
   ENABLED_NOTIFIERS: string[]
   REMINDER_MODE?: 'ONCE' | 'DAILY'
 
