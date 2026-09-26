@@ -14,7 +14,7 @@
 
 - 手機優先。桌機是放大的版本，順序與流程相同，只增加欄位與側欄。
 - 字體：Noto Sans TC（中文）、Barlow Semi Condensed（數字），都從 Google Fonts 載入。
-- 不用 UI 套件：Tailwind CSS v4 加上自己的元件，移除 daisyUI（2026-09-26，依據 `docs/research/2026-09-26-ui-kit.md`）。元件樣式以 `docs/design/subs-tracker-design.html` 為準；對話框、下拉提示、日期欄位用瀏覽器原生的 `<dialog>`、`<datalist>`、`type="date"`。
+- 不用 UI 套件，移除 daisyUI（2026-09-26，依據 `docs/research/2026-09-26-ui-kit.md`）。`src/style.css` 直接使用原型的 CSS，也不用 Tailwind：原型的樣式沒有使用 Tailwind 的 class，Tailwind 的 preflight 會改變原型的邊距。元件樣式以 `docs/design/subs-tracker-design.html` 為準；對話框、下拉提示、日期欄位用瀏覽器原生的 `<dialog>`、`<datalist>`、`type="date"`。
 - 介面用語：「通知管道」（取代「渠道」）、「下次扣款日」（取代「到期日期」）。
 - 主題：預設跟隨系統，可在設定頁切換。只存在瀏覽器，不存到伺服器。
 - 確認刪除用頁面內的確認，不用瀏覽器的 `confirm()`。
@@ -217,5 +217,5 @@
 
 - 付款方式改成自由輸入，並提示用過的值（2026-09-26）。
 - 離線時顯示最後一次的資料，不能修改（2026-09-26）。
-- 不用 UI 套件，移除 daisyUI（2026-09-26）。
+- 不用 UI 套件，移除 daisyUI 與 Tailwind，樣式直接使用原型的 CSS（2026-09-26）。
 - 所有持久資料改存 D1，KV 只作為舊資料的匯入來源（2026-09-26）。

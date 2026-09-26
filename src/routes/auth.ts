@@ -94,7 +94,7 @@ const loginRoute = createRoute({
           schema: ErrorResponseSchema,
         },
       },
-      description: '用戶名或密碼錯誤',
+      description: '使用者名稱或密碼錯誤',
     },
     500: {
       content: {
@@ -127,7 +127,7 @@ auth.openapi(loginRoute, async (c) => {
       return c.json(
         {
           success: false,
-          message: '用戶名或密碼錯誤',
+          message: '使用者名稱或密碼錯誤',
           code: 'UNAUTHORIZED',
         },
         401,
@@ -141,7 +141,7 @@ auth.openapi(loginRoute, async (c) => {
       return c.json(
         {
           success: false,
-          message: '用戶名或密碼錯誤',
+          message: '使用者名稱或密碼錯誤',
           code: 'UNAUTHORIZED',
         },
         401,

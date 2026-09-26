@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-Subscription tracker on Cloudflare Workers: Hono (API, JSX SSR, OpenAPI via `@hono/zod-openapi`), Vite 8 with `@cloudflare/vite-plugin`, TypeScript, Tailwind CSS v4 + daisyUI. Package manager: bun. Storage: D1 (`DB`); KV (`SUBSCRIPTIONS_KV`) is read only once, to import data from older versions. An hourly Cron Trigger sends reminders at the user's reminder hour.
+Subscription tracker on Cloudflare Workers: Hono (API, JSX SSR, OpenAPI via `@hono/zod-openapi`), Vite 8 with `@cloudflare/vite-plugin`, TypeScript, plain CSS (`src/style.css`, taken from the prototype `docs/design/subs-tracker-design.html`). Package manager: bun. Storage: D1 (`DB`); KV (`SUBSCRIPTIONS_KV`) is read only once, to import data from older versions. An hourly Cron Trigger sends reminders at the user's reminder hour.
 
 **Layout**:
 

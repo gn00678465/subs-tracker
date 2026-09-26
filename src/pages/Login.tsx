@@ -1,101 +1,47 @@
-import type { FC } from 'hono/jsx'
+import { Fingerprint } from 'lucide'
 import { Script } from 'vite-ssr-components/hono'
 
+import { Icon } from '../components/Icon'
 import { Layout } from '../components/Layout'
-import ThemeToggle from '../components/ToggleTheme'
 
-export const LoginPage: FC = () => {
-  return (
-    <Layout title="登入 - SubsTracker" description="登入訂閱管理系統">
-      <ThemeToggle class="fixed top-4 right-4 z-50" />
-      <div class="min-h-screen flex items-center justify-center bg-base-200 p-4">
-        <div class="card w-full max-w-md bg-base-100 shadow-xl">
-          <div class="card-body">
-            {/* 標題 */}
-            <div class="text-center mb-6">
-              <div class="flex justify-center mb-4">
-                <img src="/icon.svg" alt="SubsTracker Logo" class="w-16 h-16" />
-              </div>
-              <h1 class="text-3xl font-bold text-base-content">SubsTracker</h1>
-              <p class="text-base-content/70 mt-2">登入管理您的訂閱提醒</p>
-            </div>
-
-            {/* 表單 */}
-            <form id="loginForm" class="space-y-4">
-              {/* 用戶名輸入 */}
-              <div class="form-control">
-                <label class="label" for="username">
-                  <span class="label-text">用戶名</span>
-                </label>
-                <input
-                  type="text"
-                  id="username"
-                  name="username"
-                  placeholder="請輸入用戶名"
-                  class="input input-bordered w-full"
-                  required
-                  autocomplete="username webauthn"
-                />
-              </div>
-
-              {/* 密碼輸入 */}
-              <div class="form-control">
-                <label class="label" for="password">
-                  <span class="label-text">密碼</span>
-                </label>
-                <input
-                  type="password"
-                  id="password"
-                  name="password"
-                  placeholder="請輸入密碼"
-                  class="input input-bordered w-full"
-                  required
-                  autocomplete="current-password"
-                />
-              </div>
-
-              {/* 錯誤訊息 */}
-              <div id="errorMsg" role="alert" class="alert alert-error hidden">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="stroke-current shrink-0 h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <span id="errorText"></span>
-              </div>
-
-              {/* 提交按鈕 */}
-              <div class="form-control mt-6">
-                <button type="submit" class="btn btn-square btn-primary w-full" id="submitBtn">
-                  <span id="btnLoading" class="loading loading-spinner loading-sm hidden"></span>
-                  <span id="btnText">登入</span>
-                  <i data-lucide="send-horizontal" class="size-4"></i>
-                </button>
-              </div>
-            </form>
-
-            {/* 分隔線 */}
-            <div class="divider">或</div>
-
-            {/* WebAuthn 登入按鈕 */}
-            <button type="button" id="webauthnLoginBtn" class="btn btn-outline btn-primary w-full">
-              <i data-lucide="fingerprint" class="size-5" id="webauthnLoginIcon"></i>
-              <span class="loading loading-spinner loading-sm hidden" id="webauthnLoginLoading"></span>
-              <span id="webauthnLoginText">使用 Passkey 登入</span>
-            </button>
+export const LoginPage = ({ hasPasskey }: { hasPasskey: boolean }) => (
+  <Layout title="登入 · SubsTracker">
+    <div class="view">
+      <div class="login">
+        <div class="brand">
+          <div class="brand-stack" aria-hidden="true">
+            <i style="background: var(--c-plum)"></i>
+            <i style="background: var(--c-green)"></i>
+            <i style="background: var(--c-blue)"></i>
           </div>
+          <h1>SubsTracker</h1>
+          <p>扣款之前，先知道。</p>
         </div>
+        <form id="login-form" novalidate>
+          <p class="form-error" id="login-error" role="alert" hidden></p>
+          <div class="field">
+            <label for="l-user">使用者名稱</label>
+            <input class="input" id="l-user" name="username" autocomplete="username webauthn" required />
+          </div>
+          <div class="field">
+            <label for="l-pw">密碼</label>
+            <input class="input" id="l-pw" name="password" type="password" autocomplete="current-password" required />
+          </div>
+          <button class="btn btn-primary" type="submit">
+            登入
+          </button>
+        </form>
+        {hasPasskey && (
+          <>
+            <div class="or">或</div>
+            <button class="btn btn-secondary" type="button" id="passkey-login">
+              <Icon node={Fingerprint} />
+              使用 passkey 登入
+            </button>
+          </>
+        )}
       </div>
-
-      <Script src="/src/client/login/index.ts" type="module" />
-    </Layout>
-  )
-}
+    </div>
+    <Script src="/src/client/login/index.ts" type="module" />
+  </Layout>
+)

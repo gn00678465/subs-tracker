@@ -6,11 +6,12 @@ import { prettyJSON } from 'hono/pretty-json'
 import { optionalAuthMiddleware } from './middleware/auth'
 import { createOpenAPIApp } from './openapi'
 import { LoginPage } from './pages/Login'
-import { renderer } from './renderer'
 import auth from './routes/auth'
 import settings from './routes/settings'
 import subscriptions from './routes/subscriptions'
 import webauthn from './routes/webauthn'
+import { listPasskeyViews, relyingParty } from './services/passkey'
+import { loadSettings } from './services/settings'
 import { runReminders } from './services/subscription_cron'
 import type { Bindings } from './types'
 
@@ -20,7 +21,6 @@ const app = createOpenAPIApp()
 // 全局 middleware
 app.use(logger())
 app.use(prettyJSON())
-app.use(renderer)
 
 // API 路由使用 CORS，不使用 CSRF（JWT 已提供保護）
 app.use('/api/*', cors())
@@ -41,16 +41,12 @@ app.route('/api/settings', settings)
 app.route('/api/webauthn', webauthn)
 
 // 登入頁面路由
-app.get('/', optionalAuthMiddleware, (c) => {
-  const user = c.get('user')
-
-  if (user) {
-    // 已登入，重定向到管理頁面
-    return c.redirect('/admin')
-  }
-
-  // 未登入，渲染登入頁
-  return c.html(<LoginPage />)
+app.get('/', optionalAuthMiddleware, async (c) => {
+  if (c.get('user')) return c.redirect('/admin')
+  // 舊版的 passkey 在第一次讀取設定時匯入
+  await loadSettings(c.env)
+  const passkeys = await listPasskeyViews(c.env, relyingParty(c.req.url))
+  return c.html(<LoginPage hasPasskey={passkeys.some((passkey) => passkey.usableHere)} />)
 })
 
 export default {
