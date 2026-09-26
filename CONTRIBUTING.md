@@ -132,4 +132,24 @@ subs-tracker/
 
 ## 發布與部署
 
-正式環境由 Cloudflare Workers Builds 部署：只有推送到 `release` 分支時才部署，推送 `main` 不會部署。`bun run release`、`release:minor`、`release:major` 更新版本號、產生 changelog、建立 tag，然後推送到 `release`。設定與原因見 [`docs/research/2026-09-26-workers-builds-tag-deploy.md`](docs/research/2026-09-26-workers-builds-tag-deploy.md)。
+正式環境由 Cloudflare Workers Builds 部署：只有推送到 `release` 分支時才部署，推送 `main` 不會部署。設定與原因見 [`docs/research/2026-09-26-workers-builds-tag-deploy.md`](docs/research/2026-09-26-workers-builds-tag-deploy.md)。
+
+發布步驟：
+
+1. 切換到 `main`，並更新到與 `origin/main` 相同。工作目錄必須是乾淨的：bumpp 會把所有變更加進 release commit。
+
+   ```bash
+   git checkout main && git pull --ff-only
+   ```
+
+2. 依變更選一個指令。有破壞性變更用 `release:major`，有新功能用 `release:minor`，其他用 `release`。
+
+   ```bash
+   bun run release:minor
+   ```
+
+   bumpp 顯示新版本號並詢問是否繼續，按 Enter 確認。接著它更新 `package.json` 的版本號、產生 `CHANGELOG.md`、commit、建立 tag，推送 `main` 與 tag，最後把同一個 commit 推送到 `release`。
+
+3. 到 GitHub 上這個 release commit 的檢查，確認「Workers Builds: subs-tracker」成功。建置失敗時，點進檢查看 Cloudflare 的建置紀錄。
+
+回復到前一版：Cloudflare Dashboard → Workers & Pages → `subs-tracker` → Deployments，選前一個版本部署。

@@ -15,6 +15,10 @@ binding = "DB"
 database_name = "subs-tracker"
 migrations_dir = "migrations"
 
+# 非 release 分支由 Worker Previews 建置，建置要求這個區塊。留空：預覽沒有 KV 與 D1，打開會出錯，但碰不到任何資料。
+# Cloudflare 的 Branch control 沒有關閉預覽建置的選項
+[previews]
+
 # Cron 每小時執行；scheduled handler 只在設定的 REMINDER_HOUR（使用者時區）處理提醒
 [triggers]
 crons = ["0 * * * *"]
