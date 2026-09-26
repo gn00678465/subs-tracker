@@ -8,7 +8,7 @@ export default defineConfig({
   plugins: [cloudflare(), ssrPlugin(), tailwindcss()],
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src'),
+      '@': resolve(import.meta.dirname, 'src'),
     },
   },
 })
