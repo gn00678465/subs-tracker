@@ -14,6 +14,8 @@ interface CardProps {
   open: boolean
   /** 離線時不能修改 */
   readOnly: boolean
+  /** 表單上方的預覽 */
+  preview?: boolean
   onLip: () => void
   onAction: (action: CardAction) => void
 }
@@ -30,7 +32,7 @@ function tags(sub: Subscription): string[] {
 // 舊資料的網站沒有檢查過協定，只把 http(s) 顯示成連結
 const isWebUrl = (url: string) => /^https?:\/\//i.test(url)
 
-export const Card = ({ sub, status, defaultDays, open, readOnly, onLip, onAction }: CardProps) => {
+export const Card = ({ sub, status, defaultDays, open, readOnly, preview, onLip, onAction }: CardProps) => {
   const { days, soon, group } = status
   const amount = `${sub.currency} ${money(sub.currency, sub.price)}`
   const reminder = reminderDays(sub, defaultDays)
@@ -38,6 +40,7 @@ export const Card = ({ sub, status, defaultDays, open, readOnly, onLip, onAction
   const dateLine = sub.isFreeTrial ? `${date} 試用結束` : days < 0 ? `${date} 應扣款` : `${date} 扣款`
   const className = [
     'card',
+    preview && 'preview-card',
     open && 'is-open',
     soon && 'is-soon',
     !sub.isActive && 'state-paused',

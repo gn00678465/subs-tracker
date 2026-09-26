@@ -12,6 +12,7 @@ import { Card } from './Card'
 import type { CardAction } from './Card'
 import type { Group } from './model'
 import { groupSubscriptions, matchesQuery, money, monthDay, monthDayWeekday, statusOf, totalsBy } from './model'
+import { Sheet } from './Sheet'
 import { OfflineBanner, Side, Spend, WarningBanner } from './Summary'
 
 interface Data {
@@ -60,6 +61,19 @@ const App = ({ initial }: { initial: Data }) => {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('')
   const [showPaused, setShowPaused] = useState(false)
+  // #new 與 #edit-<id> 開啟表單；用網址記錄，手機的返回鍵可以關閉表單
+  const [hash, setHash] = useState(location.hash.slice(1))
+  useEffect(() => {
+    const onHashChange = () => setHash(location.hash.slice(1))
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
+  const editing = hash.startsWith('edit-') ? (subs.find((sub) => sub.id === hash.slice(5)) ?? null) : null
+  const sheetOpen = !readOnly && (hash === 'new' || editing !== null)
+  const closeSheet = () => {
+    history.replaceState(null, '', location.pathname)
+    setHash('')
+  }
 
   const visible = subs.filter((sub) => matchesQuery(sub, query, category))
   const groups = groupSubscriptions(visible, today, defaultDays)
@@ -256,6 +270,29 @@ const App = ({ initial }: { initial: Data }) => {
         <div class="home-foot"></div>
       </div>
       <Side subs={subs} settings={settings} />
+      {sheetOpen && (
+        <Sheet
+          sub={editing}
+          subs={subs}
+          today={today}
+          defaultDays={defaultDays}
+          onSaved={(saved) => {
+            setData((current) => ({
+              ...current,
+              subs: current.subs.some((sub) => sub.id === saved.id)
+                ? current.subs.map((sub) => (sub.id === saved.id ? saved : sub))
+                : [...current.subs, saved],
+            }))
+            setOpenId(saved.id)
+            closeSheet()
+          }}
+          onDeleted={(deleted) => {
+            setData((current) => ({ ...current, subs: current.subs.filter((sub) => sub.id !== deleted.id) }))
+            closeSheet()
+          }}
+          onClose={closeSheet}
+        />
+      )}
       <div class="fab-wrap">
         <button class="fab" type="button" {...newButtonAttrs}>
           <Icon node={Plus} />
