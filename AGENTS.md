@@ -21,13 +21,13 @@ Subscription tracker on Cloudflare Workers: Hono (API, JSX SSR, OpenAPI via `@ho
 Scripts live in `package.json`. The ones with non-obvious behavior:
 
 - `bun run dev` - Vite dev server; `@cloudflare/vite-plugin` runs the Worker in workerd with local KV.
-- `bun run check` - `fmt:check` + `lint` (oxlint) + `typecheck` (tsc). Run it with `bun run build` before a PR.
+- `bun run check` - `fmt:check` + `lint` (oxlint) + `typecheck` (tsc) + `bun test`. Run it with `bun run build` before a PR.
 - `bun run fmt` - oxfmt writes formatting in place.
 - `bun run preview` - build, then serve the production bundle locally. Use it for UI changes and dependency upgrades: some failures appear only in the bundled Worker.
 - `bun run cf-typegen` - regenerate `worker-configuration.d.ts` after changing `wrangler.toml`.
 - `bun run deploy` - `wrangler deploy` without `--env`, so it deploys the top-level `subs-tracker` Worker, not `production`.
 
-No test runner is configured. `docs/dogfood.md` is the manual walkthrough of the app; run it after UI, flow, or dependency changes and before a release, then add a row to its run log.
+Tests use `bun test` (`*.test.ts` next to the module) and cover pure logic such as calendar dates and stored-data migration. `docs/dogfood.md` is the manual walkthrough of the app; run it after UI, flow, or dependency changes and before a release, then add a row to its run log.
 
 ## Code Style
 

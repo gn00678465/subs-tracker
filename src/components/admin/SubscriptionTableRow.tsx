@@ -19,7 +19,7 @@ export function SubscriptionTableRow({
   onToggleStatus,
   onTestNotify,
 }: SubscriptionTableRowProps) {
-  const expiryDate = new Date(subscription.expiryDate)
+  const expiryDate = new Date(`${subscription.expiryDate}T00:00:00`)
   const currentTime = new Date()
   const status = getSubscriptionStatus(subscription, expiryDate, currentTime)
   const daysLeft = formatRemainingTime(expiryDate, currentTime)
@@ -76,7 +76,7 @@ export function SubscriptionTableRow({
 
       <div role="cell" class="flex flex-col gap-1">
         <span class="md:hidden text-xs text-base-content/50 mb-1">類型</span>
-        <div>{subscription.customType || '其他'}</div>
+        <div>{subscription.category || '其他'}</div>
         {subscription.periodValue && <div class="text-sm text-base-content/70">周期: {unitText}</div>}
       </div>
 

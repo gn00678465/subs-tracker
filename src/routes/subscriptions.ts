@@ -12,6 +12,7 @@ import {
   updateSubscription,
 } from '../services/subscription'
 import type { HonoEnv } from '../types'
+import { isCalendarDate, todayIn } from '../utils/calendarDate'
 import * as logger from '../utils/logger'
 import { created, notFound, serverError, success, validationError } from '../utils/response'
 
@@ -47,18 +48,11 @@ const idParamSchema = z.object({
 // 訂閱數據驗證 Schema
 const subscriptionSchema = z.object({
   name: z.string().min(1, '訂閱名稱不能為空'),
-  customType: z.string().optional(),
   category: z.string().optional(),
   currency: z.string().optional(),
   price: z.string().optional(),
-  startDate: z.string().optional(),
-  expiryDate: z.string().refine(
-    (date) => {
-      const parsed = new Date(date)
-      return !Number.isNaN(parsed.getTime())
-    },
-    { message: '無效的日期格式' },
-  ),
+  startDate: z.string().refine(isCalendarDate, { message: '日期格式必須是 YYYY-MM-DD' }).optional(),
+  expiryDate: z.string().refine(isCalendarDate, { message: '日期格式必須是 YYYY-MM-DD' }),
   hasEndDate: z.boolean().optional(),
   autoRenew: z.boolean().default(false),
   isFreeTrial: z.boolean().optional(),
@@ -90,7 +84,6 @@ const SubscriptionResponseSchema = z
     isActive: z.boolean(),
     createdAt: z.string(),
     updatedAt: z.string(),
-    customType: z.string().optional(),
     category: z.string().optional(),
     currency: z.string().optional(),
     price: z.string().optional(),
@@ -391,7 +384,8 @@ subscriptions.openapi(updateSubscriptionRoute, async (c) => {
 
     logger.info(`更新訂閱: ${id} (${user.username})`, { prefix: 'Subscriptions' })
 
-    const result = await updateSubscription(id, data, c.env)
+    const config = await getConfig(c.env)
+    const result = await updateSubscription(id, data, todayIn(config.TIMEZONE), c.env)
 
     if (!result.success) {
       // 判斷是否為 "訂閱不存在" 錯誤

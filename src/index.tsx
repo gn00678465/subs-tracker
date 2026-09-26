@@ -18,7 +18,6 @@ import { batchUpdateSubscriptions, getAllSubscriptions } from './services/subscr
 import { processSubscriptionReminder } from './services/subscription_cron'
 import type { Bindings, Subscription } from './types'
 import * as loggerUtil from './utils/logger'
-import { getCurrentTime } from './utils/time'
 
 // 使用支持 OpenAPI 的 Hono 實例
 const app = createOpenAPIApp()
@@ -113,7 +112,7 @@ export default {
       }
 
       // 4. 並行處理所有訂閱（僅讀取和計算，不寫入 KV）
-      const currentTime = getCurrentTime()
+      const currentTime = new Date()
       const processPromises = subscriptions.map((sub) => processSubscriptionReminder(sub, currentTime, config))
 
       const results = await Promise.allSettled(processPromises)

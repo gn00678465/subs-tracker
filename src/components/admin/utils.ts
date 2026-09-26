@@ -8,7 +8,8 @@ import type { Subscription } from '../../types/index'
  * 格式化日期為 zh-TW 格式
  */
 export function formatDate(dateStr: string): string {
-  const date = new Date(dateStr)
+  // 日期字串沒有時區，以本地時間的 00:00 解讀，避免在 UTC 以西顯示成前一天
+  const date = new Date(`${dateStr}T00:00:00`)
   return date.toLocaleDateString('zh-TW', {
     year: 'numeric',
     month: '2-digit',

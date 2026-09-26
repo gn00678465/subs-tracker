@@ -1,3 +1,5 @@
+import type { CalendarDate } from '../utils/calendarDate'
+
 // 通用環境變數綁定類型
 export interface Bindings {
   SUBSCRIPTIONS_KV: KVNamespace
@@ -42,12 +44,11 @@ export interface HonoEnv {
 export interface Subscription {
   id: string
   name: string
-  customType?: string
   category?: string
   currency?: string
   price?: string
-  startDate?: string
-  expiryDate: string
+  startDate?: CalendarDate
+  expiryDate: CalendarDate
   hasEndDate?: boolean
   autoRenew: boolean
   isFreeTrial?: boolean
@@ -62,7 +63,7 @@ export interface Subscription {
   createdAt: string
   updatedAt: string
   lastReminderSentAt?: string
-  lastCheckedExpiryDate?: string
+  lastCheckedExpiryDate?: CalendarDate
 }
 
 // 配置數據結構

@@ -37,29 +37,16 @@ export function SubscriptionModal() {
                   />
                 </label>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
                   <label class="w-full">
                     <div class="label">
-                      <span class="label-text">訂閱類型</span>
-                    </div>
-                    <input
-                      type="text"
-                      id="customType"
-                      name="customType"
-                      placeholder="例: 串流媒體"
-                      class="input input-bordered w-full"
-                    />
-                  </label>
-
-                  <label class="w-full">
-                    <div class="label">
-                      <span class="label-text">分類標籤</span>
+                      <span class="label-text">分類</span>
                     </div>
                     <input
                       type="text"
                       id="category"
                       name="category"
-                      placeholder="例: 個人、家庭"
+                      placeholder="例: 串流媒體"
                       class="input input-bordered w-full"
                     />
                   </label>

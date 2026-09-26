@@ -1,6 +1,7 @@
 import type { Bindings, Subscription } from '../types'
+import type { CalendarDate } from '../utils/calendarDate'
+import { addPeriod, isCalendarDate } from '../utils/calendarDate'
 import * as logger from '../utils/logger'
-import { addPeriod, getCurrentTime } from '../utils/time'
 
 /**
  * 訂閱服務模組
@@ -15,7 +16,7 @@ import { addPeriod, getCurrentTime } from '../utils/time'
 export async function getAllSubscriptions(env: Bindings): Promise<Subscription[]> {
   try {
     const data = await env.SUBSCRIPTIONS_KV.get('subscriptions')
-    return data ? JSON.parse(data) : []
+    return data ? (JSON.parse(data) as StoredSubscription[]).map(normalizeStoredSubscription) : []
   } catch (error) {
     logger.error('獲取訂閱列表失敗', error, { prefix: 'Subscription' })
     return []
@@ -76,52 +77,54 @@ export async function batchUpdateSubscriptions(
 
 // ==================== Helper Functions ====================
 
+type StoredSubscription = Omit<Subscription, 'expiryDate' | 'startDate' | 'lastCheckedExpiryDate'> & {
+  expiryDate: string
+  startDate?: string
+  lastCheckedExpiryDate?: string
+  customType?: string
+}
+
+// 舊版把到期日存成「選定日期 +1 天的 UTC 00:00」時間戳，這裡還原成選定的日曆日期
+function legacyExpiryToCalendarDate(value: string): CalendarDate {
+  if (isCalendarDate(value)) return value
+  return new Date(new Date(value).getTime() - 86_400_000).toISOString().slice(0, 10)
+}
+
 /**
- * 判斷是否應觸發提醒
- * @param reminder 提醒設定
- * @param daysDiff 距離到期的天數
- * @param hoursDiff 距離到期的小時數
+ * 讀取 KV 時把舊格式轉成目前的格式；下次寫入時就以新格式保存
  */
-export function shouldTriggerReminder(
-  reminder: { unit: 'day' | 'hour'; value: number },
-  daysDiff: number,
-  hoursDiff: number,
-): boolean {
-  if (reminder.unit === 'hour') {
-    // 小時級提醒：hoursDiff 在 0 到 reminderValue 之間
-    return hoursDiff >= 0 && hoursDiff <= reminder.value
-  } else {
-    // 天級提醒：daysDiff 在 0 到 reminderValue 之間
-    return daysDiff >= 0 && daysDiff <= reminder.value
+export function normalizeStoredSubscription(stored: StoredSubscription): Subscription {
+  const { customType, ...rest } = stored
+  return {
+    ...rest,
+    category: stored.category || customType || '',
+    expiryDate: legacyExpiryToCalendarDate(stored.expiryDate),
+    startDate: stored.startDate ? stored.startDate.slice(0, 10) : undefined,
+    lastCheckedExpiryDate: stored.lastCheckedExpiryDate
+      ? legacyExpiryToCalendarDate(stored.lastCheckedExpiryDate)
+      : undefined,
   }
 }
 
 /**
- * 應用自動續期邏輯（僅公曆）
- * @param subscription 訂閱對象
- * @param currentTime 當前時間
- * @returns 是否進行了續期及新到期日期
+ * 到期日已過時，依付款週期推進到今天或之後的第一個日期
  */
 export function applyAutoRenewal(
   subscription: Subscription,
-  currentTime: Date,
-): { renewed: boolean; newExpiryDate?: string } {
+  today: CalendarDate,
+): { renewed: boolean; newExpiryDate?: CalendarDate } {
   if (!subscription.autoRenew || !subscription.periodValue || !subscription.periodUnit) {
     return { renewed: false }
   }
-
-  let expiryDate = new Date(subscription.expiryDate)
-
-  // 如果未過期，無需續期
-  if (expiryDate >= currentTime) {
+  if (subscription.expiryDate >= today) {
     return { renewed: false }
   }
 
-  // 循環加週期直到未來
+  let expiryDate = subscription.expiryDate
   let iterations = 0
-  const maxIterations = 1000 // 防止無限循環
+  const maxIterations = 1000
 
-  while (expiryDate < currentTime && iterations < maxIterations) {
+  while (expiryDate < today && iterations < maxIterations) {
     expiryDate = addPeriod(expiryDate, subscription.periodValue, subscription.periodUnit)
     iterations++
   }
@@ -131,10 +134,7 @@ export function applyAutoRenewal(
     return { renewed: false }
   }
 
-  return {
-    renewed: true,
-    newExpiryDate: expiryDate.toISOString(),
-  }
+  return { renewed: true, newExpiryDate: expiryDate }
 }
 
 // ==================== CRUD Operations ====================
@@ -154,19 +154,15 @@ export async function createSubscription(
 
     const subscriptions = await getAllSubscriptions(env)
 
-    // 解析到期日期（創建時不進行自動續期）
-    const expiryDate = new Date(data.expiryDate)
-
     // 構建新訂閱
     const newSubscription: Subscription = {
       id: Date.now().toString(),
       name: data.name,
-      customType: data.customType || '',
       category: data.category ? data.category.trim() : '',
       currency: data.currency,
       price: data.price,
       startDate: data.startDate,
-      expiryDate: expiryDate.toISOString(),
+      expiryDate: data.expiryDate,
       hasEndDate: data.hasEndDate,
       periodValue: data.periodValue || 1,
       periodUnit: data.periodUnit || 'month',
@@ -202,6 +198,7 @@ export async function createSubscription(
 export async function updateSubscription(
   id: string,
   data: Partial<Subscription>,
+  today: CalendarDate,
   env: Bindings,
 ): Promise<{ success: boolean; subscription?: Subscription; message?: string }> {
   try {
@@ -217,28 +214,19 @@ export async function updateSubscription(
       return { success: false, message: '缺少必填字段 (name, expiryDate)' }
     }
 
-    // 解析到期日期
-    let expiryDate = new Date(data.expiryDate)
-    const currentTime = getCurrentTime()
-
-    // 如果到期且有週期設定，自動續期
-    if (expiryDate < currentTime && data.periodValue && data.periodUnit) {
-      const renewal = applyAutoRenewal({ ...data, expiryDate: data.expiryDate } as Subscription, currentTime)
-      if (renewal.renewed && renewal.newExpiryDate) {
-        expiryDate = new Date(renewal.newExpiryDate)
-      }
-    }
+    // 使用者填了已過去的到期日時，依週期推進到下一個日期
+    const renewal = applyAutoRenewal({ ...subscriptions[index], ...data, autoRenew: true } as Subscription, today)
+    const expiryDate = renewal.newExpiryDate ?? data.expiryDate
 
     // 更新訂閱（保留原有字段 + 覆蓋新字段）
     const updatedSubscription: Subscription = {
       ...subscriptions[index],
       name: data.name,
-      customType: data.customType || '',
       category: data.category ? data.category.trim() : '',
       currency: data.currency ?? subscriptions[index].currency,
       price: data.price ?? subscriptions[index].price,
       startDate: data.startDate ?? subscriptions[index].startDate,
-      expiryDate: expiryDate.toISOString(),
+      expiryDate,
       hasEndDate: data.hasEndDate ?? subscriptions[index].hasEndDate,
       periodValue: data.periodValue ?? subscriptions[index].periodValue,
       periodUnit: data.periodUnit ?? subscriptions[index].periodUnit,

@@ -1,107 +1,81 @@
 import type { Config, Subscription } from '../types'
+import type { CalendarDate } from '../utils/calendarDate'
+import { daysBetween, todayIn } from '../utils/calendarDate'
 import * as logger from '../utils/logger'
-import { getDaysDifference, getMidnightTimestamp } from '../utils/time'
 import { sendSubscriptionReminder } from './notifier'
 import { applyAutoRenewal } from './subscription'
 
 /**
- * Cron 任務相關函數
- */
-
-/**
  * 判斷是否應該發送提醒（考慮通知頻率模式）
  */
-function shouldSendReminder(subscription: Subscription, currentTime: Date, config: Config): boolean {
-  const mode = config.REMINDER_MODE || 'ONCE'
-
-  // 檢查到期日期是否變更（手動續期）
+function shouldSendReminder(subscription: Subscription, today: CalendarDate, config: Config): boolean {
+  // 到期日變更（手動續期）後重新提醒
   if (subscription.lastCheckedExpiryDate && subscription.lastCheckedExpiryDate !== subscription.expiryDate) {
     return true
   }
-
-  // 從未發送過
   if (!subscription.lastReminderSentAt) {
     return true
   }
-
-  if (mode === 'ONCE') {
-    return false
-  } else {
-    // DAILY 模式：檢查今天是否已發送
-    const lastSentDate = new Date(subscription.lastReminderSentAt)
-    const lastSentMidnight = getMidnightTimestamp(lastSentDate, 'UTC')
-    const currentMidnight = getMidnightTimestamp(currentTime, 'UTC')
-    return lastSentMidnight !== currentMidnight
+  if (config.REMINDER_MODE === 'DAILY') {
+    return todayIn(config.TIMEZONE, new Date(subscription.lastReminderSentAt)) !== today
   }
+  return false
 }
 
 /**
  * 處理單個訂閱的提醒邏輯
- * 注意：此函數為純函數，不直接寫入 KV，而是返回更新後的訂閱對象
+ * 不寫入 KV，回傳需要保存的訂閱
  */
 export async function processSubscriptionReminder(
-  subscription: Subscription,
-  currentTime: Date,
+  original: Subscription,
+  now: Date,
   config: Config,
 ): Promise<{ action: 'reminded' | 'renewed' | 'skipped'; success: boolean; updatedSubscription?: Subscription }> {
   try {
-    // 1. 前置檢查
-    if (!subscription.isActive || !subscription.isReminderSet || !subscription.reminderMe || !subscription.expiryDate) {
+    const { reminderMe } = original
+    if (!original.isActive || !original.isReminderSet || !reminderMe || !original.expiryDate) {
       return { action: 'skipped', success: true }
     }
 
-    // 2. 自動續期（如果過期且 autoRenew=true）
-    let expiryDate = new Date(subscription.expiryDate)
-    let needsUpdate = false
+    const today = todayIn(config.TIMEZONE, now)
+    const renewal = applyAutoRenewal(original, today)
+    const subscription: Subscription = renewal.newExpiryDate
+      ? {
+          ...original,
+          expiryDate: renewal.newExpiryDate,
+          lastCheckedExpiryDate: renewal.newExpiryDate,
+          lastReminderSentAt: undefined,
+          updatedAt: now.toISOString(),
+        }
+      : original
+    const renewed = subscription !== original
 
-    if (subscription.autoRenew && expiryDate < currentTime) {
-      const renewal = applyAutoRenewal(subscription, currentTime)
+    const daysLeft = daysBetween(today, subscription.expiryDate)
+    const isInReminderWindow = daysLeft >= 0 && daysLeft <= reminderMe
 
-      if (renewal.renewed && renewal.newExpiryDate) {
-        expiryDate = new Date(renewal.newExpiryDate)
-        subscription.expiryDate = renewal.newExpiryDate
-        subscription.updatedAt = currentTime.toISOString()
-        subscription.lastReminderSentAt = undefined
-        subscription.lastCheckedExpiryDate = renewal.newExpiryDate
-        needsUpdate = true
-      }
+    if (!isInReminderWindow || !shouldSendReminder(subscription, today, config)) {
+      return renewed
+        ? { action: 'renewed', success: true, updatedSubscription: subscription }
+        : { action: 'skipped', success: true }
     }
 
-    // 3. 計算提醒窗口
-    const daysDiff = getDaysDifference(currentTime, expiryDate, 'UTC')
-    const isInReminderWindow = daysDiff >= 0 && daysDiff <= subscription.reminderMe
-
-    if (!isInReminderWindow) {
-      if (needsUpdate) {
-        return { action: 'renewed', success: true, updatedSubscription: subscription }
-      }
-      return { action: 'skipped', success: true }
-    }
-
-    // 4. 判斷是否需要發送提醒
-    if (!shouldSendReminder(subscription, currentTime, config)) {
-      if (needsUpdate) {
-        return { action: 'skipped', success: true, updatedSubscription: subscription }
-      }
-      return { action: 'skipped', success: true }
-    }
-
-    // 5. 發送提醒
-    const result = await sendSubscriptionReminder(subscription.name, subscription.expiryDate, daysDiff, config)
+    const result = await sendSubscriptionReminder(subscription.name, subscription.expiryDate, daysLeft, config)
 
     if (result.successCount > 0) {
-      subscription.lastReminderSentAt = currentTime.toISOString()
-      subscription.lastCheckedExpiryDate = subscription.expiryDate
-      subscription.updatedAt = currentTime.toISOString()
-      return { action: 'reminded', success: true, updatedSubscription: subscription }
-    } else {
-      if (needsUpdate) {
-        return { action: 'reminded', success: false, updatedSubscription: subscription }
+      return {
+        action: 'reminded',
+        success: true,
+        updatedSubscription: {
+          ...subscription,
+          lastReminderSentAt: now.toISOString(),
+          lastCheckedExpiryDate: subscription.expiryDate,
+          updatedAt: now.toISOString(),
+        },
       }
-      return { action: 'reminded', success: false }
     }
+    return { action: 'reminded', success: false, updatedSubscription: renewed ? subscription : undefined }
   } catch (error) {
-    logger.error(`處理訂閱失敗: ${subscription.name}`, error, { prefix: 'Cron' })
+    logger.error(`處理訂閱失敗: ${original.name}`, error, { prefix: 'Cron' })
     return { action: 'skipped', success: false }
   }
 }

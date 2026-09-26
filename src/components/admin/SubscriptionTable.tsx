@@ -34,7 +34,7 @@ export function SubscriptionTable({ subscriptions, searchKeyword, categoryFilter
     // 關鍵字搜尋（保留原有邏輯 index.ts:164-172）
     if (searchKeyword) {
       filtered = filtered.filter((sub) => {
-        const haystack = [sub.name, sub.customType, sub.notes, sub.category].filter(Boolean).join(' ').toLowerCase()
+        const haystack = [sub.name, sub.notes, sub.category].filter(Boolean).join(' ').toLowerCase()
         return haystack.includes(searchKeyword)
       })
     }

@@ -9,7 +9,6 @@ export interface FormValues {
 
   // Basic Info
   name: string
-  customType?: string
   category?: string
 
   // Pricing
@@ -42,33 +41,6 @@ export interface FormValues {
 type FormDataRecord = Record<string, FormDataEntryValue>
 
 // ============ Date Utilities ============
-
-/**
- * 將 YYYY-MM-DD 格式的日期字符串 +1 天
- * @example addDayToDate('2024-12-20') → '2024-12-21T00:00:00.000Z'
- */
-function addDayToDate(dateStr: string): string {
-  const date = new Date(dateStr)
-  date.setDate(date.getDate() + 1)
-  return date.toISOString()
-}
-
-/**
- * 將 ISO 日期字符串 -1 天並返回 YYYY-MM-DD 格式
- * @example subtractDayFromDate('2024-12-21T00:00:00.000Z') → '2024-12-20'
- */
-function subtractDayFromDate(isoStr: string): string {
-  const date = new Date(isoStr)
-  date.setDate(date.getDate() - 1)
-  return date.toISOString().split('T')[0]
-}
-
-/**
- * 將 ISO 日期字符串轉換為 YYYY-MM-DD 格式
- */
-function toFormDateString(isoStr: string): string {
-  return isoStr.split('T')[0]
-}
 
 // ============ Field Transformers ============
 
@@ -107,18 +79,13 @@ function checkboxToBoolean(value: unknown): boolean {
 export function toApiFormat(formData: FormData): Partial<Subscription> {
   const raw = Object.fromEntries(formData.entries()) as FormDataRecord
 
-  // 處理到期日期：選定日期 +1 天作為實際過期時間
-  const expiryDateInput = raw.expiryDate as string
-  const expiryDateISO = addDayToDate(expiryDateInput)
-
   return {
     name: normalizeString(raw.name),
-    customType: normalizeString(raw.customType),
     category: normalizeString(raw.category),
     currency: normalizeString(raw.currency),
     price: normalizeString(raw.price),
     startDate: normalizeString(raw.startDate),
-    expiryDate: expiryDateISO,
+    expiryDate: raw.expiryDate as string,
     periodValue: parseNumber(raw.periodValue),
     periodUnit: raw.periodUnit as 'day' | 'month' | 'year',
     periodMethod: normalizeString(raw.periodMethod) as Subscription['periodMethod'],
@@ -140,18 +107,14 @@ export function toApiFormat(formData: FormData): Partial<Subscription> {
  * @returns 表單可用的數據對象
  */
 export function toFormFormat(subscription: Subscription): FormValues {
-  // 處理到期日期：儲存的是實際過期時間（選定日期+1），顯示時需要-1天
-  const displayExpiryDate = subtractDayFromDate(subscription.expiryDate)
-
   return {
     id: subscription.id,
     name: subscription.name,
-    customType: subscription.customType || '',
     category: subscription.category || '',
     currency: subscription.currency || 'TWD',
     price: subscription.price || '',
-    startDate: subscription.startDate ? toFormDateString(subscription.startDate) : '',
-    expiryDate: displayExpiryDate,
+    startDate: subscription.startDate || '',
+    expiryDate: subscription.expiryDate,
     periodValue: subscription.periodValue || 1,
     periodUnit: subscription.periodUnit || 'month',
     periodMethod: subscription.periodMethod || 'credit',
