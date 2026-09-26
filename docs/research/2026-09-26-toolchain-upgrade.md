@@ -7,6 +7,17 @@
   - 「Vite Plus」指 VoidZero 的 **Vite+**，npm 套件名稱是 **`vite-plus`**，CLI 指令是 `vp`。
 - 驗證方法：除了閱讀文件，本研究在 scratchpad 目錄（專案之外）複製專案，實際安裝新版本並執行 `tsc`、`vite build`、`vite preview`、`vite dev`、`oxfmt`、`oxlint`、`@oxlint/migrate`、`vp migrate`。本 repo 的 `package.json`、`bun.lock`、`node_modules` 都沒有變更。下文標示「實測」的結果都來自這些複本。
 
+## 執行結果（2026-09-26，分支 `chore/upgrade-toolchain`）
+
+第 8 節的步驟 1–9、11 已完成。步驟 12、13 未執行。下列項目與本文的建議不同，以此為準：
+
+- **`@simplewebauthn/*` 維持 13.2.2（步驟 10 未執行）。** 14.0.3 與 13.3.3 都會帶入 `@peculiar/x509`，建置後的 Worker 在啟動時失敗：`Uncaught Error: Cannot get schema for 'AlgorithmIdentifier' target`（`vite preview` 與 `vite dev` 都重現）。只有一份 `@peculiar/asn1-schema` 時也會失敗。本文只以 `tsc` 驗證 v14，所以沒有發現這個問題。根本原因未查明。
+- **`@types/psl` 不能移除。** 移除後 `tsc` 回報 TS7016：`psl` 的 `exports` 沒有公開 `types/index.d.ts`。
+- **oxlint override 的 extglob 路徑無效。** `@oxlint/migrate` 產生的 `**/*.?([cm])ts` 不會比對任何檔案，TypeScript 規則因此全部沒有套用。改成 `**/*.ts` 等一般 glob 後才生效。
+- **步驟 7、8 的順序對調。** 先換成 oxlint 並移除 ESLint，再用 oxfmt 格式化，因此不需要暫時關閉 ESLint 的 stylistic 規則。
+- **`conventional-changelog` 8.x 已沒有 `-s`。** 輸出預設寫回 `-i` 指定的檔案。新舊兩版在本 repo 都產生空的 changelog，原因未查明。
+- **沒有部署到 staging。** 驗證只在本機執行 `tsc`、`vite build`、`vite preview`、`vite dev`。
+
 ---
 
 ## 1. 摘要與建議
