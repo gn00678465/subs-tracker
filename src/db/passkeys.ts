@@ -1,11 +1,11 @@
-import type { AuthenticatorTransportFuture, CredentialDeviceType } from '@simplewebauthn/server'
+import type { CredentialDeviceType } from '@simplewebauthn/server'
 
 export interface Passkey {
   id: string
   /** base64url */
   publicKey: string
   counter: number
-  transports: AuthenticatorTransportFuture[]
+  transports: string[]
   /** null：從 KV 匯入、還沒登入過的舊憑證 */
   rpId: string | null
   aaguid: string | null
@@ -37,7 +37,7 @@ function toPasskey(row: PasskeyRow): Passkey {
     id: row.id,
     publicKey: row.public_key,
     counter: row.counter,
-    transports: JSON.parse(row.transports) as AuthenticatorTransportFuture[],
+    transports: JSON.parse(row.transports) as string[],
     rpId: row.rp_id,
     aaguid: row.aaguid,
     nickname: row.nickname,
