@@ -186,6 +186,7 @@
 
 - 沿用現有的 PWA：`public/manifest.webmanifest`、`public/sw.js`、`src/client/registerSW.ts`。頁面與靜態檔已經有快取，目前缺的是 API 資料。
 - `manifest.webmanifest` 的 `theme_color`、`background_color` 改成新設計的顏色。
+- App 圖示改用 `docs/design/icons/` 的新圖示：`icon.svg`、`favicon.svg`、`icon-192.png`、`icon-512.png`、`apple-touch-icon.png`，取代 `public/` 的舊檔。
 - `public/sw.js` 對 `GET /api/subscriptions` 與 `GET /api/config` 改用「先網路，失敗時用快取」，並記錄快取時間。
 - 頁面依回應是否來自快取，顯示離線提示並停用修改。
 
