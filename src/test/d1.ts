@@ -25,3 +25,9 @@ export async function createTestDb(): Promise<{ db: D1Database; dispose: () => P
   await db.batch(migrationStatements().map((sql) => db.prepare(sql)))
   return { db, dispose: proxy.dispose }
 }
+
+/** 舊版 KV 的替身：值以 JSON 存入，只支援匯入用到的 get */
+export function legacyKv(entries: Record<string, unknown> = {}): KVNamespace {
+  const data = new Map(Object.entries(entries).map(([key, value]) => [key, JSON.stringify(value)]))
+  return { get: async (key: string) => data.get(key) ?? null } as unknown as KVNamespace
+}

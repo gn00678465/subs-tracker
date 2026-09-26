@@ -50,9 +50,10 @@ export function daysBetween(from: CalendarDate, to: CalendarDate): number {
 }
 
 // 月底日期會截到目標月份的最後一天，例如 01-31 加一個月是 02-28
-export function addPeriod(date: CalendarDate, value: number, unit: 'day' | 'month' | 'year'): CalendarDate {
+export function addPeriod(date: CalendarDate, value: number, unit: 'day' | 'week' | 'month' | 'year'): CalendarDate {
   const [y, m, d] = toParts(date)
   if (unit === 'day') return fromUTC(Date.UTC(y, m - 1, d + value))
+  if (unit === 'week') return fromUTC(Date.UTC(y, m - 1, d + value * 7))
 
   const months = unit === 'year' ? value * 12 : value
   const monthIndex = y * 12 + (m - 1) + months

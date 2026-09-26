@@ -1,249 +1,106 @@
+import type { ChannelField, ChannelId, ChannelState, Settings, SettingsPatch } from '../db/settings'
+import { CHANNEL_FIELDS, readChannels, readSettings, updateSettings, upsertChannel } from '../db/settings'
 import type { Bindings, Config } from '../types'
-import { hourIn } from '../utils/calendarDate'
-import { generateRandomSecret, hashPassword } from '../utils/crypto'
-import * as logger from '../utils/logger'
+import { hashPassword } from '../utils/crypto'
+import { importLegacyData } from './legacyImport'
 
-/**
- * 配置服務模組
- * 處理系統配置的讀取、更新與預設值管理
- */
-
-// ==================== Default Configuration ====================
-
-/**
- * 預設配置值
- * 注意：排除 SHOW_LUNAR 和 WECHATBOT_* 字段（按重構計畫移除）
- */
-export const DEFAULT_CONFIG: Config = {
-  ADMIN_USERNAME: 'admin',
-  ADMIN_PASSWORD: 'password',
-  JWT_SECRET: '', // 首次啟動時自動生成
-  TIMEZONE: 'UTC',
-  TELEGRAM_BOT_TOKEN: '',
-  TELEGRAM_CHAT_ID: '',
-  WEBHOOK_URL: '',
-  WEBHOOK_METHOD: 'POST',
-  WEBHOOK_HEADERS: '',
-  WEBHOOK_TEMPLATE: '',
-  RESEND_API_KEY: '',
-  EMAIL_FROM: '',
-  EMAIL_FROM_NAME: '',
-  EMAIL_TO: '',
+// 使用者沒有填寫時，通知程式使用的值
+const CHANNEL_DEFAULTS: Partial<Record<ChannelField, string>> = {
   BARK_SERVER: 'https://api.day.app',
-  BARK_KEY: '',
   BARK_SAVE: 'false',
-  BARK_QUERY: '',
-  REMINDER_HOUR: 0,
-  ENABLED_NOTIFIERS: [],
-  REMINDER_MODE: 'ONCE', // 默認為首次觸發模式
-
-  // WebAuthn 預設值
-  WEBAUTHN_ENABLED: false,
-  WEBAUTHN_RP_NAME: 'SubsTracker',
-  WEBAUTHN_RP_ID: '',
-  WEBAUTHN_RP_ORIGINS: [],
-  WEBAUTHN_ATTESTATION: 'none',
-  WEBAUTHN_AUTHENTICATOR_ATTACHMENT: undefined,
-  WEBAUTHN_RESIDENT_KEY: 'preferred',
-  WEBAUTHN_USER_VERIFICATION: 'preferred',
-  WEBAUTHN_TIMEOUT: 60000,
-  WEBAUTHN_HINTS: [],
+  WEBHOOK_METHOD: 'POST',
 }
 
-// ==================== Configuration Operations ====================
+/** 第一次讀取時從 KV 匯入；匯入後重新讀取，讓並行的首次請求得到同一組設定 */
+export async function loadSettings(env: Bindings, now = new Date()): Promise<Settings> {
+  const existing = await readSettings(env.DB)
+  if (existing) return existing
 
-/**
- * 從 KV 獲取配置，並與預設值合併
- * 自動生成 JWT_SECRET（如果缺失或為舊值）
- */
+  await importLegacyData(env, now)
+  const imported = await readSettings(env.DB)
+  if (!imported) throw new Error('匯入後讀不到 settings')
+  return imported
+}
+
+function toConfig(settings: Settings, channels: ChannelState[]): Config {
+  const channelValues = Object.assign({}, ...channels.map((channel) => channel.config)) as Config
+  return {
+    ...CHANNEL_DEFAULTS,
+    ...channelValues,
+    ADMIN_USERNAME: settings.adminUsername,
+    ADMIN_PASSWORD: settings.adminPasswordHash,
+    JWT_SECRET: settings.jwtSecret,
+    TIMEZONE: settings.timezone,
+    REMINDER_HOUR: settings.reminderHour,
+    REMINDER_MODE: settings.reminderMode,
+    DEFAULT_REMINDER_DAYS: settings.defaultReminderDays,
+    ENABLED_NOTIFIERS: channels.filter((channel) => channel.enabled).map((channel) => channel.channel),
+  }
+}
+
+/** 讀取失敗時丟出錯誤，不改用預設值：預設的時區與提醒時間會讓提醒在錯的時間送出 */
 export async function getConfig(env: Bindings): Promise<Config> {
-  try {
-    if (!env.SUBSCRIPTIONS_KV) {
-      logger.error('KV 存儲未綁定', null, { prefix: 'Config' })
-      throw new Error('KV 存儲未綁定')
-    }
-
-    const data = await env.SUBSCRIPTIONS_KV.get('config')
-    logger.config(`從 KV 讀取配置: ${data ? '成功' : '空配置'}`)
-
-    const stored = data ? JSON.parse(data) : {}
-
-    // 確保 JWT_SECRET 的一致性
-    let jwtSecret = stored.JWT_SECRET
-    if (!jwtSecret || jwtSecret === 'your-secret-key') {
-      jwtSecret = generateRandomSecret()
-      logger.config('生成新的 JWT 密鑰')
-
-      // 保存新的 JWT 密鑰
-      const updatedConfig = { ...stored, JWT_SECRET: jwtSecret }
-      await env.SUBSCRIPTIONS_KV.put('config', JSON.stringify(updatedConfig))
-    }
-
-    const timezone: string = stored.TIMEZONE || DEFAULT_CONFIG.TIMEZONE
-
-    // 合併預設值與存儲值
-    const config: Config = {
-      ADMIN_USERNAME: stored.ADMIN_USERNAME || DEFAULT_CONFIG.ADMIN_USERNAME,
-      ADMIN_PASSWORD: stored.ADMIN_PASSWORD || DEFAULT_CONFIG.ADMIN_PASSWORD,
-      JWT_SECRET: jwtSecret,
-      TIMEZONE: timezone,
-      TELEGRAM_BOT_TOKEN: stored.TELEGRAM_BOT_TOKEN || stored.TG_BOT_TOKEN || DEFAULT_CONFIG.TELEGRAM_BOT_TOKEN,
-      TELEGRAM_CHAT_ID: stored.TELEGRAM_CHAT_ID || stored.TG_CHAT_ID || DEFAULT_CONFIG.TELEGRAM_CHAT_ID,
-      WEBHOOK_URL: stored.WEBHOOK_URL || DEFAULT_CONFIG.WEBHOOK_URL,
-      WEBHOOK_METHOD: stored.WEBHOOK_METHOD || DEFAULT_CONFIG.WEBHOOK_METHOD,
-      WEBHOOK_HEADERS: stored.WEBHOOK_HEADERS || DEFAULT_CONFIG.WEBHOOK_HEADERS,
-      WEBHOOK_TEMPLATE: stored.WEBHOOK_TEMPLATE || DEFAULT_CONFIG.WEBHOOK_TEMPLATE,
-      RESEND_API_KEY: stored.RESEND_API_KEY || DEFAULT_CONFIG.RESEND_API_KEY,
-      EMAIL_FROM: stored.EMAIL_FROM || DEFAULT_CONFIG.EMAIL_FROM,
-      EMAIL_FROM_NAME: stored.EMAIL_FROM_NAME || DEFAULT_CONFIG.EMAIL_FROM_NAME,
-      EMAIL_TO: stored.EMAIL_TO || DEFAULT_CONFIG.EMAIL_TO,
-      BARK_SERVER: stored.BARK_SERVER || DEFAULT_CONFIG.BARK_SERVER,
-      BARK_KEY: stored.BARK_KEY || stored.BARK_DEVICE_KEY || DEFAULT_CONFIG.BARK_KEY,
-      BARK_SAVE: stored.BARK_SAVE || stored.BARK_IS_ARCHIVE || DEFAULT_CONFIG.BARK_SAVE,
-      BARK_QUERY: stored.BARK_QUERY || DEFAULT_CONFIG.BARK_QUERY,
-      REMINDER_HOUR: isReminderHour(stored.REMINDER_HOUR) ? stored.REMINDER_HOUR : legacyReminderHour(timezone),
-      ENABLED_NOTIFIERS: Array.isArray(stored.ENABLED_NOTIFIERS)
-        ? stored.ENABLED_NOTIFIERS
-        : DEFAULT_CONFIG.ENABLED_NOTIFIERS,
-      REMINDER_MODE:
-        stored.REMINDER_MODE === 'ONCE' || stored.REMINDER_MODE === 'DAILY'
-          ? stored.REMINDER_MODE
-          : DEFAULT_CONFIG.REMINDER_MODE,
-
-      // WebAuthn 配置
-      WEBAUTHN_ENABLED: stored.WEBAUTHN_ENABLED ?? DEFAULT_CONFIG.WEBAUTHN_ENABLED,
-      WEBAUTHN_RP_NAME: stored.WEBAUTHN_RP_NAME || DEFAULT_CONFIG.WEBAUTHN_RP_NAME,
-      WEBAUTHN_RP_ID: stored.WEBAUTHN_RP_ID || DEFAULT_CONFIG.WEBAUTHN_RP_ID,
-      WEBAUTHN_RP_ORIGINS: Array.isArray(stored.WEBAUTHN_RP_ORIGINS)
-        ? stored.WEBAUTHN_RP_ORIGINS
-        : DEFAULT_CONFIG.WEBAUTHN_RP_ORIGINS,
-      WEBAUTHN_ATTESTATION: stored.WEBAUTHN_ATTESTATION || DEFAULT_CONFIG.WEBAUTHN_ATTESTATION,
-      WEBAUTHN_AUTHENTICATOR_ATTACHMENT:
-        stored.WEBAUTHN_AUTHENTICATOR_ATTACHMENT ?? DEFAULT_CONFIG.WEBAUTHN_AUTHENTICATOR_ATTACHMENT,
-      WEBAUTHN_RESIDENT_KEY: stored.WEBAUTHN_RESIDENT_KEY || DEFAULT_CONFIG.WEBAUTHN_RESIDENT_KEY,
-      WEBAUTHN_USER_VERIFICATION: stored.WEBAUTHN_USER_VERIFICATION || DEFAULT_CONFIG.WEBAUTHN_USER_VERIFICATION,
-      WEBAUTHN_TIMEOUT: stored.WEBAUTHN_TIMEOUT || DEFAULT_CONFIG.WEBAUTHN_TIMEOUT,
-      WEBAUTHN_HINTS: Array.isArray(stored.WEBAUTHN_HINTS) ? stored.WEBAUTHN_HINTS : DEFAULT_CONFIG.WEBAUTHN_HINTS,
-    }
-
-    // 檢測並強制升級明文密碼
-    if (isPlainTextPassword(config.ADMIN_PASSWORD)) {
-      logger.config('偵測到明文密碼，強制升級為 Hash')
-      const hashedPassword = await hashPassword(config.ADMIN_PASSWORD, jwtSecret)
-
-      // 更新配置並保存（確保包含 JWT_SECRET）
-      const updatedStoredConfig = {
-        ...stored,
-        JWT_SECRET: jwtSecret,
-        ADMIN_PASSWORD: hashedPassword,
-      }
-      await env.SUBSCRIPTIONS_KV.put('config', JSON.stringify(updatedStoredConfig))
-
-      // 更新返回的 config 對象
-      config.ADMIN_PASSWORD = hashedPassword
-      logger.config('密碼已自動升級為 Hash 並保存')
-    }
-
-    logger.config(`配置加載完成，用戶名: ${config.ADMIN_USERNAME}`)
-    return config
-  } catch (error) {
-    logger.error('獲取配置失敗', error, { prefix: 'Config' })
-
-    // 返回預設配置（含自動生成的 JWT_SECRET）
-    return {
-      ...DEFAULT_CONFIG,
-      JWT_SECRET: generateRandomSecret(),
-    }
-  }
+  const settings = await loadSettings(env)
+  return toConfig(settings, await readChannels(env.DB))
 }
 
-/**
- * 更新配置到 KV
- */
-export async function updateConfig(
-  newConfig: Partial<Config>,
-  env: Bindings,
-): Promise<{ success: boolean; message?: string }> {
-  try {
-    // 讀取現有配置
-    const currentConfig = await getConfig(env)
+export type ConfigPatch = Partial<
+  Pick<
+    Config,
+    | 'ADMIN_USERNAME'
+    | 'ADMIN_PASSWORD'
+    | 'TIMEZONE'
+    | 'REMINDER_HOUR'
+    | 'REMINDER_MODE'
+    | 'DEFAULT_REMINDER_DAYS'
+    | 'ENABLED_NOTIFIERS'
+    | ChannelField
+  >
+>
 
-    // 合併配置（保留舊值 + 覆蓋新值）
-    const updatedConfig: Config = {
-      ...currentConfig,
-      ...newConfig,
-    }
+/** ADMIN_PASSWORD 是明文，寫入前雜湊；管道欄位的空字串代表清除 */
+export async function updateConfig(patch: ConfigPatch, env: Bindings): Promise<void> {
+  const settings = await loadSettings(env)
+  const now = new Date().toISOString()
 
-    // 特殊處理：ADMIN_PASSWORD 需要加密
-    if (newConfig.ADMIN_PASSWORD) {
-      logger.config('開始加密管理員密碼')
-      updatedConfig.ADMIN_PASSWORD = await hashPassword(newConfig.ADMIN_PASSWORD, currentConfig.JWT_SECRET)
-      logger.config('管理員密碼已成功加密並更新')
-    }
-
-    // 特殊處理：WEBAUTHN_RP_ORIGINS（textarea 轉陣列）
-    if (newConfig.WEBAUTHN_RP_ORIGINS !== undefined) {
-      const origins = Array.isArray(newConfig.WEBAUTHN_RP_ORIGINS)
-        ? newConfig.WEBAUTHN_RP_ORIGINS
-        : String(newConfig.WEBAUTHN_RP_ORIGINS)
-            .split('\n')
-            .filter((line) => line.trim())
-      updatedConfig.WEBAUTHN_RP_ORIGINS = origins
-    }
-
-    // 保存到 KV
-    await env.SUBSCRIPTIONS_KV.put('config', JSON.stringify(updatedConfig))
-
-    logger.config('配置更新成功')
-    return { success: true }
-  } catch (error) {
-    logger.error('更新配置失敗', error, { prefix: 'Config' })
-    return {
-      success: false,
-      message: error instanceof Error ? error.message : '更新配置失敗',
-    }
-  }
-}
-
-/**
- * 獲取安全配置（移除敏感字段）
- * 用於返回給前端
- */
-export function getSafeConfig(config: Config): Omit<Config, 'JWT_SECRET' | 'ADMIN_PASSWORD'> {
-  const { JWT_SECRET, ADMIN_PASSWORD, ...safeConfig } = config
-  return safeConfig
-}
-
-// ==================== Helper Functions ====================
-
-function isReminderHour(value: unknown): value is number {
-  return Number.isInteger(value) && (value as number) >= 0 && (value as number) <= 23
-}
-
-// 舊版沒有 REMINDER_HOUR，Cron 固定在 UTC 00:00 發送；換算成使用者時區的小時以維持原本的發送時間
-function legacyReminderHour(timezone: string): number {
-  const utcMidnight = new Date()
-  utcMidnight.setUTCHours(0, 0, 0, 0)
-  return hourIn(timezone, utcMidnight)
-}
-
-/**
- * 檢測密碼是否為明文
- * Hash 值為固定長度的 hex 字串（64 字元）
- * HMAC-SHA256 會產生 32 字節 = 64 個 hex 字符
- */
-function isPlainTextPassword(password: string): boolean {
-  // Hash 值的特徵：64 字符的純 hex 字串
-  // 如果不符合這個特徵，視為明文
-  if (password.length !== 64) {
-    return true
+  const settingsPatch: SettingsPatch = {
+    adminUsername: patch.ADMIN_USERNAME,
+    adminPasswordHash: patch.ADMIN_PASSWORD ? await hashPassword(patch.ADMIN_PASSWORD, settings.jwtSecret) : undefined,
+    timezone: patch.TIMEZONE,
+    reminderHour: patch.REMINDER_HOUR,
+    reminderMode: patch.REMINDER_MODE,
+    defaultReminderDays: patch.DEFAULT_REMINDER_DAYS,
   }
 
-  // 檢查是否為純 hex 字串（0-9, a-f）
-  if (!/^[0-9a-f]{64}$/i.test(password)) {
-    return true
-  }
+  const channels = await readChannels(env.DB)
+  const changedChannels = channels.filter(
+    (channel) =>
+      patch.ENABLED_NOTIFIERS !== undefined || CHANNEL_FIELDS[channel.channel].some((field) => field in patch),
+  )
 
-  // 符合 Hash 格式
-  return false
+  const statements = [
+    ...changedChannels.map((channel) =>
+      upsertChannel(
+        env.DB,
+        channel.channel,
+        patch.ENABLED_NOTIFIERS ? patch.ENABLED_NOTIFIERS.includes(channel.channel) : channel.enabled,
+        mergeChannelConfig(channel.channel, channel.config, patch),
+        now,
+      ),
+    ),
+    updateSettings(env.DB, settingsPatch, now),
+  ].filter((statement) => statement !== null)
+  if (statements.length > 0) await env.DB.batch(statements)
+}
+
+function mergeChannelConfig(
+  channel: ChannelId,
+  current: ChannelState['config'],
+  patch: ConfigPatch,
+): ChannelState['config'] {
+  const entries = CHANNEL_FIELDS[channel].flatMap((field) => {
+    const value = field in patch ? patch[field] : current[field]
+    return value ? [[field, value] as const] : []
+  })
+  return Object.fromEntries(entries)
 }

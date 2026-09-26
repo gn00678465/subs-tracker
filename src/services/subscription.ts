@@ -1,313 +1,72 @@
+import { deleteSubscriptionRow, findSubscription, insertSubscription, saveUserFields } from '../db/subscriptions'
 import type { Bindings, Subscription } from '../types'
 import type { CalendarDate } from '../utils/calendarDate'
-import { addPeriod, isCalendarDate } from '../utils/calendarDate'
-import * as logger from '../utils/logger'
+import { addPeriod } from '../utils/calendarDate'
 
-/**
- * 訂閱服務模組
- * 處理所有訂閱 CRUD 操作及自動續期邏輯
- */
+export { findSubscription, listSubscriptions } from '../db/subscriptions'
 
-// ==================== KV Operations ====================
+export type SubscriptionInput = Omit<
+  Subscription,
+  'id' | 'createdAt' | 'updatedAt' | 'lastReminderSentAt' | 'lastCheckedExpiryDate'
+>
 
-/**
- * 從 KV 獲取所有訂閱
- */
-export async function getAllSubscriptions(env: Bindings): Promise<Subscription[]> {
-  try {
-    const data = await env.SUBSCRIPTIONS_KV.get('subscriptions')
-    return data ? (JSON.parse(data) as StoredSubscription[]).map(normalizeStoredSubscription) : []
-  } catch (error) {
-    logger.error('獲取訂閱列表失敗', error, { prefix: 'Subscription' })
-    return []
-  }
+// 試用結束後轉為付費；取消期限只屬於原本那一期
+function advance(subscription: Subscription, expiryDate: CalendarDate): Subscription {
+  return { ...subscription, expiryDate, isFreeTrial: false, cancelByDate: undefined }
 }
 
 /**
- * 根據 ID 獲取單個訂閱
+ * 自動續訂的訂閱，把已過去的扣款日依付款週期推進到今天或之後。
+ * 手動續訂的訂閱不推進，維持「已過期」，等使用者按「已續訂」。
  */
-export async function getSubscription(id: string, env: Bindings): Promise<Subscription | undefined> {
-  const subscriptions = await getAllSubscriptions(env)
-  return subscriptions.find((s) => s.id === id)
-}
-
-/**
- * 批量更新多個訂閱（原子操作）
- * 用於 cron 任務中消除競爭條件
- * @param updates 要更新的訂閱映射 (id -> Subscription)
- * @param env KV 環境綁定
- * @returns 更新結果統計
- */
-export async function batchUpdateSubscriptions(
-  updates: Map<string, Subscription>,
-  env: Bindings,
-): Promise<{ success: boolean; updatedCount: number; message?: string }> {
-  try {
-    if (updates.size === 0) {
-      return { success: true, updatedCount: 0 }
-    }
-
-    // 讀取當前所有訂閱
-    const subscriptions = await getAllSubscriptions(env)
-    let updatedCount = 0
-
-    // 應用所有更新
-    for (let i = 0; i < subscriptions.length; i++) {
-      const updated = updates.get(subscriptions[i].id)
-      if (updated) {
-        subscriptions[i] = updated
-        updatedCount++
-      }
-    }
-
-    // 單次原子寫入
-    await env.SUBSCRIPTIONS_KV.put('subscriptions', JSON.stringify(subscriptions))
-
-    logger.info(`批量更新 ${updatedCount} 個訂閱`, { prefix: 'Subscription' })
-    return { success: true, updatedCount }
-  } catch (error) {
-    logger.error('批量更新訂閱失敗', error, { prefix: 'Subscription' })
-    return {
-      success: false,
-      updatedCount: 0,
-      message: error instanceof Error ? error.message : '批量更新失敗',
-    }
-  }
-}
-
-// ==================== Helper Functions ====================
-
-type StoredSubscription = Omit<Subscription, 'expiryDate' | 'startDate' | 'lastCheckedExpiryDate'> & {
-  expiryDate: string
-  startDate?: string
-  lastCheckedExpiryDate?: string
-  customType?: string
-}
-
-// 舊版把到期日存成「選定日期 +1 天的 UTC 00:00」時間戳，這裡還原成選定的日曆日期
-function legacyExpiryToCalendarDate(value: string): CalendarDate {
-  if (isCalendarDate(value)) return value
-  return new Date(new Date(value).getTime() - 86_400_000).toISOString().slice(0, 10)
-}
-
-/**
- * 讀取 KV 時把舊格式轉成目前的格式；下次寫入時就以新格式保存
- */
-export function normalizeStoredSubscription(stored: StoredSubscription): Subscription {
-  const { customType, ...rest } = stored
-  return {
-    ...rest,
-    category: stored.category || customType || '',
-    expiryDate: legacyExpiryToCalendarDate(stored.expiryDate),
-    startDate: stored.startDate ? stored.startDate.slice(0, 10) : undefined,
-    lastCheckedExpiryDate: stored.lastCheckedExpiryDate
-      ? legacyExpiryToCalendarDate(stored.lastCheckedExpiryDate)
-      : undefined,
-  }
-}
-
-/**
- * 到期日已過時，依付款週期推進到今天或之後的第一個日期
- */
-export function applyAutoRenewal(
-  subscription: Subscription,
-  today: CalendarDate,
-): { renewed: boolean; newExpiryDate?: CalendarDate } {
-  if (!subscription.autoRenew || !subscription.periodValue || !subscription.periodUnit) {
-    return { renewed: false }
-  }
-  if (subscription.expiryDate >= today) {
-    return { renewed: false }
-  }
+export function rollForward(subscription: Subscription, today: CalendarDate): Subscription {
+  if (!subscription.autoRenew || subscription.expiryDate >= today) return subscription
 
   let expiryDate = subscription.expiryDate
-  let iterations = 0
-  const maxIterations = 1000
-
-  while (expiryDate < today && iterations < maxIterations) {
+  // 上限防止壞資料造成無窮迴圈；每天一期也涵蓋超過 27 年
+  for (let i = 0; expiryDate < today; i++) {
+    if (i >= 10_000) throw new Error(`推進扣款日次數過多：${subscription.id}`)
     expiryDate = addPeriod(expiryDate, subscription.periodValue, subscription.periodUnit)
-    iterations++
   }
-
-  if (iterations >= maxIterations) {
-    logger.warning(`自動續期循環過多: ${subscription.id}`, { prefix: 'Subscription' })
-    return { renewed: false }
-  }
-
-  return { renewed: true, newExpiryDate: expiryDate }
+  return advance(subscription, expiryDate)
 }
 
-// ==================== CRUD Operations ====================
-
-/**
- * 創建新訂閱
- */
-export async function createSubscription(
-  data: Partial<Subscription>,
-  env: Bindings,
-): Promise<{ success: boolean; subscription?: Subscription; message?: string }> {
-  try {
-    // 驗證必填字段
-    if (!data.name || !data.expiryDate) {
-      return { success: false, message: '缺少必填字段 (name, expiryDate)' }
-    }
-
-    const subscriptions = await getAllSubscriptions(env)
-
-    // 構建新訂閱
-    const newSubscription: Subscription = {
-      id: Date.now().toString(),
-      name: data.name,
-      category: data.category ? data.category.trim() : '',
-      currency: data.currency,
-      price: data.price,
-      startDate: data.startDate,
-      expiryDate: data.expiryDate,
-      hasEndDate: data.hasEndDate,
-      periodValue: data.periodValue || 1,
-      periodUnit: data.periodUnit || 'month',
-      periodMethod: data.periodMethod,
-      website: data.website,
-      isFreeTrial: data.isFreeTrial,
-      isReminderSet: data.isReminderSet,
-      reminderMe: data.reminderMe,
-      notes: data.notes || '',
-      isActive: data.isActive !== false,
-      autoRenew: data.autoRenew !== false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
-
-    subscriptions.push(newSubscription)
-
-    await env.SUBSCRIPTIONS_KV.put('subscriptions', JSON.stringify(subscriptions))
-
-    return { success: true, subscription: newSubscription }
-  } catch (error) {
-    logger.error('創建訂閱失敗', error, { prefix: 'Subscription' })
-    return {
-      success: false,
-      message: error instanceof Error ? error.message : '創建訂閱失敗',
-    }
+export async function createSubscription(input: SubscriptionInput, env: Bindings): Promise<Subscription> {
+  const now = new Date().toISOString()
+  const subscription: Subscription = {
+    ...input,
+    id: crypto.randomUUID(),
+    name: input.name.trim(),
+    category: input.category.trim(),
+    paymentMethod: input.paymentMethod.trim(),
+    createdAt: now,
+    updatedAt: now,
   }
+  await insertSubscription(env.DB, subscription).run()
+  return subscription
 }
 
-/**
- * 更新訂閱
- */
+/** 填了已過去的扣款日時，自動續訂的訂閱依週期推進到下一個日期；訂閱不存在時回傳 null */
 export async function updateSubscription(
   id: string,
-  data: Partial<Subscription>,
+  patch: Partial<SubscriptionInput>,
   today: CalendarDate,
   env: Bindings,
-): Promise<{ success: boolean; subscription?: Subscription; message?: string }> {
-  try {
-    const subscriptions = await getAllSubscriptions(env)
-    const index = subscriptions.findIndex((s) => s.id === id)
-
-    if (index === -1) {
-      return { success: false, message: '訂閱不存在' }
-    }
-
-    // 驗證必填字段
-    if (!data.name || !data.expiryDate) {
-      return { success: false, message: '缺少必填字段 (name, expiryDate)' }
-    }
-
-    // 使用者填了已過去的到期日時，依週期推進到下一個日期
-    const renewal = applyAutoRenewal({ ...subscriptions[index], ...data, autoRenew: true } as Subscription, today)
-    const expiryDate = renewal.newExpiryDate ?? data.expiryDate
-
-    // 更新訂閱（保留原有字段 + 覆蓋新字段）
-    const updatedSubscription: Subscription = {
-      ...subscriptions[index],
-      name: data.name,
-      category: data.category ? data.category.trim() : '',
-      currency: data.currency ?? subscriptions[index].currency,
-      price: data.price ?? subscriptions[index].price,
-      startDate: data.startDate ?? subscriptions[index].startDate,
-      expiryDate,
-      hasEndDate: data.hasEndDate ?? subscriptions[index].hasEndDate,
-      periodValue: data.periodValue ?? subscriptions[index].periodValue,
-      periodUnit: data.periodUnit ?? subscriptions[index].periodUnit,
-      periodMethod: data.periodMethod ?? subscriptions[index].periodMethod,
-      website: data.website ?? subscriptions[index].website,
-      isFreeTrial: data.isFreeTrial ?? subscriptions[index].isFreeTrial,
-      isReminderSet: data.isReminderSet ?? subscriptions[index].isReminderSet,
-      reminderMe: data.reminderMe ?? subscriptions[index].reminderMe,
-      notes: data.notes ?? subscriptions[index].notes,
-      isActive: data.isActive ?? subscriptions[index].isActive,
-      autoRenew: data.autoRenew ?? subscriptions[index].autoRenew,
-      updatedAt: new Date().toISOString(),
-    }
-
-    subscriptions[index] = updatedSubscription
-
-    await env.SUBSCRIPTIONS_KV.put('subscriptions', JSON.stringify(subscriptions))
-
-    return { success: true, subscription: updatedSubscription }
-  } catch (error) {
-    logger.error('更新訂閱失敗', error, { prefix: 'Subscription' })
-    return {
-      success: false,
-      message: error instanceof Error ? error.message : '更新訂閱失敗',
-    }
-  }
+): Promise<Subscription | null> {
+  const current = await findSubscription(env.DB, id)
+  if (!current) return null
+  const merged: Subscription = { ...current, ...patch, id, updatedAt: new Date().toISOString() }
+  return saveUserFields(env.DB, rollForward(merged, today))
 }
 
-/**
- * 刪除訂閱
- */
-export async function deleteSubscription(id: string, env: Bindings): Promise<{ success: boolean; message?: string }> {
-  try {
-    const subscriptions = await getAllSubscriptions(env)
-    const index = subscriptions.findIndex((s) => s.id === id)
-
-    if (index === -1) {
-      return { success: false, message: '訂閱不存在' }
-    }
-
-    subscriptions.splice(index, 1)
-
-    await env.SUBSCRIPTIONS_KV.put('subscriptions', JSON.stringify(subscriptions))
-
-    return { success: true }
-  } catch (error) {
-    logger.error('刪除訂閱失敗', error, { prefix: 'Subscription' })
-    return {
-      success: false,
-      message: error instanceof Error ? error.message : '刪除訂閱失敗',
-    }
-  }
+/** 「已續訂」：下次扣款日推進一個週期 */
+export async function renewSubscription(id: string, env: Bindings): Promise<Subscription | null> {
+  const current = await findSubscription(env.DB, id)
+  if (!current) return null
+  const renewed = advance(current, addPeriod(current.expiryDate, current.periodValue, current.periodUnit))
+  return saveUserFields(env.DB, { ...renewed, updatedAt: new Date().toISOString() })
 }
 
-/**
- * 切換訂閱啟用/停用狀態
- */
-export async function toggleSubscriptionStatus(
-  id: string,
-  isActive: boolean,
-  env: Bindings,
-): Promise<{ success: boolean; subscription?: Subscription; message?: string }> {
-  try {
-    const subscriptions = await getAllSubscriptions(env)
-    const index = subscriptions.findIndex((s) => s.id === id)
-
-    if (index === -1) {
-      return { success: false, message: '訂閱不存在' }
-    }
-
-    subscriptions[index].isActive = isActive
-    subscriptions[index].updatedAt = new Date().toISOString()
-
-    await env.SUBSCRIPTIONS_KV.put('subscriptions', JSON.stringify(subscriptions))
-
-    return { success: true, subscription: subscriptions[index] }
-  } catch (error) {
-    logger.error('切換狀態失敗', error, { prefix: 'Subscription' })
-    return {
-      success: false,
-      message: error instanceof Error ? error.message : '切換狀態失敗',
-    }
-  }
+export async function deleteSubscription(id: string, env: Bindings): Promise<boolean> {
+  return deleteSubscriptionRow(env.DB, id)
 }

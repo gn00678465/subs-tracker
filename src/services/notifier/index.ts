@@ -111,30 +111,3 @@ export async function sendNotificationToAllChannels(
     results,
   }
 }
-
-/**
- * 發送單個訂閱的提醒通知
- * @param subscriptionName 訂閱名稱
- * @param expiryDate 到期日期
- * @param daysLeft 剩餘天數
- * @param config 配置對象
- */
-export async function sendSubscriptionReminder(
-  subscriptionName: string,
-  expiryDate: string,
-  daysLeft: number,
-  config: Config,
-): Promise<NotificationResult> {
-  const title = `訂閱到期提醒: ${subscriptionName}`
-  const content = `您的訂閱「${subscriptionName}」將在 ${daysLeft} 天後到期\n\n到期日期: ${expiryDate}\n\n請及時處理續費事宜。`
-
-  return sendNotificationToAllChannels(
-    {
-      title,
-      content,
-      timestamp: new Date().toISOString(),
-      metadata: { subscriptionName, expiryDate, daysLeft },
-    },
-    config,
-  )
-}

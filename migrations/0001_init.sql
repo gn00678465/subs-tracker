@@ -75,7 +75,8 @@ CREATE TABLE passkey_credentials (
   public_key TEXT NOT NULL,
   counter INTEGER NOT NULL DEFAULT 0,
   transports TEXT NOT NULL DEFAULT '[]',
-  rp_id TEXT NOT NULL,
+  -- NULL：從 KV 匯入的舊憑證，WEBAUTHN_RP_ID 空白且匯入時沒有請求的主機名稱；第一次登入時補上
+  rp_id TEXT,
   aaguid TEXT,
   nickname TEXT,
   device_type TEXT,

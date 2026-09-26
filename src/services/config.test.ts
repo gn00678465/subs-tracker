@@ -1,30 +1,69 @@
-import { describe, expect, test } from 'bun:test'
+import { afterEach, beforeEach, expect, test } from 'bun:test'
 
+import { recordChannelResult, readChannels } from '../db/settings'
+import { createTestDb, legacyKv } from '../test/d1'
 import type { Bindings } from '../types'
-import { getConfig } from './config'
+import { verifyPassword } from '../utils/crypto'
+import { getConfig, updateConfig } from './config'
 
-function envWith(stored: Record<string, unknown>): Bindings {
-  const data = new Map([['config', JSON.stringify(stored)]])
-  const kv = {
-    get: async (key: string) => data.get(key) ?? null,
-    put: async (key: string, value: string) => void data.set(key, value),
-  }
-  return { DB: {} as D1Database, SUBSCRIPTIONS_KV: kv as unknown as KVNamespace }
-}
+let env: Bindings
+let dispose: () => Promise<void>
 
-describe('REMINDER_HOUR', () => {
-  test('stored value is kept', async () => {
-    const config = await getConfig(envWith({ TIMEZONE: 'Asia/Taipei', REMINDER_HOUR: 21 }))
-    expect(config.REMINDER_HOUR).toBe(21)
+beforeEach(async () => {
+  const test = await createTestDb()
+  env = { DB: test.db, SUBSCRIPTIONS_KV: legacyKv() }
+  dispose = test.dispose
+})
+afterEach(() => dispose())
+
+test('password is stored as a hash', async () => {
+  await updateConfig({ ADMIN_PASSWORD: 'new-password' }, env)
+  const config = await getConfig(env)
+  expect(config.ADMIN_PASSWORD).not.toBe('new-password')
+  expect(await verifyPassword('new-password', config.ADMIN_PASSWORD, config.JWT_SECRET)).toBe(true)
+})
+
+test('settings and channels are saved together', async () => {
+  await updateConfig(
+    {
+      TIMEZONE: 'Asia/Taipei',
+      REMINDER_HOUR: 21,
+      DEFAULT_REMINDER_DAYS: 7,
+      ENABLED_NOTIFIERS: ['telegram'],
+      TELEGRAM_BOT_TOKEN: '123:abc',
+      TELEGRAM_CHAT_ID: '42',
+    },
+    env,
+  )
+  const config = await getConfig(env)
+  expect(config).toMatchObject({
+    TIMEZONE: 'Asia/Taipei',
+    REMINDER_HOUR: 21,
+    DEFAULT_REMINDER_DAYS: 7,
+    ENABLED_NOTIFIERS: ['telegram'],
+    TELEGRAM_BOT_TOKEN: '123:abc',
+    TELEGRAM_CHAT_ID: '42',
   })
+})
 
-  test('legacy config keeps sending at UTC 00:00, expressed in the user timezone', async () => {
-    expect((await getConfig(envWith({ TIMEZONE: 'Asia/Taipei' }))).REMINDER_HOUR).toBe(8)
-    expect((await getConfig(envWith({}))).REMINDER_HOUR).toBe(0)
-  })
+test('an empty channel field clears it and keeps the other fields', async () => {
+  await updateConfig({ TELEGRAM_BOT_TOKEN: '123:abc', TELEGRAM_CHAT_ID: '42' }, env)
+  await updateConfig({ TELEGRAM_CHAT_ID: '' }, env)
+  const telegram = (await readChannels(env.DB)).find((c) => c.channel === 'telegram')
+  expect(telegram?.config).toEqual({ TELEGRAM_BOT_TOKEN: '123:abc' })
+})
 
-  test('out-of-range value falls back to the legacy hour', async () => {
-    const config = await getConfig(envWith({ TIMEZONE: 'Asia/Tokyo', REMINDER_HOUR: 25 }))
-    expect(config.REMINDER_HOUR).toBe(9)
-  })
+test('saving a channel keeps the last delivery result written by Cron', async () => {
+  await getConfig(env)
+  await recordChannelResult(env.DB, 'bark', 'failed', 'HTTP 500', '2026-09-26T01:00:00.000Z').run()
+  await updateConfig({ BARK_KEY: 'new-key' }, env)
+  const bark = (await readChannels(env.DB)).find((c) => c.channel === 'bark')
+  expect(bark).toMatchObject({ config: { BARK_KEY: 'new-key' }, lastStatus: 'failed', lastError: 'HTTP 500' })
+})
+
+test('an invalid value is rejected by the schema and nothing changes', async () => {
+  await expect(updateConfig({ REMINDER_HOUR: 24, TELEGRAM_CHAT_ID: '42' }, env)).rejects.toThrow()
+  const config = await getConfig(env)
+  expect(config.REMINDER_HOUR).toBe(9)
+  expect(config.TELEGRAM_CHAT_ID).toBeUndefined()
 })

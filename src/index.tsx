@@ -5,7 +5,6 @@ import { prettyJSON } from 'hono/pretty-json'
 
 import { optionalAuthMiddleware, pageAuthMiddleware } from './middleware/auth'
 import { createOpenAPIApp } from './openapi'
-import { AdminPage } from './pages/Admin'
 import { ConfigPage } from './pages/Config'
 import { LoginPage } from './pages/Login'
 import { renderer } from './renderer'
@@ -13,12 +12,8 @@ import auth from './routes/auth'
 import config from './routes/config'
 import subscriptions from './routes/subscriptions'
 import webauthn from './routes/webauthn'
-import { getConfig } from './services/config'
-import { batchUpdateSubscriptions, getAllSubscriptions } from './services/subscription'
-import { processSubscriptionReminder } from './services/subscription_cron'
-import type { Bindings, Subscription } from './types'
-import { hourIn } from './utils/calendarDate'
-import * as loggerUtil from './utils/logger'
+import { runReminders } from './services/subscription_cron'
+import type { Bindings } from './types'
 
 // 使用支持 OpenAPI 的 Hono 實例
 const app = createOpenAPIApp()
@@ -43,18 +38,8 @@ app.route('/api/subscriptions', subscriptions)
 // 掛載配置路由
 app.route('/api/config', config)
 
-// 掛載第三方通知路由（無需認證，使用 API Token）
-
 // 掛載 WebAuthn 路由
 app.route('/api/webauthn', webauthn)
-
-// .well-known/webauthn 端點（ROR 發現）
-app.get('/.well-known/webauthn', async (c) => {
-  const config = await getConfig(c.env)
-  return c.json({
-    origins: config.WEBAUTHN_RP_ORIGINS || [],
-  })
-})
 
 // 登入頁面路由
 app.get('/', optionalAuthMiddleware, (c) => {
@@ -75,101 +60,9 @@ app.get('/admin/config', pageAuthMiddleware, (c) => {
   return c.html(<ConfigPage username={user.username} />)
 })
 
-// 管理頁面路由
-app.get('/admin', pageAuthMiddleware, (c) => {
-  const user = c.get('user')
-  return c.html(<AdminPage username={user.username} />)
-})
-
 export default {
   fetch: app.fetch,
-  async scheduled(event: ScheduledEvent, env: Bindings, ctx: ExecutionContext) {
-    loggerUtil.info('[Cron] 定時任務開始', {
-      prefix: 'Cron',
-      data: { triggerTime: new Date().toISOString() },
-    })
-
-    try {
-      // 1. 獲取配置
-      const config = await getConfig(env)
-
-      // 2. Cron 每小時執行，只在使用者時區的提醒小時處理
-      const currentTime = new Date()
-      if (hourIn(config.TIMEZONE, currentTime) !== config.REMINDER_HOUR) {
-        return
-      }
-
-      // 3. 獲取所有訂閱
-      const subscriptions = await getAllSubscriptions(env)
-      loggerUtil.info(`[Cron] 獲取到 ${subscriptions.length} 個訂閱`, { prefix: 'Cron' })
-
-      if (subscriptions.length === 0) {
-        loggerUtil.info('[Cron] 沒有訂閱需要檢查', { prefix: 'Cron' })
-        return
-      }
-
-      // 4. 並行處理所有訂閱（僅讀取和計算，不寫入 KV）
-      const processPromises = subscriptions.map((sub) => processSubscriptionReminder(sub, currentTime, config))
-
-      const results = await Promise.allSettled(processPromises)
-
-      // 5. 收集需要更新的訂閱
-      const subscriptionUpdates = new Map<string, Subscription>()
-
-      results.forEach((result, index) => {
-        if (result.status === 'fulfilled' && result.value.updatedSubscription) {
-          const { updatedSubscription } = result.value
-          subscriptionUpdates.set(updatedSubscription.id, updatedSubscription)
-        }
-      })
-
-      // 6. 原子批量更新（單次 KV 寫入，消除競爭條件）
-      if (subscriptionUpdates.size > 0) {
-        const updateResult = await batchUpdateSubscriptions(subscriptionUpdates, env)
-        if (!updateResult.success) {
-          loggerUtil.error('[Cron] 批量更新訂閱失敗', new Error(updateResult.message || '未知錯誤'), {
-            prefix: 'Cron',
-          })
-        } else {
-          loggerUtil.info(`[Cron] 成功更新 ${updateResult.updatedCount} 個訂閱`, { prefix: 'Cron' })
-        }
-      }
-
-      // 7. 統計結果
-      const stats = {
-        total: subscriptions.length,
-        processed: 0,
-        reminded: 0,
-        renewed: 0,
-        skipped: 0,
-        failed: 0,
-      }
-
-      results.forEach((result, index) => {
-        if (result.status === 'fulfilled') {
-          const { action, success } = result.value
-          if (success) {
-            stats.processed++
-            if (action === 'reminded') stats.reminded++
-            else if (action === 'renewed') stats.renewed++
-            else if (action === 'skipped') stats.skipped++
-          } else {
-            stats.failed++
-          }
-        } else {
-          stats.failed++
-          loggerUtil.error(`[Cron] 處理失敗: ${subscriptions[index].name}`, result.reason, {
-            prefix: 'Cron',
-          })
-        }
-      })
-
-      loggerUtil.info('[Cron] 定時任務執行完成', {
-        prefix: 'Cron',
-        data: stats,
-      })
-    } catch (error) {
-      loggerUtil.error('[Cron] 定時任務執行失敗', error, { prefix: 'Cron' })
-    }
+  async scheduled(_event: ScheduledEvent, env: Bindings, ctx: ExecutionContext) {
+    ctx.waitUntil(runReminders(env, new Date()))
   },
 }
