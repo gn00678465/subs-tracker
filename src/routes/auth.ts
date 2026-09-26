@@ -1,6 +1,6 @@
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
 
-import { getConfig } from '../services/config'
+import { loadSettings } from '../services/settings'
 import type { HonoEnv } from '../types'
 import { clearTokenCookie, generateJWT, setTokenCookie, verifyPassword } from '../utils/crypto'
 import * as logger from '../utils/logger'
@@ -94,7 +94,7 @@ const loginRoute = createRoute({
           schema: ErrorResponseSchema,
         },
       },
-      description: '用戶名或密碼錯誤',
+      description: '使用者名稱或密碼錯誤',
     },
     500: {
       content: {
@@ -118,16 +118,16 @@ auth.openapi(loginRoute, async (c) => {
       contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')
     const { username, password } = isForm ? c.req.valid('form') : c.req.valid('json')
 
-    const config = await getConfig(c.env)
+    const settings = await loadSettings(c.env)
 
     logger.info(`登入嘗試: ${username}`, { prefix: 'Auth' })
     // 驗證用戶名
-    if (username !== config.ADMIN_USERNAME) {
+    if (username !== settings.adminUsername) {
       logger.warning(`登入失敗: 用戶名錯誤 (${username})`, { prefix: 'Auth' })
       return c.json(
         {
           success: false,
-          message: '用戶名或密碼錯誤',
+          message: '使用者名稱或密碼錯誤',
           code: 'UNAUTHORIZED',
         },
         401,
@@ -135,13 +135,13 @@ auth.openapi(loginRoute, async (c) => {
     }
 
     // 驗證密碼（使用 Hash 驗證）
-    const passwordValid = await verifyPassword(password, config.ADMIN_PASSWORD, config.JWT_SECRET)
+    const passwordValid = await verifyPassword(password, settings.adminPasswordHash, settings.jwtSecret)
     if (!passwordValid) {
       logger.warning(`登入失敗: 密碼錯誤 (${username})`, { prefix: 'Auth' })
       return c.json(
         {
           success: false,
-          message: '用戶名或密碼錯誤',
+          message: '使用者名稱或密碼錯誤',
           code: 'UNAUTHORIZED',
         },
         401,
@@ -149,7 +149,7 @@ auth.openapi(loginRoute, async (c) => {
     }
 
     // 生成 JWT Token
-    const token = await generateJWT(username, config.JWT_SECRET)
+    const token = await generateJWT(username, settings.jwtSecret)
 
     // 設置 Cookie
     setTokenCookie(c, token)

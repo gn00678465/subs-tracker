@@ -23,11 +23,11 @@ export interface TemplateRenderResult {
  */
 export function renderTemplate(template: string, variables: TemplateVariables): TemplateRenderResult {
   try {
-    // 替換所有變數
+    // 替換值用函式傳入：字串形式會把名稱裡的 $& 之類的文字當成替換樣式
     const rendered = template
-      .replace(/\{\{title\}\}/g, escapeJsonString(variables.title))
-      .replace(/\{\{content\}\}/g, escapeJsonString(variables.content))
-      .replace(/\{\{timestamp\}\}/g, escapeJsonString(variables.timestamp))
+      .replace(/\{\{title\}\}/g, () => escapeJsonString(variables.title))
+      .replace(/\{\{content\}\}/g, () => escapeJsonString(variables.content))
+      .replace(/\{\{timestamp\}\}/g, () => escapeJsonString(variables.timestamp))
 
     // 驗證 JSON 格式
     try {
@@ -51,33 +51,7 @@ export function renderTemplate(template: string, variables: TemplateVariables): 
   }
 }
 
-/**
- * 轉義 JSON 字串中的特殊字符
- * 避免破壞 JSON 結構
- */
+// 模板的變數寫在 JSON 字串的引號內，所以只取 JSON.stringify 結果中引號內的部分
 function escapeJsonString(str: string): string {
-  return str
-    .replace(/\\/g, '\\\\') // 反斜線
-    .replace(/"/g, '\\"') // 雙引號
-    .replace(/\n/g, '\\n') // 換行
-    .replace(/\r/g, '\\r') // 回車
-    .replace(/\t/g, '\\t') // Tab
-    .replace(/\f/g, '\\f') // Form feed
-    .replace(/\b/g, '\\b') // Backspace
-}
-
-/**
- * 驗證模板格式（可選）
- */
-export function validateTemplate(template: string): { valid: boolean; error?: string } {
-  try {
-    // 檢查是否為有效 JSON
-    JSON.parse(template)
-    return { valid: true }
-  } catch (error) {
-    return {
-      valid: false,
-      error: error instanceof Error ? error.message : 'Invalid JSON template',
-    }
-  }
+  return JSON.stringify(str).slice(1, -1)
 }

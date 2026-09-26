@@ -39,3 +39,4 @@ lerna-debug.log*
 .shared/ui-ux-pro-max/
 # gitnexus local index
 .gitnexus/
+.audit/

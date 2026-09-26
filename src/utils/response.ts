@@ -53,38 +53,6 @@ export function validationError(
 }
 
 /**
- * 認證錯誤回應 (401)
- * @param c Hono Context
- * @param message 錯誤訊息
- */
-export function unauthorized(c: Context, message: string): Response {
-  return c.json(
-    {
-      success: false,
-      message,
-      code: ErrorCode.UNAUTHORIZED,
-    } as Api.ErrorResponse,
-    401,
-  )
-}
-
-/**
- * 授權錯誤回應 (403)
- * @param c Hono Context
- * @param message 錯誤訊息
- */
-export function forbidden(c: Context, message: string): Response {
-  return c.json(
-    {
-      success: false,
-      message,
-      code: ErrorCode.FORBIDDEN,
-    } as Api.ErrorResponse,
-    403,
-  )
-}
-
-/**
  * 資源不存在回應 (404)
  * @param c Hono Context
  * @param message 錯誤訊息
@@ -113,21 +81,5 @@ export function serverError(c: Context, message: string = '服務器內部錯誤
       code: ErrorCode.INTERNAL_ERROR,
     } as Api.ErrorResponse,
     500,
-  )
-}
-
-/**
- * 功能未實現回應 (501)
- * @param c Hono Context
- * @param message 錯誤訊息
- */
-export function notImplemented(c: Context, message: string): Response {
-  return c.json(
-    {
-      success: false,
-      message,
-      code: ErrorCode.NOT_IMPLEMENTED,
-    } as Api.ErrorResponse,
-    501,
   )
 }

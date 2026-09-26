@@ -4,25 +4,6 @@ import * as logger from '../../../utils/logger'
 import type { ChannelSender, ChannelValidator } from '../types'
 
 /**
- * Resend 實例快取
- * 避免每次發送郵件都重新創建實例
- */
-let resendInstanceCache: { apiKey: string; instance: Resend } | null = null
-
-/**
- * 獲取或創建 Resend 實例
- */
-function getResendInstance(apiKey: string): Resend {
-  if (resendInstanceCache && resendInstanceCache.apiKey === apiKey) {
-    return resendInstanceCache.instance
-  }
-
-  const instance = new Resend(apiKey)
-  resendInstanceCache = { apiKey, instance }
-  return instance
-}
-
-/**
  * HTML 轉義函數，防止 XSS 攻擊
  */
 function escapeHtml(text: string): string {
@@ -74,64 +55,52 @@ export const validateResendConfig: ChannelValidator = (config) => {
 export const sendResendNotification: ChannelSender = async (options, config) => {
   const channelName = 'email'
 
-  try {
-    // 配置驗證
-    const validation = validateResendConfig(config)
-    if (!validation.isValid) {
-      return {
-        channel: channelName,
-        success: false,
-        error: `配置缺失: ${validation.missingFields?.join(', ')}`,
-      }
-    }
-
-    // 類型守衛：驗證後確保必要欄位存在
-    const apiKey = config.RESEND_API_KEY
-    const emailFrom = config.EMAIL_FROM
-    const emailTo = config.EMAIL_TO
-    if (!apiKey || !emailFrom || !emailTo) {
-      return {
-        channel: channelName,
-        success: false,
-        error: '配置驗證失敗',
-      }
-    }
-
-    const resend = getResendInstance(apiKey)
-    const { title, content } = options
-
-    const { data, error } = await resend.emails.send({
-      from: config.EMAIL_FROM_NAME ? `${config.EMAIL_FROM_NAME} <${emailFrom}>` : emailFrom,
-      to: [emailTo],
-      subject: title,
-      html: generateEmailHtml(title, content),
-    })
-
-    if (error) {
-      logger.notification(`Resend 發送失敗: ${error.message || 'Unknown error'}`, {
-        data: { status: error.statusCode, error },
-      })
-      return {
-        channel: channelName,
-        success: false,
-        error: error.message || `HTTP ${error.statusCode}`,
-        details: error,
-      }
-    }
-
-    logger.notification(`Resend 發送成功: email_id=${data.id}`)
-    return {
-      channel: channelName,
-      success: true,
-      message: '發送成功',
-      details: data,
-    }
-  } catch (error) {
-    logger.error('Resend 發送異常', error, { prefix: 'Notifier' })
+  // 配置驗證
+  const validation = validateResendConfig(config)
+  if (!validation.isValid) {
     return {
       channel: channelName,
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: `配置缺失: ${validation.missingFields?.join(', ')}`,
     }
+  }
+
+  // 類型守衛：驗證後確保必要欄位存在
+  const apiKey = config.RESEND_API_KEY
+  const emailFrom = config.EMAIL_FROM
+  const emailTo = config.EMAIL_TO
+  if (!apiKey || !emailFrom || !emailTo) {
+    return {
+      channel: channelName,
+      success: false,
+      error: '配置驗證失敗',
+    }
+  }
+
+  const resend = new Resend(apiKey)
+  const { title, content } = options
+
+  const { data, error } = await resend.emails.send({
+    from: config.EMAIL_FROM_NAME ? `${config.EMAIL_FROM_NAME} <${emailFrom}>` : emailFrom,
+    to: [emailTo],
+    subject: title,
+    html: generateEmailHtml(title, content),
+  })
+
+  if (error) {
+    logger.notification(`Resend 發送失敗: ${error.message || 'Unknown error'}`, {
+      data: { status: error.statusCode, error },
+    })
+    return {
+      channel: channelName,
+      success: false,
+      error: error.message || `HTTP ${error.statusCode}`,
+    }
+  }
+
+  logger.notification(`Resend 發送成功: email_id=${data.id}`)
+  return {
+    channel: channelName,
+    success: true,
   }
 }

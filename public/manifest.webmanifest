@@ -1,11 +1,11 @@
 {
   "name": "SubsTracker",
   "short_name": "SubsTracker",
-  "description": "訂閱管理系統",
+  "description": "扣款之前，先知道。",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#36A45D",
+  "background_color": "#eceef1",
+  "theme_color": "#eceef1",
   "orientation": "portrait-primary",
   "icons": [
     {

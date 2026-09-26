@@ -1,68 +1,77 @@
-import { getSafeRedirectUrl } from '../../utils/url'
-// 導入 WebAuthn 登入功能
-import './webauthn'
+import type { PublicKeyCredentialRequestOptionsJSON } from '@simplewebauthn/browser'
+import { browserSupportsWebAuthnAutofill, startAuthentication } from '@simplewebauthn/browser'
 
-const form = document.getElementById('loginForm') as HTMLFormElement | null
-const btn = document.getElementById('submitBtn') as HTMLButtonElement | null
-const btnText = document.getElementById('btnText') as HTMLElement | null
-const btnLoading = document.getElementById('btnLoading') as HTMLElement | null
-const errorMsg = document.getElementById('errorMsg') as HTMLElement | null
-const errorText = document.getElementById('errorText') as HTMLElement | null
+import { isCancel } from '../shared/api'
 
-function resetButtonState() {
-  if (!btn || !btnText || !btnLoading) return
-  btn.disabled = false
-  btnText.classList.remove('hidden')
-  btnLoading.classList.add('hidden')
+const form = document.getElementById('login-form') as HTMLFormElement
+const submit = form.querySelector('button[type="submit"]') as HTMLButtonElement
+const error = document.getElementById('login-error') as HTMLParagraphElement
+const passkeyButton = document.getElementById('passkey-login') as HTMLButtonElement | null
+
+function showError(message: string | null) {
+  error.hidden = !message
+  error.textContent = message ?? ''
 }
 
-function showError(message: string) {
-  if (!errorMsg || !errorText) return
-  errorText.textContent = message
-  errorMsg.classList.remove('hidden')
+function setBusy(button: HTMLButtonElement, busy: boolean, label: string) {
+  button.disabled = busy
+  button.setAttribute('aria-disabled', String(busy))
+  if (button.lastChild) button.lastChild.textContent = label
 }
 
-form?.addEventListener('submit', async (evt: Event) => {
-  evt.preventDefault()
+async function postJson<T>(url: string, body: unknown): Promise<Api.Response<T>> {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  return (await response.json()) as Api.Response<T>
+}
 
-  const formData = new FormData(form)
-  const username = formData.get('username')
-  const password = formData.get('password')
+form.addEventListener('submit', async (event) => {
+  event.preventDefault()
+  const data = new FormData(form)
+  const username = String(data.get('username') ?? '').trim()
+  const password = String(data.get('password') ?? '')
+  if (!username || !password) return showError('請輸入使用者名稱和密碼。')
 
-  if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
-    showError('請輸入用戶名和密碼')
-    return
-  }
-
-  errorMsg?.classList.add('hidden')
-
-  if (!btn || !btnText || !btnLoading) return
-  btn.disabled = true
-  btnText.classList.add('hidden')
-  btnLoading.classList.remove('hidden')
-
+  showError(null)
+  setBusy(submit, true, '登入中')
   try {
-    const response = await fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        username,
-        password,
-      }),
-    })
-
-    const data = (await response.json()) as Api.Response<{ username: string }>
-
-    if (data.success) {
-      const params = new URLSearchParams(window.location.search)
-      const redirectTo = getSafeRedirectUrl(params.get('redirect_to'))
-      window.location.href = redirectTo
-    } else {
-      showError(data.message || '登入失敗，請檢查用戶名和密碼')
-      resetButtonState()
-    }
+    const result = await postJson('/api/login', { username, password })
+    if (result.success) return location.assign('/admin')
+    showError(result.message)
   } catch {
-    showError('發生錯誤，請稍後再試')
-    resetButtonState()
+    showError('無法連線，請確認網路後再試一次。')
   }
+  setBusy(submit, false, '登入')
 })
+
+async function signInWithPasskey(conditional: boolean) {
+  const options = await postJson<PublicKeyCredentialRequestOptionsJSON>('/api/webauthn/authenticate/options', {
+    conditional,
+  })
+  if (!options.success || !options.data) throw new Error(options.success ? '伺服器沒有回傳驗證選項' : options.message)
+  const credential = await startAuthentication({ optionsJSON: options.data, useBrowserAutofill: conditional })
+  const result = await postJson('/api/webauthn/authenticate/verify', credential)
+  if (!result.success) throw new Error(result.message)
+  location.assign('/admin')
+}
+
+passkeyButton?.addEventListener('click', async () => {
+  showError(null)
+  setBusy(passkeyButton, true, '驗證中')
+  try {
+    await signInWithPasskey(false)
+  } catch (caught) {
+    if (!isCancel(caught)) showError(caught instanceof Error ? caught.message : String(caught))
+  }
+  setBusy(passkeyButton, false, '使用 passkey 登入')
+})
+
+if (passkeyButton) {
+  browserSupportsWebAuthnAutofill()
+    .then((supported) => (supported ? signInWithPasskey(true) : undefined))
+    // 自動填入是背景的請求，使用者沒有操作；失敗時仍可用密碼或按鈕登入，不顯示錯誤
+    .catch(() => undefined)
+}

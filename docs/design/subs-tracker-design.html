@@ -1,0 +1,3518 @@
+<title>SubsTracker 錢包卡匣</title>
+<!--
+THESIS: 每筆訂閱是一張卡，卡緣就是一行資訊；最快扣款的卡放在最前面。拒絕的預設：合計卡片 + 表格 + 圓餅圖的記帳後台。
+OWN-WORLD: 冷灰卡槽底色上疊深色卡片，每個分類一種深色；白字、等寬數字、金額靠右；一條紅色「今天」線；其餘介面只用墨色與灰。
+STORY: 收到提醒後打開 app，一眼看到下一筆扣款與剩幾天，往下看到之後的卡緣與本月合計，需要時點開一張卡處理。
+FIRST VIEWPORT: 頂端一行依貨幣分開的本月合計；下方卡疊，最近一筆完整展開（名稱、金額、扣款日、倒數），其後只露出卡緣；新增按鈕固定在右下拇指範圍。
+FORM: 錢包卡匣，grounded 清單第 5 項，seed key c67ccd49。
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap"
+/>
+<script src="https://cdn.jsdelivr.net/npm/lucide@1.48.0/dist/umd/lucide.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@floating-ui/core@1.8.0/dist/floating-ui.core.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.8.0/dist/floating-ui.dom.umd.min.js"></script>
+<style>
+  :root {
+    --ground: #eceef1;
+    --surface: #ffffff;
+    --ink: #15181c;
+    --ink-2: #4a5260;
+    --ink-3: #626a77;
+    --line: #d5d9df;
+    --today: #bf3019;
+    --focus: #2b6cf0;
+    --danger: #b3261e;
+    --shadow: 0 1px 2px rgb(21 24 28 / 0.08), 0 8px 24px -12px rgb(21 24 28 / 0.28);
+
+    --c-green: #1f5f4a;
+    --c-blue: #2b4c8c;
+    --c-brick: #8a3b2e;
+    --c-violet: #5b4a8c;
+    --c-ochre: #6f540e;
+    --c-slate: #2f3a45;
+    --c-teal: #1d5c66;
+    --c-plum: #7a2e5c;
+
+    --font-ui: 'Noto Sans TC', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+    --font-figure: 'Barlow Semi Condensed', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+
+    --paused: #52585f;
+    --radius-card: 14px;
+    --radius-control: 10px;
+    --lip: 56px;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      color-scheme: dark;
+      --ground: #0d0f12;
+      --surface: #181b20;
+      --ink: #eef0f2;
+      --ink-2: #a9b0bb;
+      --ink-3: #8a929e;
+      --line: #2a2f37;
+      --today: #ff5a3d;
+      --focus: #6e9bff;
+      --danger: #ff6b5e;
+      --shadow: 0 1px 2px rgb(0 0 0 / 0.5), 0 10px 28px -12px rgb(0 0 0 / 0.8);
+      --c-green: #24705a;
+      --c-blue: #33599f;
+      --c-brick: #9c4536;
+      --c-violet: #68569f;
+      --c-ochre: #6f540e;
+      --c-slate: #3a4653;
+      --c-teal: #226b76;
+      --c-plum: #8a3569;
+      --paused: #3b4049;
+    }
+  }
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --ground: #0d0f12;
+    --surface: #181b20;
+    --ink: #eef0f2;
+    --ink-2: #a9b0bb;
+    --ink-3: #8a929e;
+    --line: #2a2f37;
+    --today: #ff5a3d;
+    --focus: #6e9bff;
+    --danger: #ff6b5e;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.5), 0 10px 28px -12px rgb(0 0 0 / 0.8);
+    --c-green: #24705a;
+    --c-blue: #33599f;
+    --c-brick: #9c4536;
+    --c-violet: #68569f;
+    --c-ochre: #6f540e;
+    --c-slate: #3a4653;
+    --c-teal: #226b76;
+    --c-plum: #8a3569;
+    --paused: #3b4049;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 400 15px/1.55 var(--font-ui);
+    padding-inline: 16px;
+    padding-block: 24px 64px;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::placeholder {
+    color: var(--ink-3);
+    opacity: 1;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--c-blue) 30%, transparent);
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .page {
+    max-width: 960px;
+    margin-inline: auto;
+    display: grid;
+    gap: 48px;
+  }
+  header.intro h1 {
+    font-size: 26px;
+    line-height: 1.25;
+    margin: 0 0 8px;
+    text-wrap: balance;
+  }
+  header.intro p {
+    margin: 0;
+    color: var(--ink-2);
+    max-width: 62ch;
+  }
+  section > h2 {
+    font-size: 18px;
+    margin: 0 0 4px;
+  }
+  section > p.lede {
+    margin: 0 0 20px;
+    color: var(--ink-2);
+    max-width: 62ch;
+  }
+  .grid-2 {
+    display: grid;
+    gap: 24px;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+    align-items: start;
+  }
+  .panel {
+    background: var(--surface);
+    border-radius: var(--radius-card);
+    padding: 20px;
+    box-shadow: var(--shadow);
+  }
+  .panel h3 {
+    font-size: 14px;
+    margin: 0 0 12px;
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+  .num {
+    font-family: var(--font-figure);
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  /* 色票 */
+  .swatches {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  }
+  .swatch {
+    display: grid;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  .swatch i {
+    display: block;
+    height: 48px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+  }
+  .swatch b {
+    color: var(--ink);
+    font-weight: 500;
+    font-size: 13px;
+  }
+
+  /* 字級 */
+  .type-row {
+    display: grid;
+    grid-template-columns: 88px 1fr;
+    gap: 12px;
+    align-items: baseline;
+    padding-block: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .type-row:last-child {
+    border-bottom: 0;
+  }
+  .type-row small {
+    color: var(--ink-3);
+    font-size: 12px;
+  }
+
+  /* 卡匣 */
+  .wallet {
+    display: flex;
+    flex-direction: column;
+    max-width: 420px;
+  }
+  .totals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    align-items: baseline;
+    padding: 0 4px 14px;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .totals strong {
+    font-family: var(--font-figure);
+    font-variant-numeric: tabular-nums;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-inline-start: 4px;
+  }
+  .card {
+    --tone: var(--c-slate);
+    position: relative;
+    background: var(--tone);
+    color: #fff;
+    border-radius: var(--radius-card);
+    box-shadow:
+      0 -1px 0 rgb(255 255 255 / 0.1) inset,
+      0 -4px 14px -6px rgb(0 0 0 / 0.35);
+    margin-top: -12px;
+    overflow: hidden;
+  }
+  .card:first-of-type,
+  .today + .card {
+    margin-top: 0;
+  }
+  .card button.lip {
+    all: unset;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    height: var(--lip);
+    padding: 0 16px;
+    cursor: pointer;
+  }
+  .card button.lip:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: -4px;
+    border-radius: var(--radius-card);
+  }
+  .lip-name {
+    min-width: 0;
+    font-weight: 500;
+    font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* 名稱太長時截斷名稱，標籤保持完整 */
+  .lip-name .n {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+  }
+  .lip-name .t {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .lip-meta {
+    display: flex;
+    gap: 12px;
+    align-items: baseline;
+    font-family: var(--font-figure);
+    font-variant-numeric: tabular-nums;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .lip-meta .when {
+    font-weight: 500;
+    color: rgb(255 255 255 / 0.86);
+    min-width: 4.5em;
+    text-align: right;
+  }
+  .card.is-soon .lip-meta .when {
+    color: #fff;
+    font-weight: 700;
+  }
+  .detail {
+    display: grid;
+    grid-template-rows: 0fr;
+    padding-inline: 16px;
+    transition: grid-template-rows 280ms var(--ease);
+  }
+  .detail-inner {
+    min-height: 0;
+    overflow: hidden;
+  }
+  .detail-body {
+    display: grid;
+    gap: 16px;
+    padding-bottom: 16px;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition:
+      opacity 200ms var(--ease),
+      transform 280ms var(--ease);
+  }
+  .card.is-open .detail {
+    grid-template-rows: 1fr;
+  }
+  .card.is-open .detail-body {
+    opacity: 1;
+    transform: none;
+    transition-delay: 60ms;
+  }
+  .lip-meta {
+    transition: opacity 160ms var(--ease);
+  }
+  .card.is-open .lip-meta {
+    opacity: 0;
+    visibility: hidden;
+  }
+  .detail-amount {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 12px;
+  }
+  .detail-amount .price {
+    font-family: var(--font-figure);
+    font-variant-numeric: tabular-nums;
+    font-size: 34px;
+    line-height: 1;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .detail-amount .price small {
+    font-size: 15px;
+    font-weight: 500;
+    color: rgb(255 255 255 / 0.86);
+    margin-inline-start: 4px;
+  }
+  .countdown {
+    text-align: right;
+    font-size: 13px;
+    color: rgb(255 255 255 / 0.86);
+  }
+  .countdown b {
+    display: block;
+    font-family: var(--font-figure);
+    font-size: 24px;
+    line-height: 1.1;
+    color: #fff;
+  }
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    font-size: 12px;
+    color: rgb(255 255 255 / 0.86);
+  }
+  .facts span b {
+    display: block;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .card-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .card-actions :is(button, a) {
+    all: unset;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.1);
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .card-actions button:hover {
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.45);
+  }
+  .card-actions :is(button, a):focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
+  .card-actions svg,
+  .btn svg,
+  .row svg {
+    width: 16px;
+    height: 16px;
+  }
+  .today {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-block: 12px;
+    color: var(--today);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .today::after {
+    content: '';
+    flex: 1;
+    height: 2px;
+    background: var(--today);
+    border-radius: 2px;
+  }
+
+  /* 狀態 */
+  .card .tag {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 999px;
+    border: 1px solid currentColor;
+    margin-inline-start: 8px;
+    flex: none;
+  }
+  /* 卡片互相重疊，淡化只能用不透明的混色；opacity 會讓後面的卡透出來 */
+  .card.state-paused {
+    background: color-mix(in srgb, var(--tone) 15%, var(--paused));
+    color: rgb(255 255 255 / 0.86);
+  }
+  .card.state-expired {
+    background: color-mix(in srgb, var(--tone) 60%, var(--paused));
+  }
+  .state-list {
+    display: grid;
+    gap: 10px;
+  }
+  .state-list .card {
+    margin-top: 0;
+  }
+  .state-list p {
+    margin: 4px 4px 0;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+
+  /* 控制項 */
+  .controls {
+    display: grid;
+    gap: 16px;
+  }
+  .btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .btn {
+    all: unset;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 44px;
+    padding: 0 18px;
+    border-radius: var(--radius-control);
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+      background 150ms var(--ease),
+      transform 150ms var(--ease);
+  }
+  .btn:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .btn:active {
+    transform: translateY(1px);
+  }
+  .btn-primary {
+    background: var(--ink);
+    color: var(--ground);
+  }
+  .btn-primary:hover {
+    background: color-mix(in srgb, var(--ink) 86%, var(--ground));
+  }
+  .btn-secondary {
+    border: 1px solid var(--line);
+    color: var(--ink);
+    background: var(--surface);
+  }
+  .btn-secondary:hover {
+    background: color-mix(in srgb, var(--ink) 5%, var(--surface));
+  }
+  .btn-danger {
+    color: var(--danger);
+  }
+  .btn[aria-disabled='true'] {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .btn .spin {
+    animation: spin 800ms linear infinite;
+  }
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .field {
+    display: grid;
+    gap: 6px;
+  }
+  .field label {
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .field .hint {
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .field .error {
+    font-size: 12px;
+    color: var(--danger);
+  }
+  .input,
+  .select {
+    appearance: none;
+    height: 44px;
+    width: 100%;
+    padding: 0 12px;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    caret-color: var(--focus);
+  }
+  .input::placeholder {
+    color: var(--ink-3);
+  }
+  .input:focus,
+  .select:focus {
+    outline: 2px solid var(--focus);
+    outline-offset: -1px;
+    border-color: transparent;
+  }
+  .input[aria-invalid='true'] {
+    border-color: var(--danger);
+  }
+  .date-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    text-align: left;
+    cursor: pointer;
+  }
+  .date-trigger:hover {
+    background: color-mix(in srgb, var(--ink) 3%, var(--surface));
+  }
+  .date-trigger[aria-expanded='true'] {
+    outline: 2px solid var(--focus);
+    outline-offset: -1px;
+    border-color: transparent;
+  }
+  .date-trigger .num {
+    font-size: 16px;
+  }
+  .date-trigger .placeholder {
+    color: var(--ink-3);
+  }
+  .date-trigger svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    color: var(--ink-3);
+  }
+  /* 手機展開在欄位下方，與欄位同寬，日期格較大 */
+  .calendar {
+    max-width: 360px;
+    margin-top: 6px;
+    padding: 12px;
+    /* 捲動定位時月曆還在進場動畫的縮小狀態，留白補足差距 */
+    scroll-margin-block: 16px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    transform-origin: top left;
+    animation: calendar-in 160ms var(--ease);
+  }
+  /* 桌機浮在內容上，位置由 DatePicker.tsx 用 Floating UI 計算 */
+  @media (min-width: 1024px) {
+    .calendar {
+      position: fixed;
+      z-index: 30;
+      width: 304px;
+      margin-top: 0;
+      box-shadow: var(--shadow);
+    }
+    .calendar[data-side='top'] {
+      transform-origin: bottom left;
+    }
+  }
+  @keyframes calendar-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.98);
+    }
+  }
+  .cal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .cal-nav {
+    all: unset;
+    box-sizing: border-box;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+  .cal-nav:hover {
+    background: color-mix(in srgb, var(--ink) 6%, var(--surface));
+    color: var(--ink);
+  }
+  .cal-nav:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+  }
+  .cal-nav svg {
+    width: 16px;
+    height: 16px;
+  }
+  .cal-caption {
+    display: flex;
+  }
+  .cal-caption select {
+    appearance: none;
+    padding: 6px 8px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .cal-caption select:hover {
+    background: color-mix(in srgb, var(--ink) 6%, var(--surface));
+  }
+  .cal-caption select:focus-visible {
+    outline: 2px solid var(--focus);
+  }
+  .cal-grid {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  .cal-grid th {
+    height: 32px;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--ink-3);
+  }
+  .cal-grid td {
+    padding: 1px;
+  }
+  .cal-day {
+    all: unset;
+    box-sizing: border-box;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    font-size: 15px;
+    color: var(--ink);
+    cursor: pointer;
+    transition: background 120ms var(--ease);
+  }
+  .cal-day:hover {
+    background: color-mix(in srgb, var(--ink) 7%, var(--surface));
+  }
+  .cal-day:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+  }
+  .cal-day[data-outside] {
+    color: var(--ink-3);
+  }
+  /* 今天用首頁今天線的顏色 */
+  .cal-day[aria-current='date'] {
+    color: var(--today);
+    font-weight: 700;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--today) 45%, transparent);
+  }
+  .cal-grid td[aria-selected='true'] .cal-day {
+    background: var(--ink);
+    color: var(--ground);
+    font-weight: 700;
+    box-shadow: none;
+  }
+  .cal-foot {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--line);
+  }
+  .cal-foot button {
+    all: unset;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .cal-foot button:hover {
+    background: color-mix(in srgb, var(--ink) 6%, var(--surface));
+  }
+  .cal-foot button:focus-visible {
+    outline: 2px solid var(--focus);
+  }
+  .cal-foot .clear {
+    color: var(--ink-2);
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .segmented {
+    display: inline-grid;
+    grid-auto-flow: column;
+    padding: 3px;
+    border-radius: var(--radius-control);
+    background: color-mix(in srgb, var(--ink) 8%, var(--surface));
+  }
+  .segmented button {
+    all: unset;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    color: var(--ink-2);
+  }
+  .segmented button[aria-pressed='true'] {
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgb(21 24 28 / 0.18);
+  }
+  .segmented button:focus-visible {
+    outline: 2px solid var(--focus);
+  }
+  .switch {
+    appearance: none;
+    width: 44px;
+    height: 26px;
+    border-radius: 999px;
+    background: var(--line);
+    position: relative;
+    cursor: pointer;
+    transition: background 180ms var(--ease);
+    flex: none;
+    margin: 0;
+  }
+  .switch::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+    transition: transform 180ms var(--ease);
+  }
+  .switch:checked {
+    background: var(--c-green);
+  }
+  .switch:checked::after {
+    transform: translateX(18px);
+  }
+
+  /* 設定列 */
+  .rows {
+    display: grid;
+    border-radius: var(--radius-card);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .row {
+    border-bottom: 1px solid var(--line);
+  }
+  .row:last-child {
+    border-bottom: 0;
+  }
+  .row summary {
+    display: grid;
+    grid-template-columns: 32px 1fr auto 16px;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+    list-style: none;
+  }
+  .row summary::-webkit-details-marker {
+    display: none;
+  }
+  .row summary:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: -2px;
+  }
+  .row .glyph {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--ink) 7%, var(--surface));
+    color: var(--ink);
+  }
+  .row .status {
+    font-size: 13px;
+    color: var(--ink-3);
+  }
+  /* --c-green 是卡片底色，當文字色時混入 --ink，兩種主題都達到 4.5:1 */
+  .row .status.on {
+    color: color-mix(in srgb, var(--c-green) 55%, var(--ink));
+    font-weight: 500;
+  }
+  .row .chev {
+    color: var(--ink-3);
+    transition: transform 180ms var(--ease);
+  }
+  .row[open] .chev {
+    transform: rotate(90deg);
+  }
+  .row .body {
+    display: grid;
+    gap: 14px;
+    padding: 0 16px 18px 60px;
+  }
+  .note {
+    font-size: 13px;
+    color: var(--ink-2);
+    margin: 0;
+  }
+  .fab {
+    all: unset;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 52px;
+    padding: 0 20px 0 16px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--ground);
+    font-weight: 500;
+    box-shadow: 0 6px 18px -6px rgb(21 24 28 / 0.55);
+    cursor: pointer;
+  }
+  .fab:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 3px;
+  }
+  .fab svg {
+    width: 20px;
+    height: 20px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::after {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+  html {
+    scrollbar-color: var(--line) transparent;
+  }
+  body.proto {
+    padding-inline: 0;
+    padding-block: 0;
+  }
+  .proto-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    padding: 8px 16px;
+    font-size: 12px;
+    color: var(--ink-2);
+    border-bottom: 1px dashed var(--line);
+    background: var(--ground);
+  }
+  .proto-bar b {
+    color: var(--ink);
+    letter-spacing: 0.04em;
+  }
+  .proto-bar nav,
+  .proto-bar .states {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .proto-bar a,
+  .proto-bar button {
+    all: unset;
+    cursor: pointer;
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: 1px dashed var(--line);
+  }
+  .proto-bar a[aria-current='page'],
+  .proto-bar button[aria-pressed='true'] {
+    border-style: solid;
+    border-color: var(--ink);
+    color: var(--ink);
+  }
+  .proto-bar a:focus-visible,
+  .proto-bar button:focus-visible {
+    outline: 2px solid var(--focus);
+  }
+  .view {
+    padding-inline: 16px;
+  }
+  .view-system {
+    padding-block: 24px 64px;
+  }
+
+  /* 頂部列 */
+  .topbar {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 56px;
+    margin-inline: -16px;
+    padding-inline: 16px 8px;
+    background: var(--ground);
+    border-bottom: 1px solid transparent;
+  }
+  .topbar h1 {
+    flex: 1;
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .icon-btn {
+    all: unset;
+    box-sizing: border-box;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .icon-btn:hover {
+    background: color-mix(in srgb, var(--ink) 7%, transparent);
+  }
+  .icon-btn:focus-visible {
+    outline: 2px solid var(--focus);
+  }
+  .icon-btn svg {
+    width: 22px;
+    height: 22px;
+  }
+  .search-field {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: var(--radius-control);
+    background: var(--surface);
+    border: 1px solid var(--line);
+  }
+  .search-field input {
+    all: unset;
+    flex: 1;
+    min-width: 0;
+    font-size: 15px;
+    caret-color: var(--focus);
+  }
+  .search-field:focus-within {
+    outline: 2px solid var(--focus);
+    outline-offset: -1px;
+  }
+  .search-field svg {
+    width: 18px;
+    height: 18px;
+    color: var(--ink-3);
+    flex: none;
+  }
+  .topbar .desk-only {
+    display: none;
+  }
+  .chips {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 4px 0 12px;
+    scrollbar-width: none;
+  }
+  .chip {
+    all: unset;
+    flex: none;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    cursor: pointer;
+  }
+  .chip[aria-pressed='true'] {
+    background: var(--ink);
+    color: var(--ground);
+    border-color: var(--ink);
+  }
+  .chip:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  /* 橫幅 */
+  .banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 4px 0 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    background: var(--surface);
+    border: 1px solid color-mix(in srgb, var(--today) 45%, var(--line));
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .banner svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    color: var(--today);
+  }
+  .banner span {
+    flex: 1;
+  }
+  .banner.offline {
+    border-color: var(--line);
+    color: var(--ink-2);
+  }
+  .banner.offline svg {
+    color: var(--ink-2);
+  }
+  a.banner:focus-visible {
+    outline: 2px solid var(--focus);
+  }
+
+  /* 花費摘要 */
+  .spend {
+    display: grid;
+    gap: 2px;
+    padding: 4px 4px 16px;
+  }
+  .spend-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 10px;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .spend-row .cur {
+    width: 2.6em;
+    font-family: var(--font-figure);
+    font-weight: 600;
+    color: var(--ink-2);
+  }
+  .spend-row .m {
+    font-family: var(--font-figure);
+    font-variant-numeric: tabular-nums;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .spend-row .y {
+    font-family: var(--font-figure);
+    font-variant-numeric: tabular-nums;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink-2);
+  }
+  .spend-note {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+
+  /* 卡疊分組 */
+  .group-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    margin: 20px 4px 8px;
+    font-size: 13px;
+  }
+  .group-head h2 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .group-head span {
+    font-family: var(--font-figure);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-2);
+  }
+  .stack {
+    display: flex;
+    flex-direction: column;
+  }
+  .stack .card:first-child {
+    margin-top: 0;
+  }
+  .lip-name .sub {
+    display: none;
+  }
+  .lip-meta .amt small {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgb(255 255 255 / 0.86);
+    margin-inline-start: 1px;
+  }
+  .card-actions button[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .paused-toggle {
+    all: unset;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-top: 20px;
+    padding: 12px 4px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border-top: 1px solid var(--line);
+  }
+  .paused-toggle svg {
+    width: 18px;
+    height: 18px;
+    color: var(--ink-3);
+    transition: transform 180ms var(--ease);
+  }
+  .paused-toggle[aria-expanded='true'] svg {
+    transform: rotate(90deg);
+  }
+  .paused-toggle:focus-visible {
+    outline: 2px solid var(--focus);
+  }
+  .empty {
+    display: grid;
+    justify-items: start;
+    gap: 14px;
+    padding: 40px 4px;
+  }
+  .empty .ghost-stack {
+    display: grid;
+    width: 180px;
+  }
+  .empty .ghost-stack i {
+    height: 34px;
+    border-radius: 12px 12px 0 0;
+    border: 1.5px dashed var(--line);
+    border-bottom: 0;
+    margin-top: -8px;
+    background: var(--ground);
+  }
+  .empty .ghost-stack i:first-child {
+    margin-top: 0;
+  }
+  .empty p {
+    margin: 0;
+    max-width: 30ch;
+    color: var(--ink-2);
+  }
+  .home-foot {
+    height: 96px;
+  }
+  .fab-wrap {
+    position: fixed;
+    right: 16px;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    z-index: 6;
+  }
+  .fab[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .side {
+    display: none;
+  }
+
+  /* 表單頁 */
+  .scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    background: rgb(13 15 18 / 0.4);
+    animation: fade 200ms var(--ease);
+  }
+  .sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 21;
+    display: flex;
+    flex-direction: column;
+    background: var(--ground);
+    animation: rise 240ms var(--ease);
+  }
+  @keyframes rise {
+    from {
+      transform: translateY(24px);
+      opacity: 0.4;
+    }
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+  }
+  .sheet-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 56px;
+    padding: env(safe-area-inset-top, 0px) 8px 0;
+    box-sizing: content-box;
+    border-bottom: 1px solid var(--line);
+  }
+  .sheet-head h2 {
+    flex: 1;
+    margin: 0;
+    font-size: 17px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sheet-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 16px 24px;
+    display: grid;
+    align-content: start;
+    gap: 18px;
+  }
+  .sheet-foot {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--line);
+    background: var(--ground);
+  }
+  .sheet-foot .btn-primary {
+    flex: 1;
+  }
+  .preview-card {
+    margin-top: 0;
+  }
+  .form-group {
+    display: grid;
+    gap: 14px;
+    padding: 16px;
+    border-radius: var(--radius-card);
+    background: var(--surface);
+  }
+  .form-row {
+    display: grid;
+    grid-template-columns: 104px 1fr;
+    gap: 10px;
+  }
+  .period-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .period-row .input {
+    width: 72px;
+  }
+  .switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .switch-row label {
+    display: grid;
+    gap: 2px;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  .switch-row small {
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .more {
+    border-radius: var(--radius-card);
+    background: var(--surface);
+  }
+  .more summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    cursor: pointer;
+    list-style: none;
+    font-weight: 500;
+  }
+  .more summary::-webkit-details-marker {
+    display: none;
+  }
+  .more summary span {
+    font-weight: 400;
+    font-size: 13px;
+    color: var(--ink-3);
+  }
+  .more summary:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: -2px;
+    border-radius: var(--radius-card);
+  }
+  .more .inner {
+    display: grid;
+    gap: 14px;
+    padding: 0 16px 16px;
+  }
+  textarea.input {
+    height: 88px;
+    padding: 10px 12px;
+    resize: vertical;
+  }
+  .confirm {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+  }
+  .btn-danger-solid {
+    background: var(--danger);
+    color: #fff;
+  }
+
+  /* 設定 */
+  .settings {
+    display: grid;
+    gap: 28px;
+    padding-bottom: 64px;
+  }
+  .settings section > h2 {
+    font-size: 17px;
+    margin: 0 0 4px;
+  }
+  .settings section > p {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .set-list {
+    border-radius: var(--radius-card);
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .set-item {
+    display: grid;
+    grid-template-columns: 1fr minmax(0, 190px);
+    align-items: center;
+    gap: 12px;
+    min-height: 56px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .set-item:last-child {
+    border-bottom: 0;
+  }
+  .set-item label {
+    font-size: 15px;
+  }
+  .set-item small {
+    display: block;
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .set-item .select,
+  .set-item .input {
+    height: 40px;
+  }
+  .set-item.stack-item {
+    grid-template-columns: 1fr;
+    padding-block: 14px;
+  }
+  .section-save {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--ink-3);
+  }
+  .rows .row .body .switch-row {
+    padding-bottom: 2px;
+  }
+  .advanced summary {
+    font-size: 14px;
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+  .advanced[open] summary {
+    margin-bottom: 12px;
+  }
+  .advanced .inner {
+    display: grid;
+    gap: 14px;
+  }
+  .row .status.fail {
+    color: var(--today);
+    font-weight: 500;
+  }
+  .passkeys {
+    display: grid;
+  }
+  .passkey {
+    display: grid;
+    grid-template-columns: 36px 1fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .passkey .glyph {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--ink) 7%, var(--surface));
+  }
+  .passkey .glyph svg {
+    width: 18px;
+    height: 18px;
+  }
+  .passkey b {
+    font-weight: 500;
+  }
+  .passkey small {
+    display: block;
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .passkey .warn {
+    color: var(--today);
+  }
+  .passkey-actions {
+    display: flex;
+    gap: 2px;
+  }
+  .passkey-actions .icon-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+  .passkey .confirm,
+  .passkey .rename {
+    grid-column: 1 / -1;
+  }
+  .reauth {
+    display: grid;
+    gap: 12px;
+    padding: 16px;
+    border-top: 1px solid var(--line);
+    background: color-mix(in srgb, var(--ink) 3%, var(--surface));
+  }
+  .list-foot {
+    padding: 12px 16px;
+  }
+
+  /* 登入 */
+  .login {
+    display: grid;
+    align-content: center;
+    min-height: calc(100vh - 44px);
+    max-width: 380px;
+    margin-inline: auto;
+    padding-block: 40px;
+    gap: 28px;
+  }
+  .brand {
+    display: grid;
+    gap: 14px;
+  }
+  .brand-stack {
+    display: grid;
+    width: 132px;
+  }
+  .brand-stack i {
+    height: 22px;
+    border-radius: 9px 9px 0 0;
+    margin-top: -6px;
+    box-shadow: 0 -2px 6px -3px rgb(0 0 0 / 0.35);
+  }
+  .brand-stack i:first-child {
+    margin-top: 0;
+  }
+  .brand h1 {
+    margin: 0;
+    font-size: 26px;
+  }
+  .brand p {
+    margin: 0;
+    color: var(--ink-2);
+  }
+  .login form {
+    display: grid;
+    gap: 16px;
+  }
+  .login .btn {
+    width: 100%;
+  }
+  .or {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--ink-3);
+  }
+  .or::before,
+  .or::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+  .form-error {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: var(--radius-control);
+    font-size: 14px;
+    color: var(--danger);
+    background: color-mix(in srgb, var(--danger) 9%, var(--surface));
+  }
+
+  /* toast */
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+    z-index: 40;
+    transform: translateX(-50%);
+    max-width: calc(100% - 32px);
+    padding: 10px 16px;
+    border-radius: 12px;
+    background: var(--ink);
+    color: var(--ground);
+    font-size: 14px;
+    box-shadow: 0 8px 24px -8px rgb(0 0 0 / 0.5);
+    animation: rise 200ms var(--ease);
+  }
+
+  /* 桌機 */
+  @media (min-width: 1024px) {
+    .view-home {
+      max-width: 1180px;
+      margin-inline: auto;
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
+      column-gap: 32px;
+      align-items: start;
+    }
+    .view-home > .topbar {
+      grid-column: 1 / -1;
+      margin-inline: 0;
+      padding-inline: 0;
+      gap: 12px;
+    }
+    .topbar .desk-only {
+      display: flex;
+    }
+    .topbar .mobile-only,
+    .fab-wrap,
+    .home-main > .spend {
+      display: none;
+    }
+    .view-home .search-field.desk-only {
+      max-width: 320px;
+    }
+    .home-main .card button.lip {
+      grid-template-columns: minmax(0, 1.4fr) 5em minmax(0, 1fr) auto;
+    }
+    .home-main .lip-name .sub,
+    .home-main .lip-name {
+      display: contents;
+    }
+    .lip-name .sub span {
+      font-size: 13px;
+      color: rgb(255 255 255 / 0.86);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .side {
+      display: grid;
+      gap: 16px;
+      position: sticky;
+      top: 72px;
+      margin-top: 8px;
+    }
+    .side .panel h3 {
+      margin-bottom: 10px;
+    }
+    .bars {
+      display: grid;
+      gap: 8px;
+      font-size: 13px;
+    }
+    .bar {
+      display: grid;
+      grid-template-columns: 4em 1fr 5em;
+      gap: 8px;
+      align-items: center;
+    }
+    .bar i {
+      display: block;
+      height: 10px;
+      border-radius: 5px;
+    }
+    .bar span:last-child {
+      text-align: right;
+      font-family: var(--font-figure);
+      font-variant-numeric: tabular-nums;
+    }
+    .status-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      font-size: 13px;
+    }
+    .status-list div {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .status-list dt {
+      color: var(--ink-2);
+    }
+    .status-list dd {
+      margin: 0;
+      text-align: right;
+    }
+    .sheet {
+      left: auto;
+      width: 460px;
+      box-shadow: -12px 0 40px -16px rgb(0 0 0 / 0.45);
+      animation: slide 240ms var(--ease);
+    }
+    @keyframes slide {
+      from {
+        transform: translateX(32px);
+        opacity: 0.4;
+      }
+    }
+    .view-settings {
+      max-width: 720px;
+      margin-inline: auto;
+    }
+    .view-settings .topbar {
+      margin-inline: 0;
+      padding-inline: 0;
+    }
+  }
+</style>
+
+<div class="proto-bar" aria-label="原型控制">
+  <b>原型</b>
+  <nav aria-label="頁面">
+    <a href="#login">登入</a><a href="#home">首頁</a><a href="#new">新增訂閱</a><a href="#edit-s2">編輯訂閱</a
+    ><a href="#settings">設定</a><a href="#system">設計系統</a>
+  </nav>
+  <span>狀態</span>
+  <div class="states">
+    <button type="button" data-mode="normal">正常</button><button type="button" data-mode="warning">提醒失敗</button
+    ><button type="button" data-mode="offline">離線</button><button type="button" data-mode="empty">沒有訂閱</button>
+  </div>
+</div>
+<div id="app"></div>
+<div id="system" class="view view-system" hidden>
+  <main class="page">
+    <header class="intro">
+      <h1>SubsTracker 設計系統：錢包卡匣</h1>
+      <p>
+        每筆訂閱是一張卡，卡緣就是一行資訊，最快扣款的卡放在最前面。下面列出顏色、字體、卡片、狀態與控制項。畫面中的訂閱都是示範資料。
+      </p>
+    </header>
+
+    <section aria-labelledby="h-wallet">
+      <h2 id="h-wallet">卡匣</h2>
+      <p class="lede">
+        一次只展開一張卡。點其他卡緣會收合目前的卡、展開那一張。紅線是今天：線上方是已過去的卡，線下方依扣款日排列。
+      </p>
+      <div class="grid-2">
+        <div class="wallet" id="wallet">
+          <div class="totals" aria-label="本月合計">本月<strong>TWD 1,219</strong><strong>USD 20</strong></div>
+          <div class="card state-expired" style="--tone: var(--c-brick)">
+            <button class="lip" type="button" aria-expanded="false">
+              <span class="lip-name">Adobe Lightroom<span class="tag">已過期</span></span>
+              <span class="lip-meta"><span>USD 11.99</span><span class="when">9/20</span></span>
+            </button>
+            <div class="detail">
+              <div class="detail-inner">
+                <div class="detail-body">
+                  <div class="detail-amount">
+                    <div class="price">USD 11.99<small>/月</small></div>
+                    <div class="countdown">已過期<b>6 天</b></div>
+                  </div>
+                  <div class="card-actions">
+                    <button type="button"><i data-lucide="calendar-check"></i>更新到期日</button>
+                    <button type="button"><i data-lucide="pause"></i>停用</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="today" role="separator">今天 9/26（六）</div>
+          <div class="card is-open is-soon" style="--tone: var(--c-plum)">
+            <button class="lip" type="button" aria-expanded="true">
+              <span class="lip-name">Netflix 標準方案</span>
+              <span class="lip-meta"><span>TWD 390</span><span class="when">3 天後</span></span>
+            </button>
+            <div class="detail">
+              <div class="detail-inner">
+                <div class="detail-body">
+                  <div class="detail-amount">
+                    <div class="price">TWD 390<small>/月</small></div>
+                    <div class="countdown">9/29（二）扣款<b>3 天後</b></div>
+                  </div>
+                  <div class="facts">
+                    <span>分類<b>影音</b></span>
+                    <span>付款方式<b>信用卡</b></span>
+                    <span>提醒<b>前 3 天</b></span>
+                  </div>
+                  <div class="card-actions">
+                    <button type="button"><i data-lucide="pencil"></i>編輯</button>
+                    <button type="button"><i data-lucide="pause"></i>停用</button>
+                    <button type="button"><i data-lucide="send"></i>測試通知</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card is-soon state-trial" style="--tone: var(--c-green)">
+            <button class="lip" type="button" aria-expanded="false">
+              <span class="lip-name">Spotify Premium<span class="tag">試用</span></span>
+              <span class="lip-meta"><span>TWD 149</span><span class="when">5 天後</span></span>
+            </button>
+            <div class="detail">
+              <div class="detail-inner">
+                <div class="detail-body">
+                  <div class="detail-amount">
+                    <div class="price">TWD 149<small>/月</small></div>
+                    <div class="countdown">10/1（四）試用結束<b>5 天後</b></div>
+                  </div>
+                  <div class="facts">
+                    <span>分類<b>音樂</b></span>
+                    <span>付款方式<b>信用卡</b></span>
+                    <span>提醒<b>前 7 天</b></span>
+                  </div>
+                  <div class="card-actions">
+                    <button type="button"><i data-lucide="pencil"></i>編輯</button>
+                    <button type="button"><i data-lucide="x"></i>不續訂</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card" style="--tone: var(--c-blue)">
+            <button class="lip" type="button" aria-expanded="false">
+              <span class="lip-name">iCloud+ 200GB</span>
+              <span class="lip-meta"><span>TWD 90</span><span class="when">12 天後</span></span>
+            </button>
+            <div class="detail">
+              <div class="detail-inner">
+                <div class="detail-body">
+                  <div class="detail-amount">
+                    <div class="price">TWD 90<small>/月</small></div>
+                    <div class="countdown">10/8（四）扣款<b>12 天後</b></div>
+                  </div>
+                  <div class="facts">
+                    <span>分類<b>雲端</b></span>
+                    <span>付款方式<b>Apple Pay</b></span>
+                    <span>提醒<b>前 1 天</b></span>
+                  </div>
+                  <div class="card-actions">
+                    <button type="button"><i data-lucide="pencil"></i>編輯</button>
+                    <button type="button"><i data-lucide="pause"></i>停用</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card" style="--tone: var(--c-teal)">
+            <button class="lip" type="button" aria-expanded="false">
+              <span class="lip-name">ChatGPT Plus</span>
+              <span class="lip-meta"><span>USD 20</span><span class="when">16 天後</span></span>
+            </button>
+            <div class="detail">
+              <div class="detail-inner">
+                <div class="detail-body">
+                  <div class="detail-amount">
+                    <div class="price">USD 20<small>/月</small></div>
+                    <div class="countdown">10/12（一）扣款<b>16 天後</b></div>
+                  </div>
+                  <div class="facts">
+                    <span>分類<b>工具</b></span>
+                    <span>付款方式<b>信用卡</b></span>
+                    <span>提醒<b>前 3 天</b></span>
+                  </div>
+                  <div class="card-actions">
+                    <button type="button"><i data-lucide="pencil"></i>編輯</button>
+                    <button type="button"><i data-lucide="pause"></i>停用</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card" style="--tone: var(--c-ochre)">
+            <button class="lip" type="button" aria-expanded="false">
+              <span class="lip-name">Nintendo Switch Online</span>
+              <span class="lip-meta"><span>TWD 590</span><span class="when">11/3</span></span>
+            </button>
+            <div class="detail">
+              <div class="detail-inner">
+                <div class="detail-body">
+                  <div class="detail-amount">
+                    <div class="price">TWD 590<small>/年</small></div>
+                    <div class="countdown">11/3（二）扣款<b>38 天後</b></div>
+                  </div>
+                  <div class="facts">
+                    <span>分類<b>遊戲</b></span>
+                    <span>付款方式<b>信用卡</b></span>
+                    <span>提醒<b>前 7 天</b></span>
+                  </div>
+                  <div class="card-actions">
+                    <button type="button"><i data-lucide="pencil"></i>編輯</button>
+                    <button type="button"><i data-lucide="pause"></i>停用</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: flex-end; margin-top: 20px">
+            <button class="fab" type="button"><i data-lucide="plus"></i>新增訂閱</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>卡片的規則</h3>
+          <div class="state-list" style="gap: 14px; font-size: 14px">
+            <p style="margin: 0; color: var(--ink)">
+              <b>卡緣</b>高 56px，只放三件事：名稱、金額、什麼時候扣款。30 天內用「N 天後」，更遠的用日期。
+            </p>
+            <p style="margin: 0; color: var(--ink)">
+              <b>展開的卡</b>加上金額與週期、扣款日與倒數、分類、付款方式、提醒天數，以及這張卡能做的操作。
+            </p>
+            <p style="margin: 0; color: var(--ink)">
+              <b>緊急程度</b>只用位置與明暗表示。在提醒天數內的卡，倒數文字改成粗體白色，其他卡是 78% 白。
+            </p>
+            <p style="margin: 0; color: var(--ink)">
+              <b>顏色</b>跟著分類。同一個分類永遠是同一個顏色，顏色本身不代表狀態。
+            </p>
+            <p style="margin: 0; color: var(--ink)">
+              <b>金額</b>用 Barlow Semi Condensed 等寬數字，貨幣代碼寫在數字前面。合計依貨幣分開，不換算匯率。
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-states">
+      <h2 id="h-states">狀態</h2>
+      <p class="lede">四種狀態，每種全站只有一種標示方式。</p>
+      <div class="grid-2">
+        <div class="state-list">
+          <div class="card is-soon" style="--tone: var(--c-plum)">
+            <button class="lip" type="button" tabindex="-1">
+              <span class="lip-name">即將扣款</span>
+              <span class="lip-meta"><span>TWD 390</span><span class="when">3 天後</span></span>
+            </button>
+          </div>
+          <p>在提醒天數內：倒數改成粗體白色。</p>
+          <div class="card state-trial" style="--tone: var(--c-green)">
+            <button class="lip" type="button" tabindex="-1">
+              <span class="lip-name">試用中<span class="tag">試用</span></span>
+              <span class="lip-meta"><span>TWD 149</span><span class="when">試用結束 10/1</span></span>
+            </button>
+          </div>
+          <p>試用中：名稱後加外框標籤「試用」，日期說明是試用結束。</p>
+        </div>
+        <div class="state-list">
+          <div class="card state-expired" style="--tone: var(--c-brick)">
+            <button class="lip" type="button" tabindex="-1">
+              <span class="lip-name">已過期<span class="tag">已過期</span></span>
+              <span class="lip-meta"><span>USD 11.99</span><span class="when">9/20</span></span>
+            </button>
+          </div>
+          <p>沒有自動續訂而且已過到期日：放在今天線上方，分類色混入底色變淡。</p>
+          <div class="card state-paused" style="--tone: var(--c-blue)">
+            <button class="lip" type="button" tabindex="-1">
+              <span class="lip-name">已停用<span class="tag">已停用</span></span>
+              <span class="lip-meta"><span>TWD 90</span><span class="when">—</span></span>
+            </button>
+          </div>
+          <p>已停用：分類色混入灰色，收在清單最後的「已停用」區，不計入合計，也不提醒。</p>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-appicon">
+      <h2 id="h-appicon">App 圖示</h2>
+      <p class="lede">
+        三張疊起來的卡片，用梅、綠、藍三個分類色，放在墨色底上。安裝到手機主畫面時，系統會裁成圓角方形或圓形，卡片都在安全範圍內。瀏覽器分頁用簡化版，只留三張卡。
+      </p>
+      <div class="panel" style="display: flex; flex-wrap: wrap; gap: 24px; align-items: end">
+        <figure style="margin: 0; display: grid; gap: 8px; font-size: 12px; color: var(--ink-2)">
+          <svg
+            width="120"
+            height="120"
+            style="display: block; border-radius: 28px"
+            aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 512 512"
+          >
+            <defs>
+              <filter id="lift-a" x="-20%" y="-40%" width="140%" height="160%">
+                <feDropShadow dx="0" dy="-6" stdDeviation="8" flood-color="#000" flood-opacity="0.4" />
+              </filter>
+            </defs>
+            <rect width="512" height="512" fill="#15181C" />
+            <rect x="86" y="142" width="340" height="200" rx="28" fill="#7A2E5C" />
+            <rect x="86" y="196" width="340" height="174" rx="28" fill="#1F5F4A" filter="url(#lift-a)" />
+            <g filter="url(#lift-a)">
+              <rect x="86" y="250" width="340" height="120" rx="28" fill="#2B4C8C" />
+              <rect x="120" y="282" width="126" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.92" />
+              <rect x="326" y="282" width="66" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.92" />
+              <rect x="120" y="318" width="80" height="13" rx="6.5" fill="#FFFFFF" fill-opacity="0.55" />
+            </g>
+          </svg>
+          <figcaption>iOS 主畫面</figcaption>
+        </figure>
+        <figure style="margin: 0; display: grid; gap: 8px; font-size: 12px; color: var(--ink-2)">
+          <svg
+            width="120"
+            height="120"
+            style="display: block; border-radius: 50%"
+            aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 512 512"
+          >
+            <defs>
+              <filter id="lift-b" x="-20%" y="-40%" width="140%" height="160%">
+                <feDropShadow dx="0" dy="-6" stdDeviation="8" flood-color="#000" flood-opacity="0.4" />
+              </filter>
+            </defs>
+            <rect width="512" height="512" fill="#15181C" />
+            <rect x="86" y="142" width="340" height="200" rx="28" fill="#7A2E5C" />
+            <rect x="86" y="196" width="340" height="174" rx="28" fill="#1F5F4A" filter="url(#lift-b)" />
+            <g filter="url(#lift-b)">
+              <rect x="86" y="250" width="340" height="120" rx="28" fill="#2B4C8C" />
+              <rect x="120" y="282" width="126" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.92" />
+              <rect x="326" y="282" width="66" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.92" />
+              <rect x="120" y="318" width="80" height="13" rx="6.5" fill="#FFFFFF" fill-opacity="0.55" />
+            </g>
+          </svg>
+          <figcaption>Android 圓形遮罩</figcaption>
+        </figure>
+        <figure style="margin: 0; display: grid; gap: 8px; font-size: 12px; color: var(--ink-2)">
+          <svg
+            width="32"
+            height="32"
+            style="display: block"
+            aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 64 64"
+          >
+            <rect width="64" height="64" rx="14" fill="#15181C" />
+            <rect x="8" y="10" width="48" height="30" rx="6" fill="#7A2E5C" />
+            <rect x="8" y="21" width="48" height="30" rx="6" fill="#1F5F4A" />
+            <rect x="8" y="32" width="48" height="22" rx="6" fill="#2B4C8C" />
+          </svg>
+          <figcaption>分頁 32px</figcaption>
+        </figure>
+        <figure style="margin: 0; display: grid; gap: 8px; font-size: 12px; color: var(--ink-2)">
+          <svg
+            width="16"
+            height="16"
+            style="display: block"
+            aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 64 64"
+          >
+            <rect width="64" height="64" rx="14" fill="#15181C" />
+            <rect x="8" y="10" width="48" height="30" rx="6" fill="#7A2E5C" />
+            <rect x="8" y="21" width="48" height="30" rx="6" fill="#1F5F4A" />
+            <rect x="8" y="32" width="48" height="22" rx="6" fill="#2B4C8C" />
+          </svg>
+          <figcaption>分頁 16px</figcaption>
+        </figure>
+      </div>
+    </section>
+    <section aria-labelledby="h-color">
+      <h2 id="h-color">顏色</h2>
+      <p class="lede">
+        介面本身只用墨色、灰與一條紅線；顏色留給卡片。分類色都是深色，白字的對比度在 4.5:1 以上。深色主題跟著系統切換。
+      </p>
+      <div class="grid-2">
+        <div class="panel">
+          <h3>介面</h3>
+          <div class="swatches">
+            <div class="swatch"><i style="background: var(--ground)"></i><b>卡槽底色</b>ground</div>
+            <div class="swatch"><i style="background: var(--surface)"></i><b>面板</b>surface</div>
+            <div class="swatch"><i style="background: var(--ink)"></i><b>墨色</b>ink</div>
+            <div class="swatch"><i style="background: var(--ink-2)"></i><b>次要文字</b>ink-2</div>
+            <div class="swatch"><i style="background: var(--line)"></i><b>分隔線</b>line</div>
+            <div class="swatch"><i style="background: var(--today)"></i><b>今天線</b>today</div>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>分類色（依分類自動分配）</h3>
+          <div class="swatches">
+            <div class="swatch"><i style="background: var(--c-plum)"></i><b>梅</b>影音</div>
+            <div class="swatch"><i style="background: var(--c-green)"></i><b>綠</b>音樂</div>
+            <div class="swatch"><i style="background: var(--c-blue)"></i><b>藍</b>雲端</div>
+            <div class="swatch"><i style="background: var(--c-teal)"></i><b>青</b>工具</div>
+            <div class="swatch"><i style="background: var(--c-ochre)"></i><b>黃土</b>遊戲</div>
+            <div class="swatch"><i style="background: var(--c-brick)"></i><b>磚紅</b>設計</div>
+            <div class="swatch"><i style="background: var(--c-violet)"></i><b>紫</b>學習</div>
+            <div class="swatch"><i style="background: var(--c-slate)"></i><b>石板</b>未分類</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-type">
+      <h2 id="h-type">字體</h2>
+      <p class="lede">
+        兩種字體都來自 Google Fonts，Windows、macOS、手機看到的字相同。中文用 Noto Sans TC（台灣字形）。數字與金額用
+        Barlow Semi Condensed，窄而等寬，卡緣放得下金額與日期。字級固定，不隨螢幕縮放。
+      </p>
+      <div class="panel">
+        <div class="type-row">
+          <small>頁面標題 22</small><span style="font-size: 22px; font-weight: 700">即將扣款</span>
+        </div>
+        <div class="type-row">
+          <small>區塊標題 17</small><span style="font-size: 17px; font-weight: 700">通知渠道</span>
+        </div>
+        <div class="type-row"><small>內文 15</small><span>每天 09:00 依你的時區發送提醒。</span></div>
+        <div class="type-row">
+          <small>說明 13</small><span style="font-size: 13px; color: var(--ink-2)">留空表示不修改目前的密碼。</span>
+        </div>
+        <div class="type-row">
+          <small>金額 34</small
+          ><span class="num" style="font-size: 34px; font-weight: 600; line-height: 1">TWD 1,219</span>
+        </div>
+        <div class="type-row">
+          <small>卡緣數字 16</small
+          ><span class="num" style="font-size: 16px; font-weight: 600">USD 11.99　9/29　12 天後</span>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-controls">
+      <h2 id="h-controls">控制項</h2>
+      <p class="lede">按鈕只有三種：主要（墨色）、次要（外框）、危險（紅字）。觸控範圍至少 44px。</p>
+      <div class="grid-2">
+        <div class="panel controls">
+          <h3>按鈕</h3>
+          <div class="btn-row">
+            <button class="btn btn-primary" type="button">儲存</button>
+            <button class="btn btn-secondary" type="button">取消</button>
+            <button class="btn btn-danger" type="button"><i data-lucide="trash-2"></i>刪除訂閱</button>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" type="button" aria-disabled="true">
+              <i data-lucide="loader-circle" class="spin"></i>儲存中
+            </button>
+            <button class="btn btn-secondary" type="button" aria-disabled="true">停用狀態</button>
+          </div>
+          <h3 style="margin-top: 8px">分段選擇</h3>
+          <div class="segmented" role="group" aria-label="付款週期">
+            <button type="button" aria-pressed="false">每天</button>
+            <button type="button" aria-pressed="true">每月</button>
+            <button type="button" aria-pressed="false">每年</button>
+          </div>
+        </div>
+        <div class="panel controls">
+          <h3>欄位</h3>
+          <div class="field">
+            <label for="demo-name">名稱</label>
+            <input class="input" id="demo-name" value="Netflix 標準方案" />
+          </div>
+          <div class="field">
+            <label for="demo-price">金額</label>
+            <input class="input num" id="demo-price" inputmode="decimal" aria-invalid="true" value="39o" />
+            <span class="error">請輸入數字，例如 390</span>
+          </div>
+          <div class="field">
+            <label for="demo-hour">每日提醒時間</label>
+            <select class="select" id="demo-hour">
+              <option>08:00</option>
+              <option selected>09:00</option>
+              <option>20:00</option>
+            </select>
+            <span class="hint">依你的時區（台北）計算</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-rows">
+      <h2 id="h-rows">設定列</h2>
+      <p class="lede">
+        設定頁用和卡片相同的展開方式：每個項目收合成一列，右側顯示目前狀態，點開才看到欄位。一次可以展開多列。
+      </p>
+      <div class="rows" style="max-width: 560px">
+        <details class="row" open>
+          <summary>
+            <span class="glyph"><i data-lucide="send"></i></span><span>Telegram</span
+            ><span class="status on">已啟用</span><i class="chev" data-lucide="chevron-right"></i>
+          </summary>
+          <div class="body">
+            <div class="field">
+              <label for="demo-tg-token">Bot Token</label>
+              <input class="input" id="demo-tg-token" value="7421••••••••••••••••••RkQ" />
+              <span class="hint">在 Telegram 找 @BotFather 建立 bot 後取得</span>
+            </div>
+            <div class="field">
+              <label for="demo-tg-chat">Chat ID</label>
+              <input class="input num" id="demo-tg-chat" value="58213377" />
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-secondary" type="button"><i data-lucide="send"></i>傳送測試訊息</button>
+            </div>
+          </div>
+        </details>
+        <details class="row">
+          <summary>
+            <span class="glyph"><i data-lucide="mail"></i></span><span>Email</span><span class="status">未設定</span
+            ><i class="chev" data-lucide="chevron-right"></i>
+          </summary>
+          <div class="body"><p class="note">填入 Resend API Key 與收件地址。</p></div>
+        </details>
+        <details class="row">
+          <summary>
+            <span class="glyph"><i data-lucide="bell-ring"></i></span><span>Bark</span><span class="status">未設定</span
+            ><i class="chev" data-lucide="chevron-right"></i>
+          </summary>
+          <div class="body"><p class="note">填入 Bark 的裝置 Key。</p></div>
+        </details>
+        <details class="row">
+          <summary>
+            <span class="glyph"><i data-lucide="webhook"></i></span><span>Webhook</span
+            ><span class="status">未設定</span><i class="chev" data-lucide="chevron-right"></i>
+          </summary>
+          <div class="body"><p class="note">填入網址，可以自訂請求內容。</p></div>
+        </details>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  document.body.classList.add('proto')
+
+  const wallet = document.getElementById('wallet')
+  wallet.addEventListener('click', (event) => {
+    const lip = event.target.closest('button.lip')
+    if (!lip) return
+    const card = lip.closest('.card')
+    const wasOpen = card.classList.contains('is-open')
+    wallet.querySelectorAll('.card.is-open').forEach((open) => {
+      open.classList.remove('is-open')
+      open.querySelector('button.lip').setAttribute('aria-expanded', 'false')
+    })
+    if (!wasOpen) {
+      card.classList.add('is-open')
+      lip.setAttribute('aria-expanded', 'true')
+    }
+  })
+
+  const TODAY = '2026-09-26'
+  const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
+
+  // 日期選擇器：結構、樣式與鍵盤操作和 src/client/home/DatePicker.tsx 相同
+  const dpParts = (d) => d.split('-').map(Number)
+  const dpOf = (ms) => new Date(ms).toISOString().slice(0, 10)
+  const dpAddDays = (d, n) => {
+    const [y, m, day] = dpParts(d)
+    return dpOf(Date.UTC(y, m - 1, day + n))
+  }
+  const dpAddMonths = (d, n) => {
+    const [y, m, day] = dpParts(d)
+    const last = new Date(Date.UTC(y, m - 1 + n + 1, 0)).getUTCDate()
+    return dpOf(Date.UTC(y, m - 1 + n, Math.min(day, last)))
+  }
+  const dpWeekday = (d) => {
+    const [y, m, day] = dpParts(d)
+    return new Date(Date.UTC(y, m - 1, day)).getUTCDay()
+  }
+  const longDate = (d) => {
+    const [y, m, day] = dpParts(d)
+    return `${y} 年 ${m} 月 ${day} 日（${WEEKDAYS[dpWeekday(d)]}）`
+  }
+  const triggerHTML = (value) =>
+    `${value ? `<span class="num">${longDate(value)}</span>` : '<span class="placeholder">選擇日期</span>'}<i data-lucide="calendar"></i>`
+
+  function datePicker(id, name, label, value, optional) {
+    return `<div class="date-picker" data-label="${label}"${optional ? ' data-optional' : ''}>
+      <input type="hidden" name="${name}" value="${value || ''}" />
+      <button class="input date-trigger" type="button" id="${id}" aria-haspopup="dialog" aria-expanded="false" aria-label="${label}：${value ? longDate(value) : '未選擇'}">${triggerHTML(value)}</button>
+    </div>`
+  }
+
+  function calendarHTML(picker) {
+    const id = picker.querySelector('.date-trigger').id
+    const value = picker.querySelector('input').value
+    const focus = picker.dataset.focus
+    const [year, month] = dpParts(focus)
+    const first = focus.slice(0, 8) + '01'
+    const start = dpAddDays(first, -dpWeekday(first))
+    const todayYear = dpParts(TODAY)[0]
+    const years = []
+    for (let y = Math.min(todayYear - 30, year); y <= Math.max(todayYear + 10, year); y++) years.push(y)
+    const cell = (date) =>
+      `<td aria-selected="${date === value}"><button class="cal-day num" type="button" data-date="${date}"${dpParts(date)[1] !== month ? ' data-outside' : ''}${date === TODAY ? ' aria-current="date"' : ''} aria-label="${longDate(date)}" tabindex="${date === focus ? 0 : -1}">${dpParts(date)[2]}</button></td>`
+    const rows = [0, 1, 2, 3, 4, 5]
+      .map((week) => `<tr>${[0, 1, 2, 3, 4, 5, 6].map((day) => cell(dpAddDays(start, week * 7 + day))).join('')}</tr>`)
+      .join('')
+    return `<div class="calendar" role="dialog" aria-label="選擇${picker.dataset.label}">
+      <div class="cal-head">
+        <button class="cal-nav" type="button" data-shift="-1" aria-label="上個月"><i data-lucide="chevron-left"></i></button>
+        <div class="cal-caption">
+          <select aria-label="年" data-part="year">${years.map((y) => `<option value="${y}" ${y === year ? 'selected' : ''}>${y} 年</option>`).join('')}</select>
+          <select aria-label="月" data-part="month">${Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}" ${i + 1 === month ? 'selected' : ''}>${i + 1} 月</option>`).join('')}</select>
+        </div>
+        <button class="cal-nav" type="button" data-shift="1" aria-label="下個月"><i data-lucide="chevron-right"></i></button>
+      </div>
+      <span class="sr-only" id="${id}-month" aria-live="polite">${year} 年 ${month} 月</span>
+      <table class="cal-grid" role="grid" aria-labelledby="${id}-month">
+        <thead><tr>${WEEKDAYS.map((d) => `<th scope="col" abbr="星期${d}">${d}</th>`).join('')}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="cal-foot">
+        <button type="button" data-pick="${TODAY}">今天</button>
+        ${picker.hasAttribute('data-optional') && value ? '<button type="button" class="clear" data-pick="">清除</button>' : ''}
+      </div>
+    </div>`
+  }
+
+  // 與 CSS 的桌機版面相同：桌機的月曆浮在內容上，手機展開在欄位下方
+  const FLOATING = '(min-width: 1024px)'
+
+  function removeCalendar(picker) {
+    picker.stopFloating?.()
+    picker.querySelector('.calendar')?.remove()
+  }
+
+  function renderCalendar(picker, focusDay) {
+    removeCalendar(picker)
+    picker.insertAdjacentHTML('beforeend', calendarHTML(picker))
+    const trigger = picker.querySelector('.date-trigger')
+    const calendar = picker.querySelector('.calendar')
+    trigger.setAttribute('aria-expanded', 'true')
+    window.lucide?.createIcons()
+    if (matchMedia(FLOATING).matches) {
+      const { autoUpdate, computePosition, flip, hide, offset, shift } = window.FloatingUIDOM
+      picker.stopFloating = autoUpdate(trigger, calendar, () =>
+        computePosition(trigger, calendar, {
+          strategy: 'fixed',
+          placement: 'bottom-start',
+          middleware: [offset(6), flip({ padding: 12 }), shift({ padding: 12 }), hide()],
+        }).then(({ x, y, placement, middlewareData }) => {
+          calendar.style.left = `${x}px`
+          calendar.style.top = `${y}px`
+          calendar.style.visibility = middlewareData.hide?.referenceHidden ? 'hidden' : 'visible'
+          calendar.dataset.side = placement.split('-')[0]
+        }),
+      )
+    } else if (focusDay) {
+      calendar.scrollIntoView({ block: 'nearest' })
+    }
+    if (focusDay) picker.querySelector(`[data-date="${picker.dataset.focus}"]`).focus({ preventScroll: true })
+  }
+
+  function closeCalendar(picker, refocus = true) {
+    removeCalendar(picker)
+    const trigger = picker.querySelector('.date-trigger')
+    trigger.setAttribute('aria-expanded', 'false')
+    if (refocus) trigger.focus()
+  }
+
+  function pickDate(picker, date) {
+    const input = picker.querySelector('input')
+    const trigger = picker.querySelector('.date-trigger')
+    input.value = date
+    trigger.innerHTML = triggerHTML(date)
+    trigger.setAttribute('aria-label', `${picker.dataset.label}：${date ? longDate(date) : '未選擇'}`)
+    window.lucide?.createIcons()
+    closeCalendar(picker)
+    input.dispatchEvent(new Event('change', { bubbles: true }))
+  }
+  const UNIT_LABEL = { day: '天', week: '週', month: '月', year: '年' }
+  const PER_YEAR = { day: 365, week: 52, month: 12, year: 1 }
+  const CATEGORY_TONE = {
+    影音: 'plum',
+    音樂: 'green',
+    雲端: 'blue',
+    工具: 'teal',
+    遊戲: 'ochre',
+    設計: 'brick',
+    學習: 'violet',
+    新聞: 'slate',
+  }
+  const DEFAULT_REMINDER = 3
+
+  const SAMPLE = [
+    {
+      id: 's1',
+      name: 'Adobe Lightroom',
+      category: '設計',
+      currency: 'USD',
+      price: 11.99,
+      periodValue: 1,
+      periodUnit: 'month',
+      nextDate: '2026-09-20',
+      autoRenew: false,
+      trial: false,
+      reminder: 'default',
+      payment: '玉山 Pi 卡',
+      website: 'https://www.adobe.com',
+      active: true,
+    },
+    {
+      id: 's2',
+      name: 'Netflix 標準方案',
+      category: '影音',
+      currency: 'TWD',
+      price: 390,
+      periodValue: 1,
+      periodUnit: 'month',
+      nextDate: '2026-09-29',
+      autoRenew: true,
+      trial: false,
+      reminder: 'default',
+      payment: '玉山 Pi 卡',
+      website: 'https://www.netflix.com',
+      active: true,
+    },
+    {
+      id: 's3',
+      name: '經濟日報電子報',
+      category: '新聞',
+      currency: 'TWD',
+      price: 60,
+      periodValue: 1,
+      periodUnit: 'week',
+      nextDate: '2026-09-30',
+      autoRenew: true,
+      trial: false,
+      reminder: 'none',
+      payment: 'LINE Pay',
+      active: true,
+    },
+    {
+      id: 's4',
+      name: 'Spotify Premium',
+      category: '音樂',
+      currency: 'TWD',
+      price: 149,
+      periodValue: 1,
+      periodUnit: 'month',
+      nextDate: '2026-10-01',
+      autoRenew: true,
+      trial: true,
+      reminder: 7,
+      cancelBy: '2026-09-30',
+      payment: '國泰 CUBE 卡',
+      active: true,
+    },
+    {
+      id: 's5',
+      name: 'YouTube Premium',
+      category: '影音',
+      currency: 'TWD',
+      price: 199,
+      periodValue: 1,
+      periodUnit: 'month',
+      nextDate: '2026-10-02',
+      autoRenew: true,
+      trial: false,
+      reminder: 1,
+      payment: '國泰 CUBE 卡',
+      active: true,
+    },
+    {
+      id: 's6',
+      name: 'iCloud+ 200GB',
+      category: '雲端',
+      currency: 'TWD',
+      price: 90,
+      periodValue: 1,
+      periodUnit: 'month',
+      nextDate: '2026-10-08',
+      autoRenew: true,
+      trial: false,
+      reminder: 1,
+      payment: 'Apple Pay',
+      active: true,
+    },
+    {
+      id: 's7',
+      name: 'ChatGPT Plus',
+      category: '工具',
+      currency: 'USD',
+      price: 20,
+      periodValue: 1,
+      periodUnit: 'month',
+      nextDate: '2026-10-12',
+      autoRenew: true,
+      trial: false,
+      reminder: 'default',
+      payment: '玉山 Pi 卡',
+      active: true,
+    },
+    {
+      id: 's8',
+      name: 'Nintendo Switch Online',
+      category: '遊戲',
+      currency: 'TWD',
+      price: 590,
+      periodValue: 1,
+      periodUnit: 'year',
+      nextDate: '2026-11-03',
+      autoRenew: true,
+      trial: false,
+      reminder: 7,
+      payment: '國泰 CUBE 卡',
+      active: true,
+    },
+    {
+      id: 's9',
+      name: '1Password',
+      category: '工具',
+      currency: 'USD',
+      price: 35.88,
+      periodValue: 1,
+      periodUnit: 'year',
+      nextDate: '2027-02-14',
+      autoRenew: true,
+      trial: false,
+      reminder: 14,
+      payment: '玉山 Pi 卡',
+      active: true,
+    },
+    {
+      id: 's10',
+      name: 'Duolingo Super',
+      category: '學習',
+      currency: 'TWD',
+      price: 1490,
+      periodValue: 1,
+      periodUnit: 'year',
+      nextDate: '2027-05-20',
+      autoRenew: true,
+      trial: false,
+      reminder: 'default',
+      payment: 'Google Pay',
+      active: true,
+    },
+    {
+      id: 's11',
+      name: 'Disney+',
+      category: '影音',
+      currency: 'TWD',
+      price: 270,
+      periodValue: 1,
+      periodUnit: 'month',
+      nextDate: '2026-08-15',
+      autoRenew: false,
+      trial: false,
+      reminder: 'default',
+      payment: '玉山 Pi 卡',
+      active: false,
+    },
+    {
+      id: 's12',
+      name: 'Notion Plus',
+      category: '工具',
+      currency: 'USD',
+      price: 96,
+      periodValue: 1,
+      periodUnit: 'year',
+      nextDate: '2026-12-01',
+      autoRenew: true,
+      trial: false,
+      reminder: 'default',
+      payment: '玉山 Pi 卡',
+      active: false,
+    },
+  ]
+
+  const state = {
+    subs: structuredClone(SAMPLE),
+    mode: 'normal',
+    openId: 's2',
+    showPaused: false,
+    searching: false,
+    query: '',
+    category: '',
+    loginError: false,
+    channels: {
+      telegram: { on: true, status: 'on' },
+      email: { on: false, status: 'off' },
+      bark: { on: true, status: 'fail' },
+      webhook: { on: false, status: 'off' },
+    },
+    passkeys: [
+      { id: 'p1', name: 'iCloud 鑰匙圈', created: '2026/3/2', used: '9/25', synced: true },
+      { id: 'p2', name: 'YubiKey 5C', created: '2026/5/18', used: '8/30', synced: false },
+      {
+        id: 'p3',
+        name: 'Google 密碼管理工具',
+        created: '2025/11/9',
+        used: '2026/1/4',
+        synced: true,
+        otherHost: 'subs.example.workers.dev',
+      },
+    ],
+    reauthFor: null,
+    confirmPasskey: null,
+    renamePasskey: null,
+    dirty: {},
+  }
+
+  // ---------- 日期與金額 ----------
+  const parts = (d) => d.split('-').map(Number)
+  const utc = (d) => {
+    const [y, m, day] = parts(d)
+    return Date.UTC(y, m - 1, day)
+  }
+  const daysBetween = (a, b) => Math.round((utc(b) - utc(a)) / 86400000)
+  const md = (d) => {
+    const [, m, day] = parts(d)
+    return `${m}/${day}`
+  }
+  const mdw = (d) => `${md(d)}（${WEEKDAYS[new Date(utc(d)).getUTCDay()]}）`
+  const addPeriod = (d, value, unit) => {
+    const [y, m, day] = parts(d)
+    if (unit === 'day' || unit === 'week') {
+      return new Date(Date.UTC(y, m - 1, day + value * (unit === 'week' ? 7 : 1))).toISOString().slice(0, 10)
+    }
+    const idx = y * 12 + (m - 1) + (unit === 'year' ? value * 12 : value)
+    const ny = Math.floor(idx / 12)
+    const nm = idx % 12
+    const last = new Date(Date.UTC(ny, nm + 1, 0)).getUTCDate()
+    return new Date(Date.UTC(ny, nm, Math.min(day, last))).toISOString().slice(0, 10)
+  }
+  const money = (cur, v) => {
+    const digits = cur === 'TWD' || cur === 'JPY' || cur === 'KRW' ? 0 : Number.isInteger(v) ? 0 : 2
+    return v.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })
+  }
+  const periodText = (s) =>
+    s.periodValue === 1 ? `/${UNIT_LABEL[s.periodUnit]}` : `/${s.periodValue} ${UNIT_LABEL[s.periodUnit]}`
+  const perYear = (s) => (s.price * PER_YEAR[s.periodUnit]) / s.periodValue
+  const reminderDays = (s) => (s.reminder === 'none' ? null : s.reminder === 'default' ? DEFAULT_REMINDER : s.reminder)
+  const tone = (category) => `var(--c-${CATEGORY_TONE[category] || 'slate'})`
+  const esc = (t) =>
+    String(t ?? '').replace(
+      /[&<>"']/g,
+      (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+    )
+  const icon = (name) => `<i data-lucide="${name}"></i>`
+
+  function statusOf(s) {
+    const days = daysBetween(TODAY, s.nextDate)
+    const anchor = s.cancelBy || s.nextDate
+    const reminder = reminderDays(s)
+    const soon = reminder !== null && daysBetween(TODAY, anchor) <= reminder && days >= 0
+    let group = 'later'
+    if (!s.active) group = 'paused'
+    else if (days < 0) group = 'due'
+    else if (days <= 7) group = 'week'
+    else if (days <= 30) group = 'month'
+    return { days, soon, group }
+  }
+
+  function countdownText(days) {
+    if (days < 0) return `過期 ${-days} 天`
+    if (days === 0) return '今天'
+    if (days === 1) return '明天'
+    return `${days} 天後`
+  }
+
+  function whenText(s, days) {
+    if (days < 0) return `過期 ${-days} 天`
+    if (days === 0) return '今天'
+    if (days === 1) return '明天'
+    if (days <= 30) return `${days} 天後`
+    return md(s.nextDate)
+  }
+
+  function totalsBy(list, fn) {
+    const map = new Map()
+    for (const s of list) map.set(s.currency, (map.get(s.currency) || 0) + fn(s))
+    return [...map.entries()].sort((a, b) => (a[0] === 'TWD' ? -1 : b[0] === 'TWD' ? 1 : a[0].localeCompare(b[0])))
+  }
+
+  // ---------- 首頁 ----------
+  function cardHTML(s) {
+    const { days, soon, group } = statusOf(s)
+    const tags = []
+    if (s.trial) tags.push('試用')
+    else if (!s.autoRenew && s.active) tags.push('手動續訂')
+    if (s.reminder === 'none' && s.active) tags.push('未設提醒')
+    if (!s.active) tags.push('已停用')
+    const open = state.openId === s.id
+    const offline = state.mode === 'offline'
+    const reminder = reminderDays(s)
+    const when = s.active ? whenText(s, days) : '—'
+    const dateLine = s.trial
+      ? `${mdw(s.nextDate)} 試用結束`
+      : days < 0
+        ? `${mdw(s.nextDate)} 應扣款`
+        : `${mdw(s.nextDate)} 扣款`
+    const cls = [
+      'card',
+      open && 'is-open',
+      soon && 'is-soon',
+      !s.active && 'state-paused',
+      group === 'due' && 'state-expired',
+    ]
+      .filter(Boolean)
+      .join(' ')
+    return `
+      <div class="${cls}" style="--tone: ${tone(s.category)}" data-id="${s.id}">
+        <button class="lip" type="button" aria-expanded="${open}">
+          <span class="lip-name"><span class="n"><span class="t">${esc(s.name)}</span>${tags.map((t) => `<span class="tag">${t}</span>`).join('')}</span><span class="sub"><span>${esc(s.category || '未分類')}</span><span>${esc(s.payment || '')}</span></span></span>
+          <span class="lip-meta"><span class="amt">${s.currency} ${money(s.currency, s.price)}<small>${periodText(s)}</small></span><span class="when">${when}</span></span>
+        </button>
+        <div class="detail"><div class="detail-inner"><div class="detail-body">
+          <div class="detail-amount">
+            <div class="price">${s.currency} ${money(s.currency, s.price)}<small>${periodText(s)}</small></div>
+            <div class="countdown">${dateLine}<b>${s.active ? countdownText(days) : '已停用'}</b></div>
+          </div>
+          <div class="facts">
+            <span>分類<b>${esc(s.category || '未分類')}</b></span>
+            <span>付款方式<b>${esc(s.payment || '—')}</b></span>
+            <span>提醒<b>${reminder === null ? '不提醒' : `前 ${reminder} 天`}</b></span>
+          </div>
+          ${s.cancelBy ? `<div class="facts"><span>取消期限<b>${mdw(s.cancelBy)} 前取消</b></span></div>` : ''}
+          <div class="card-actions">
+            <button type="button" data-act="edit" ${offline ? 'disabled' : ''}>${icon('pencil')}編輯</button>
+            ${!s.autoRenew && s.active && !s.trial ? `<button type="button" data-act="renew" ${offline ? 'disabled' : ''}>${icon('calendar-check')}已續訂</button>` : ''}
+            <button type="button" data-act="toggle" ${offline ? 'disabled' : ''}>${icon(s.active ? 'pause' : 'play')}${s.active ? '停用' : '啟用'}</button>
+            ${s.website ? `<a href="${esc(s.website)}" target="_blank" rel="noopener">${icon('external-link')}前往網站</a>` : ''}
+          </div>
+        </div></div></div>
+      </div>`
+  }
+
+  function homeHTML() {
+    const subs = state.mode === 'empty' ? [] : state.subs
+    const q = state.query.trim().toLowerCase()
+    const visible = subs.filter(
+      (s) =>
+        (!state.category || s.category === state.category) &&
+        (!q || [s.name, s.category, s.payment].join(' ').toLowerCase().includes(q)),
+    )
+    const sorted = [...visible].sort((a, b) => utc(a.nextDate) - utc(b.nextDate))
+    const groups = { due: [], week: [], month: [], later: [], paused: [] }
+    for (const s of sorted) groups[statusOf(s).group].push(s)
+
+    const paying = subs.filter((s) => s.active && !s.trial)
+    const monthly = totalsBy(paying, (s) => perYear(s) / 12)
+    const yearly = new Map(totalsBy(paying, perYear))
+    const trials = subs.filter((s) => s.active && s.trial).length
+    const categories = [...new Set(subs.map((s) => s.category).filter(Boolean))]
+
+    const subtotal = (list) =>
+      totalsBy(
+        list.filter((s) => !s.trial),
+        (s) => s.price,
+      )
+        .map(([c, v]) => `${c} ${money(c, v)}`)
+        .join(' · ')
+
+    const group = (key, title, withSubtotal) =>
+      groups[key].length
+        ? `<div class="group-head"><h2>${title}</h2>${withSubtotal ? `<span>${subtotal(groups[key])}</span>` : `<span>${groups[key].length} 筆</span>`}</div>
+           <div class="stack">${groups[key].map(cardHTML).join('')}</div>`
+        : ''
+
+    const banner =
+      state.mode === 'offline'
+        ? `<div class="banner offline" role="status">${icon('wifi-off')}<span>離線中，顯示 9/26 09:12 的資料。連上網路後才能修改。</span></div>`
+        : state.mode === 'warning'
+          ? `<a class="banner" href="#settings">${icon('triangle-alert')}<span>9/26 09:00 的提醒有 1 個管道發送失敗（Bark）</span>${icon('chevron-right')}</a>`
+          : ''
+
+    const spend = monthly.length
+      ? `<div class="spend" aria-label="平均花費">
+          ${monthly
+            .map(
+              ([c, v]) =>
+                `<div class="spend-row"><span class="cur">${c}</span><span class="m">${money(c, Math.round(v * 100) / 100)}</span><span>/月</span><span class="y">${money(c, Math.round(yearly.get(c) * 100) / 100)}</span><span>/年</span></div>`,
+            )
+            .join('')}
+          <div class="spend-note">平均值，依貨幣分開${trials ? `；另有 ${trials} 筆試用中，不計入` : ''}</div>
+        </div>`
+      : ''
+
+    const topbar = state.searching
+      ? `<header class="topbar">
+          <label class="search-field">${icon('search')}<input id="search" type="search" placeholder="搜尋名稱、分類、付款方式" value="${esc(state.query)}" aria-label="搜尋訂閱" /></label>
+          <button class="icon-btn" type="button" data-act="search-close" aria-label="關閉搜尋">${icon('x')}</button>
+        </header>
+        <div class="chips" role="group" aria-label="分類">${['', ...categories].map((c) => `<button class="chip" type="button" data-cat="${esc(c)}" aria-pressed="${state.category === c}">${c || '全部'}</button>`).join('')}</div>`
+      : `<header class="topbar">
+          <h1>訂閱</h1>
+          <label class="search-field desk-only">${icon('search')}<input id="search-desk" type="search" placeholder="搜尋名稱、分類、付款方式" value="${esc(state.query)}" aria-label="搜尋訂閱" /></label>
+          <button class="btn btn-primary desk-only" type="button" data-act="new" ${state.mode === 'offline' ? 'aria-disabled="true"' : ''}>${icon('plus')}新增訂閱</button>
+          <button class="icon-btn mobile-only" type="button" data-act="search" aria-label="搜尋">${icon('search')}</button>
+          <a class="icon-btn" href="#settings" aria-label="設定">${icon('settings')}</a>
+        </header>`
+
+    const body = !subs.length
+      ? `<div class="empty">
+          <div class="ghost-stack" aria-hidden="true"><i></i><i></i><i></i></div>
+          <h2 style="margin: 0; font-size: 17px">還沒有訂閱</h2>
+          <p>新增第一筆訂閱，扣款前會依你的設定收到提醒。</p>
+          <button class="btn btn-primary" type="button" data-act="new">${icon('plus')}新增訂閱</button>
+        </div>`
+      : !visible.length
+        ? `<div class="empty"><p>沒有符合「${esc(state.query || state.category)}」的訂閱。</p></div>`
+        : `${group('due', '需要處理', false)}
+           <div class="today" role="separator">今天 ${mdw(TODAY)}</div>
+           ${group('week', '7 天內', true)}
+           ${group('month', '30 天內', true)}
+           ${group('later', '之後', false)}
+           ${
+             groups.paused.length
+               ? `<button class="paused-toggle" type="button" data-act="paused" aria-expanded="${state.showPaused}"><span>已停用（${groups.paused.length}）</span>${icon('chevron-right')}</button>
+                  ${state.showPaused ? `<div class="stack">${groups.paused.map(cardHTML).join('')}</div>` : ''}`
+               : ''
+           }`
+
+    const catMonthly = new Map()
+    for (const s of paying) {
+      const key = s.currency
+      if (!catMonthly.has(key)) catMonthly.set(key, new Map())
+      const m = catMonthly.get(key)
+      m.set(s.category, (m.get(s.category) || 0) + perYear(s) / 12)
+    }
+    const side = `<aside class="side" aria-label="摘要">
+        <div class="panel"><h3>平均花費</h3>${spend.replace('class="spend"', 'class="spend" style="padding: 0"')}</div>
+        ${[...catMonthly.entries()]
+          .map(([cur, m]) => {
+            const rows = [...m.entries()].sort((a, b) => b[1] - a[1])
+            const max = rows[0][1]
+            return `<div class="panel"><h3>${cur} 分類每月平均</h3><div class="bars">${rows
+              .map(
+                ([cat, v]) =>
+                  `<div class="bar"><span>${esc(cat)}</span><i style="width: ${(v / max) * 100}%; background: ${tone(cat)}"></i><span>${money(cur, Math.round(v * 100) / 100)}</span></div>`,
+              )
+              .join('')}</div></div>`
+          })
+          .join('')}
+        <div class="panel"><h3>提醒</h3><dl class="status-list">
+          <div><dt>每日提醒時間</dt><dd>09:00（台北）</dd></div>
+          <div><dt>預設提前</dt><dd>3 天</dd></div>
+          <div><dt>通知管道</dt><dd>Telegram、Bark</dd></div>
+          <div><dt>上次執行</dt><dd>${state.mode === 'warning' ? '<span style="color: var(--today)">9/26 09:00，Bark 失敗</span>' : '9/26 09:00，送出 2 則'}</dd></div>
+        </dl></div>
+      </aside>`
+
+    return `<div class="view view-home">
+        ${topbar}
+        <div class="home-main">${banner}${spend}${body}<div class="home-foot"></div></div>
+        ${side}
+        <div class="fab-wrap"><button class="fab" type="button" data-act="new" ${state.mode === 'offline' ? 'disabled' : ''}>${icon('plus')}新增訂閱</button></div>
+      </div>`
+  }
+
+  // ---------- 新增與編輯 ----------
+  function editHTML(id) {
+    const s = id ? state.subs.find((x) => x.id === id) : null
+    const v = s || {
+      name: '',
+      category: '',
+      currency: 'TWD',
+      price: '',
+      periodValue: 1,
+      periodUnit: 'month',
+      nextDate: '',
+      autoRenew: true,
+      trial: false,
+      reminder: 'default',
+      payment: '',
+      website: '',
+      notes: '',
+    }
+    const categories = [...new Set(state.subs.map((x) => x.category).filter(Boolean))]
+    const payments = [...new Set(state.subs.map((x) => x.payment).filter(Boolean))]
+    const reminderOptions = [
+      ['default', `沿用預設（${DEFAULT_REMINDER} 天前）`],
+      ['none', '不提醒'],
+      ['1', '1 天前'],
+      ['3', '3 天前'],
+      ['7', '7 天前'],
+      ['14', '14 天前'],
+      ['30', '30 天前'],
+    ]
+    return `<div class="scrim" data-act="close"></div>
+      <form class="sheet" id="sub-form" novalidate aria-labelledby="sheet-title">
+        <div class="sheet-head">
+          <button class="icon-btn" type="button" data-act="close" aria-label="取消">${icon('x')}</button>
+          <h2 id="sheet-title">${s ? `編輯 ${esc(s.name)}` : '新增訂閱'}</h2>
+        </div>
+        <div class="sheet-body">
+          <div id="preview"></div>
+          <div class="form-group">
+            <div class="field">
+              <label for="f-name">名稱</label>
+              <input class="input" id="f-name" name="name" value="${esc(v.name)}" placeholder="例如 Netflix 標準方案" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label for="f-price">金額</label>
+              <div class="form-row">
+                <select class="select" id="f-currency" name="currency" aria-label="貨幣">
+                  ${['TWD', 'USD', 'JPY', 'EUR', 'HKD'].map((c) => `<option ${c === v.currency ? 'selected' : ''}>${c}</option>`).join('')}
+                </select>
+                <input class="input num" id="f-price" name="price" inputmode="decimal" value="${esc(v.price)}" placeholder="390" />
+              </div>
+              <span class="error" id="e-price" hidden></span>
+            </div>
+            <div class="field">
+              <span style="font-size: 13px; font-weight: 500">付款週期</span>
+              <div class="period-row">
+                <span>每</span>
+                <input class="input num" id="f-period" name="periodValue" inputmode="numeric" value="${v.periodValue}" aria-label="週期數量" />
+                <div class="segmented" role="group" aria-label="週期單位">
+                  ${['day', 'week', 'month', 'year'].map((u) => `<button type="button" data-unit="${u}" aria-pressed="${u === v.periodUnit}">${UNIT_LABEL[u]}</button>`).join('')}
+                </div>
+              </div>
+            </div>
+            <div class="field">
+              <label for="f-date" id="l-date">${v.trial ? '試用結束日' : '下次扣款日'}</label>
+              ${datePicker('f-date', 'nextDate', v.trial ? '試用結束日' : '下次扣款日', v.nextDate)}
+              <span class="error" id="e-date" hidden></span>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="switch-row">
+              <label for="f-auto">自動續訂<small>扣款後自動算出下一次的日期</small></label>
+              <input class="switch" id="f-auto" name="autoRenew" type="checkbox" ${v.autoRenew ? 'checked' : ''} />
+            </div>
+            <div class="switch-row">
+              <label for="f-trial">試用中<small>不計入花費，提醒改為「試用即將結束」</small></label>
+              <input class="switch" id="f-trial" name="trial" type="checkbox" ${v.trial ? 'checked' : ''} />
+            </div>
+            <div class="field">
+              <label for="f-reminder">提醒</label>
+              <select class="select" id="f-reminder" name="reminder">
+                ${reminderOptions.map(([val, label]) => `<option value="${val}" ${String(v.reminder) === val ? 'selected' : ''}>${label}</option>`).join('')}
+              </select>
+            </div>
+            <div class="field">
+              <label for="f-cancel">取消期限（選填）</label>
+              ${datePicker('f-cancel', 'cancelBy', '取消期限', v.cancelBy, true)}
+              <span class="hint">要在這天之前取消才不會扣款。設了這個日期時，提醒依它計算。</span>
+            </div>
+          </div>
+          <details class="more">
+            <summary>更多<span>分類、付款方式、網站、開始日、備註</span></summary>
+            <div class="inner">
+              <div class="field">
+                <label for="f-category">分類</label>
+                <input class="input" id="f-category" name="category" list="dl-category" value="${esc(v.category)}" placeholder="例如 影音" />
+                <datalist id="dl-category">${categories.map((c) => `<option value="${esc(c)}"></option>`).join('')}</datalist>
+              </div>
+              <div class="field">
+                <label for="f-payment">付款方式</label>
+                <input class="input" id="f-payment" name="payment" list="dl-payment" value="${esc(v.payment)}" placeholder="例如 玉山 Pi 卡" />
+                <datalist id="dl-payment">${payments.map((c) => `<option value="${esc(c)}"></option>`).join('')}</datalist>
+              </div>
+              <div class="field">
+                <label for="f-site">網站</label>
+                <input class="input" id="f-site" name="website" type="url" inputmode="url" value="${esc(v.website || '')}" placeholder="https://" />
+              </div>
+              <div class="field">
+                <label for="f-start">開始日</label>
+                ${datePicker('f-start', 'startDate', '開始日', '', true)}
+              </div>
+              <div class="field">
+                <label for="f-notes">備註</label>
+                <textarea class="input" id="f-notes" name="notes">${esc(v.notes || '')}</textarea>
+              </div>
+            </div>
+          </details>
+        </div>
+        <div class="sheet-foot" id="sheet-foot">
+          ${s ? `<button class="btn btn-danger" type="button" data-act="ask-delete">${icon('trash-2')}刪除</button>` : ''}
+          <button class="btn btn-primary" type="submit">儲存</button>
+        </div>
+      </form>`
+  }
+
+  function formValues(form) {
+    const fd = new FormData(form)
+    const unit = form.querySelector('[data-unit][aria-pressed="true"]')?.dataset.unit || 'month'
+    const reminder = fd.get('reminder')
+    return {
+      name: String(fd.get('name') || '').trim(),
+      category: String(fd.get('category') || '').trim(),
+      currency: String(fd.get('currency')),
+      price: String(fd.get('price') || '').trim(),
+      periodValue: Math.max(1, Number.parseInt(fd.get('periodValue'), 10) || 1),
+      periodUnit: unit,
+      nextDate: String(fd.get('nextDate') || ''),
+      autoRenew: fd.get('autoRenew') === 'on',
+      trial: fd.get('trial') === 'on',
+      reminder: reminder === 'default' || reminder === 'none' ? reminder : Number(reminder),
+      cancelBy: String(fd.get('cancelBy') || '') || undefined,
+      payment: String(fd.get('payment') || '').trim(),
+      website: String(fd.get('website') || '').trim(),
+      notes: String(fd.get('notes') || ''),
+    }
+  }
+
+  function renderPreview() {
+    const form = document.getElementById('sub-form')
+    if (!form) return
+    const v = formValues(form)
+    const price = Number(v.price)
+    const preview = {
+      ...v,
+      id: 'preview',
+      name: v.name || '新的訂閱',
+      price: Number.isFinite(price) && v.price ? price : 0,
+      nextDate: v.nextDate || TODAY,
+      active: true,
+    }
+    const saved = state.openId
+    state.openId = null
+    document.getElementById('preview').innerHTML = cardHTML(preview).replace('class="card', 'class="card preview-card')
+    state.openId = saved
+    document.getElementById('l-date').textContent = v.trial ? '試用結束日' : '下次扣款日'
+    document.querySelectorAll('#preview button').forEach((b) => b.setAttribute('tabindex', '-1'))
+    window.lucide?.createIcons()
+  }
+
+  // ---------- 設定 ----------
+  function channelRow(key, name, glyph, fields, advanced) {
+    const ch = state.channels[key]
+    const status = { on: ['已啟用', 'on'], off: ['未設定', ''], fail: ['發送失敗', 'fail'] }[ch.status]
+    return `<details class="row" ${ch.status === 'fail' ? 'open' : ''}>
+        <summary><span class="glyph">${icon(glyph)}</span><span>${name}</span><span class="status ${status[1]}">${status[0]}</span><i class="chev" data-lucide="chevron-right"></i></summary>
+        <div class="body">
+          ${ch.status === 'fail' ? `<p class="note" style="color: var(--today)">9/26 09:00 發送失敗：伺服器回應 400，裝置 Key 可能已經失效。</p>` : ''}
+          <div class="switch-row"><label for="ch-${key}">啟用 ${name}</label><input class="switch" id="ch-${key}" type="checkbox" data-channel="${key}" ${ch.on ? 'checked' : ''} /></div>
+          ${fields}
+          ${advanced ? `<details class="advanced"><summary>進階</summary><div class="inner">${advanced}</div></details>` : ''}
+          <div class="btn-row">
+            <button class="btn btn-secondary" type="button" data-test="${key}" ${state.mode === 'offline' ? 'aria-disabled="true"' : ''}>${icon('send')}傳送測試</button>
+            <button class="btn btn-primary" type="button" data-save="channel" ${state.mode === 'offline' ? 'aria-disabled="true"' : ''}>儲存</button>
+          </div>
+        </div>
+      </details>`
+  }
+
+  const f = (id, label, value, extra = '') =>
+    `<div class="field"><label for="${id}">${label}</label><input class="input" id="${id}" value="${esc(value)}" ${extra} /></div>`
+
+  function settingsHTML() {
+    const offline = state.mode === 'offline'
+    const disabled = offline ? 'aria-disabled="true"' : ''
+    const passkeyRows = state.passkeys
+      .map((p) => {
+        const confirming = state.confirmPasskey === p.id
+        const renaming = state.renamePasskey === p.id
+        const last = state.passkeys.length === 1
+        return `<div class="passkey">
+          <span class="glyph">${icon(p.synced ? 'cloud' : 'usb')}</span>
+          <div><b>${esc(p.name)}</b><small>建立 ${p.created} · 最後使用 ${p.used} · ${p.synced ? '已同步' : '僅限此裝置'}</small>${p.otherHost ? `<small class="warn">在此網址無法使用（註冊於 ${p.otherHost}）</small>` : ''}</div>
+          <div class="passkey-actions">
+            <button class="icon-btn" type="button" data-pk-rename="${p.id}" aria-label="修改 ${esc(p.name)} 的名稱">${icon('pencil')}</button>
+            <button class="icon-btn" type="button" data-pk-delete="${p.id}" aria-label="刪除 ${esc(p.name)}" ${disabled}>${icon('trash-2')}</button>
+          </div>
+          ${renaming ? `<div class="rename field"><label for="pk-name">名稱</label><div class="form-row" style="grid-template-columns: 1fr auto"><input class="input" id="pk-name" value="${esc(p.name)}" /><button class="btn btn-primary" type="button" data-pk-rename-save="${p.id}">儲存</button></div></div>` : ''}
+          ${confirming ? `<div class="confirm"><span>${last ? '刪除後只能用密碼登入。確定刪除？' : `刪除「${esc(p.name)}」？`}</span><button class="btn btn-danger-solid btn" type="button" data-pk-delete-yes="${p.id}">刪除</button><button class="btn btn-secondary" type="button" data-pk-cancel>取消</button></div>` : ''}
+        </div>`
+      })
+      .join('')
+    const reauth =
+      state.reauthFor !== null
+        ? `<div class="reauth">
+            <p class="note">上次登入超過 10 分鐘。請先確認身分，再${state.reauthFor === 'add' ? '新增' : '刪除'} passkey。</p>
+            <div class="field"><label for="reauth-pw">密碼</label><input class="input" id="reauth-pw" type="password" autocomplete="current-password" /></div>
+            <div class="btn-row"><button class="btn btn-primary" type="button" data-act="reauth-ok">確認</button><button class="btn btn-secondary" type="button" data-act="reauth-passkey">${icon('fingerprint')}改用 passkey 確認</button><button class="btn btn-secondary" type="button" data-act="reauth-cancel">取消</button></div>
+          </div>`
+        : ''
+
+    return `<div class="view view-settings">
+      <header class="topbar"><a class="icon-btn" href="#home" aria-label="回到訂閱">${icon('arrow-left')}</a><h1>設定</h1></header>
+      ${offline ? `<div class="banner offline" role="status">${icon('wifi-off')}<span>離線中，顯示 9/26 09:12 的設定。連上網路後才能修改。</span></div>` : ''}
+      <div class="settings">
+        <section aria-labelledby="s-remind">
+          <h2 id="s-remind">提醒</h2>
+          <p>Cron 每小時檢查一次，只在你設定的時間發送。</p>
+          <div class="set-list" data-section="remind">
+            <div class="set-item"><label for="s-hour">每日提醒時間</label><select class="select" id="s-hour">${Array.from({ length: 24 }, (_, h) => `<option ${h === 9 ? 'selected' : ''}>${String(h).padStart(2, '0')}:00</option>`).join('')}</select></div>
+            <div class="set-item"><label for="s-tz">時區</label><select class="select" id="s-tz"><option selected>台北（UTC+8）</option><option>東京（UTC+9）</option><option>UTC</option></select></div>
+            <div class="set-item"><label for="s-days">預設提前<small>新增訂閱時的提醒天數</small></label><select class="select" id="s-days">${[1, 3, 7, 14, 30].map((d) => `<option ${d === 3 ? 'selected' : ''}>${d} 天</option>`).join('')}</select></div>
+            <div class="set-item stack-item"><span>提醒頻率</span><div class="segmented" role="group" aria-label="提醒頻率"><button type="button" aria-pressed="true" data-seg>只提醒一次</button><button type="button" aria-pressed="false" data-seg>每天提醒直到扣款</button></div></div>
+          </div>
+          <div class="section-save"><span data-dirty-note="remind">沒有未儲存的修改</span><button class="btn btn-primary" type="button" data-save="remind" aria-disabled="true">儲存提醒設定</button></div>
+        </section>
+
+        <section aria-labelledby="s-channels">
+          <h2 id="s-channels">通知管道</h2>
+          <p>提醒會同時送到每個啟用的管道。</p>
+          ${Object.values(state.channels).some((c) => c.on) ? '' : `<div class="banner">${icon('triangle-alert')}<span>沒有啟用通知管道，提醒不會送出。</span></div>`}
+          <div class="rows">
+            ${channelRow('telegram', 'Telegram', 'send', `${f('tg-token', 'Bot Token', '7421••••••••••••••RkQ', 'autocomplete="off"')}<span class="hint" style="margin-top: -8px">在 Telegram 找 @BotFather 建立 bot 後取得</span>${f('tg-chat', 'Chat ID', '58213377', 'inputmode="numeric"')}`)}
+            ${channelRow('email', 'Email', 'mail', `${f('em-key', 'Resend API Key', '', 'placeholder="re_…"')}${f('em-from', '寄件地址', '', 'placeholder="reminder@你的網域"')}${f('em-to', '收件地址', '', 'type="email" placeholder="you@example.com"')}`, f('em-name', '寄件人名稱', 'SubsTracker'))}
+            ${channelRow('bark', 'Bark', 'bell-ring', f('bk-key', '裝置 Key', 'x7Kq••••••••'), `${f('bk-server', '伺服器', 'https://api.day.app')}<div class="switch-row"><label for="bk-save">保存到 Bark 歷史紀錄</label><input class="switch" id="bk-save" type="checkbox" checked /></div>${f('bk-query', '查詢參數', 'sound=alarm&amp;group=訂閱')}`)}
+            ${channelRow('webhook', 'Webhook', 'webhook', f('wh-url', '網址', '', 'type="url" placeholder="https://"'), `<div class="field"><label for="wh-method">方法</label><select class="select" id="wh-method"><option>POST</option><option>PUT</option><option>GET</option></select></div>${f('wh-headers', '標頭（JSON）', '', 'placeholder=\'{"Authorization": "Bearer …"}\'')}${f('wh-body', '內容範本（JSON）', '', 'placeholder=\'{"title": "{{title}}"}\'')}`)}
+          </div>
+        </section>
+
+        <section aria-labelledby="s-account">
+          <h2 id="s-account">帳號與登入</h2>
+          <p>只有一組帳號。修改使用者名稱不會影響 passkey。</p>
+          <div class="set-list" data-section="account">
+            <div class="set-item"><label for="a-user">使用者名稱</label><input class="input" id="a-user" value="madao" autocomplete="username" /></div>
+            <div class="set-item"><label for="a-pw">新密碼<small>至少 8 個字元；留空表示不修改</small></label><input class="input" id="a-pw" type="password" autocomplete="new-password" /></div>
+            <div class="set-item"><label for="a-pw2">確認新密碼</label><input class="input" id="a-pw2" type="password" autocomplete="new-password" /></div>
+          </div>
+          <div class="section-save"><span data-dirty-note="account">沒有未儲存的修改</span><button class="btn btn-primary" type="button" data-save="account" aria-disabled="true">儲存帳號</button></div>
+
+          <h3 style="font-size: 15px; margin: 24px 0 8px">Passkey</h3>
+          <div class="set-list passkeys">
+            ${passkeyRows || '<div class="list-foot note">還沒有 passkey。新增後可以用指紋、臉部或安全金鑰登入。</div>'}
+            ${reauth}
+            <div class="list-foot"><button class="btn btn-secondary" type="button" data-act="pk-add" ${disabled}>${icon('plus')}新增 passkey</button></div>
+          </div>
+          <div class="section-save" style="justify-content: flex-start"><a class="btn btn-secondary" href="#login">${icon('log-out')}登出</a></div>
+        </section>
+
+        <section aria-labelledby="s-data">
+          <h2 id="s-data">資料</h2>
+          <p>下載所有訂閱與設定。檔案不含密碼、登入金鑰與通知管道的憑證。</p>
+          <button class="btn btn-secondary" type="button" data-act="export" ${disabled}>${icon('download')}匯出 JSON</button>
+        </section>
+
+        <section aria-labelledby="s-look">
+          <h2 id="s-look">外觀</h2>
+          <p>只影響這個瀏覽器。</p>
+          <div class="segmented" role="group" aria-label="主題">
+            ${[
+              ['', '跟隨系統'],
+              ['light', '淺色'],
+              ['dark', '深色'],
+            ]
+              .map(
+                ([v, l]) =>
+                  `<button type="button" data-theme-pick="${v}" aria-pressed="${(document.documentElement.dataset.theme || '') === v}">${l}</button>`,
+              )
+              .join('')}
+          </div>
+        </section>
+      </div>
+    </div>`
+  }
+
+  // ---------- 登入 ----------
+  function loginHTML() {
+    return `<div class="view"><div class="login">
+      <div class="brand">
+        <div class="brand-stack" aria-hidden="true"><i style="background: var(--c-plum)"></i><i style="background: var(--c-green)"></i><i style="background: var(--c-blue)"></i></div>
+        <h1>SubsTracker</h1>
+        <p>扣款之前，先知道。</p>
+      </div>
+      <form id="login-form" novalidate>
+        ${state.loginError ? '<p class="form-error" role="alert">使用者名稱或密碼錯誤。</p>' : ''}
+        <div class="field"><label for="l-user">使用者名稱</label><input class="input" id="l-user" autocomplete="username webauthn" value="madao" /></div>
+        <div class="field"><label for="l-pw">密碼</label><input class="input" id="l-pw" type="password" autocomplete="current-password" placeholder="原型中輸入任何文字都能登入，輸入 wrong 看錯誤" /></div>
+        <button class="btn btn-primary" type="submit">登入</button>
+      </form>
+      <div class="or">或</div>
+      <button class="btn btn-secondary" type="button" data-act="passkey-login" style="width: 100%">${icon('fingerprint')}使用 passkey 登入</button>
+    </div></div>`
+  }
+
+  // ---------- 路由與事件 ----------
+  const app = document.getElementById('app')
+  const system = document.getElementById('system')
+  let toastTimer
+
+  function toast(text) {
+    document.querySelector('.toast')?.remove()
+    const el = document.createElement('div')
+    el.className = 'toast'
+    el.setAttribute('role', 'status')
+    el.textContent = text
+    document.body.append(el)
+    clearTimeout(toastTimer)
+    toastTimer = setTimeout(() => el.remove(), 2600)
+  }
+
+  function route() {
+    const hash = location.hash.slice(1) || 'home'
+    document.querySelectorAll('.proto-bar nav a').forEach((a) => {
+      const target = a.getAttribute('href').slice(1)
+      a.toggleAttribute('aria-current', target === hash || (target === 'home' && hash.startsWith('edit')))
+      if (a.hasAttribute('aria-current')) a.setAttribute('aria-current', 'page')
+    })
+    document
+      .querySelectorAll('.proto-bar [data-mode]')
+      .forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === state.mode)))
+    system.hidden = hash !== 'system'
+    app.hidden = hash === 'system'
+    if (hash === 'system') return window.lucide?.createIcons()
+    if (hash === 'login') app.innerHTML = loginHTML()
+    else if (hash === 'settings') app.innerHTML = settingsHTML()
+    else if (hash === 'new' || hash.startsWith('edit-')) {
+      app.innerHTML = homeHTML() + editHTML(hash.startsWith('edit-') ? hash.slice(5) : null)
+      renderPreview()
+      document.getElementById('f-name')?.focus({ preventScroll: true })
+    } else app.innerHTML = homeHTML()
+    window.lucide?.createIcons()
+  }
+
+  function rerenderKeepFocus() {
+    const id = document.activeElement?.id
+    const pos = document.activeElement?.selectionStart
+    route()
+    if (id) {
+      const el = document.getElementById(id)
+      el?.focus({ preventScroll: true })
+      if (pos != null && el?.setSelectionRange) el.setSelectionRange(pos, pos)
+    }
+  }
+
+  document.addEventListener('click', (event) => {
+    const t = event.target
+    if (t.closest('#system')) return
+    const modeBtn = t.closest('[data-mode]')
+    if (modeBtn) {
+      state.mode = modeBtn.dataset.mode
+      return route()
+    }
+    const lip = t.closest('.card button.lip')
+    if (lip && !lip.closest('#preview')) {
+      const card = lip.closest('.card')
+      const id = card.dataset.id
+      state.openId = state.openId === id ? null : id
+      document.querySelectorAll('#app .card.is-open').forEach((open) => {
+        open.classList.remove('is-open')
+        open.querySelector('button.lip').setAttribute('aria-expanded', 'false')
+      })
+      if (state.openId) {
+        card.classList.add('is-open')
+        lip.setAttribute('aria-expanded', 'true')
+        const behavior = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+        setTimeout(() => card.scrollIntoView({ block: 'nearest', behavior }), 300)
+      }
+      return
+    }
+    const act = t.closest('[data-act]')
+    const cardId = t.closest('.card')?.dataset.id
+    if (act) {
+      const a = act.dataset.act
+      if (act.getAttribute('aria-disabled') === 'true' || act.disabled) return
+      if (a === 'new') location.hash = 'new'
+      else if (a === 'edit') location.hash = `edit-${cardId}`
+      else if (a === 'close') location.hash = 'home'
+      else if (a === 'search') {
+        state.searching = true
+        route()
+        document.getElementById('search')?.focus()
+      } else if (a === 'search-close') {
+        Object.assign(state, { searching: false, query: '', category: '' })
+        route()
+      } else if (a === 'paused') {
+        state.showPaused = !state.showPaused
+        route()
+      } else if (a === 'renew') {
+        const s = state.subs.find((x) => x.id === cardId)
+        let next = s.nextDate
+        while (next < TODAY) next = addPeriod(next, s.periodValue, s.periodUnit)
+        s.nextDate = next
+        route()
+        toast(`已續訂 ${s.name}，下次扣款日 ${md(next)}`)
+      } else if (a === 'toggle') {
+        const s = state.subs.find((x) => x.id === cardId)
+        s.active = !s.active
+        state.openId = null
+        route()
+        toast(s.active ? `已啟用 ${s.name}` : `已停用 ${s.name}，不再提醒`)
+      } else if (a === 'ask-delete') {
+        document.getElementById('sheet-foot').innerHTML =
+          `<div class="confirm" style="flex: 1"><span>刪除後無法復原。</span><button class="btn btn-danger-solid" type="button" data-act="delete">刪除</button><button class="btn btn-secondary" type="button" data-act="cancel-delete">取消</button></div>`
+      } else if (a === 'cancel-delete') route()
+      else if (a === 'delete') {
+        const id = location.hash.slice(6)
+        const s = state.subs.find((x) => x.id === id)
+        state.subs = state.subs.filter((x) => x.id !== id)
+        location.hash = 'home'
+        toast(`已刪除 ${s.name}`)
+      } else if (a === 'pk-add') {
+        state.reauthFor = 'add'
+        route()
+        document.getElementById('reauth-pw')?.focus()
+      } else if (a === 'reauth-cancel') {
+        state.reauthFor = null
+        route()
+      } else if (a === 'reauth-ok' || a === 'reauth-passkey') {
+        const target = state.reauthFor
+        state.reauthFor = null
+        if (target === 'add') {
+          state.passkeys.push({
+            id: `p${Date.now()}`,
+            name: 'iCloud 鑰匙圈',
+            created: '2026/9/26',
+            used: '從未',
+            synced: true,
+          })
+          toast('已新增 passkey「iCloud 鑰匙圈」')
+        } else {
+          state.confirmPasskey = target
+        }
+        route()
+      } else if (a === 'export') toast('原型不會下載檔案；實作時會下載 subs-tracker-2026-09-26.json')
+      else if (a === 'passkey-login') {
+        location.hash = 'home'
+        toast('已用 passkey 登入')
+      }
+      return
+    }
+    const cat = t.closest('[data-cat]')
+    if (cat) {
+      state.category = cat.dataset.cat
+      return route()
+    }
+    const unit = t.closest('[data-unit]')
+    if (unit) {
+      unit.parentElement
+        .querySelectorAll('[data-unit]')
+        .forEach((b) => b.setAttribute('aria-pressed', String(b === unit)))
+      return renderPreview()
+    }
+    const seg = t.closest('[data-seg]')
+    if (seg) {
+      seg.parentElement.querySelectorAll('[data-seg]').forEach((b) => b.setAttribute('aria-pressed', String(b === seg)))
+      return markDirty(seg)
+    }
+    const test = t.closest('[data-test]')
+    if (test && test.getAttribute('aria-disabled') !== 'true') {
+      const key = test.dataset.test
+      if (key === 'bark') toast('Bark 傳送失敗：伺服器回應 400。請確認裝置 Key。')
+      else toast(`已傳送測試訊息到 ${test.closest('.row').querySelector('summary span:nth-child(2)').textContent}`)
+      return
+    }
+    const save = t.closest('[data-save]')
+    if (save && save.getAttribute('aria-disabled') !== 'true') {
+      const section = save.dataset.save
+      if (section === 'account') {
+        const pw = document.getElementById('a-pw').value
+        if (pw && pw !== document.getElementById('a-pw2').value) return toast('兩次輸入的新密碼不同')
+        if (pw && pw.length < 8) return toast('新密碼至少要 8 個字元')
+      }
+      save.setAttribute('aria-disabled', section === 'channel' ? 'false' : 'true')
+      const note = document.querySelector(`[data-dirty-note="${section}"]`)
+      if (note) note.textContent = '已儲存'
+      return toast(section === 'remind' ? '已儲存提醒設定' : section === 'account' ? '已儲存帳號' : '已儲存通知管道')
+    }
+    const theme = t.closest('[data-theme-pick]')
+    if (theme) {
+      if (theme.dataset.themePick) document.documentElement.dataset.theme = theme.dataset.themePick
+      else delete document.documentElement.dataset.theme
+      return route()
+    }
+    const pkRename = t.closest('[data-pk-rename]')
+    if (pkRename) {
+      state.renamePasskey = state.renamePasskey === pkRename.dataset.pkRename ? null : pkRename.dataset.pkRename
+      route()
+      return document.getElementById('pk-name')?.focus()
+    }
+    const pkRenameSave = t.closest('[data-pk-rename-save]')
+    if (pkRenameSave) {
+      const p = state.passkeys.find((x) => x.id === pkRenameSave.dataset.pkRenameSave)
+      p.name = document.getElementById('pk-name').value.trim() || p.name
+      state.renamePasskey = null
+      route()
+      return toast(`已改名為「${p.name}」`)
+    }
+    const pkDelete = t.closest('[data-pk-delete]')
+    if (pkDelete && pkDelete.getAttribute('aria-disabled') !== 'true') {
+      state.reauthFor = pkDelete.dataset.pkDelete
+      route()
+      return document.getElementById('reauth-pw')?.focus()
+    }
+    const pkYes = t.closest('[data-pk-delete-yes]')
+    if (pkYes) {
+      const p = state.passkeys.find((x) => x.id === pkYes.dataset.pkDeleteYes)
+      state.passkeys = state.passkeys.filter((x) => x !== p)
+      state.confirmPasskey = null
+      route()
+      return toast(`已刪除 passkey「${p.name}」`)
+    }
+    if (t.closest('[data-pk-cancel]')) {
+      state.confirmPasskey = null
+      return route()
+    }
+  })
+
+  function markDirty(el) {
+    const section =
+      el.closest('[data-section]')?.dataset.section || el.closest('section')?.querySelector('[data-save]')?.dataset.save
+    if (!section) return
+    const btn = document.querySelector(`[data-save="${section}"]`)
+    if (btn && state.mode !== 'offline') btn.setAttribute('aria-disabled', 'false')
+    const note = document.querySelector(`[data-dirty-note="${section}"]`)
+    if (note) note.textContent = '有未儲存的修改'
+  }
+
+  document.addEventListener('input', (event) => {
+    const t = event.target
+    if (t.id === 'search' || t.id === 'search-desk') {
+      state.query = t.value
+      return rerenderKeepFocus()
+    }
+    if (t.closest('#sub-form')) return renderPreview()
+    if (t.closest('[data-section]')) markDirty(t)
+  })
+
+  document.addEventListener('change', (event) => {
+    const t = event.target
+    if (t.closest('#sub-form')) return renderPreview()
+    if (t.dataset.channel) {
+      const ch = state.channels[t.dataset.channel]
+      ch.on = t.checked
+      ch.status = t.checked ? 'on' : 'off'
+      const status = t.closest('.row').querySelector('.status')
+      status.textContent = t.checked ? '已啟用' : '未設定'
+      status.className = `status ${t.checked ? 'on' : ''}`
+      return
+    }
+    if (t.closest('[data-section]')) markDirty(t)
+  })
+
+  document.addEventListener('submit', (event) => {
+    event.preventDefault()
+    const form = event.target
+    if (form.id === 'login-form') {
+      state.loginError = document.getElementById('l-pw').value === 'wrong'
+      if (state.loginError) return route()
+      location.hash = 'home'
+      return toast('已登入')
+    }
+    if (form.id !== 'sub-form') return
+    const v = formValues(form)
+    const price = Number(v.price)
+    const errors = {
+      price: !v.price ? '請輸入金額' : !Number.isFinite(price) || price < 0 ? '請輸入數字，例如 390' : '',
+      date: !v.nextDate ? `請選擇${v.trial ? '試用結束日' : '下次扣款日'}` : '',
+    }
+    for (const [key, msg] of Object.entries(errors)) {
+      const el = document.getElementById(`e-${key}`)
+      el.hidden = !msg
+      el.textContent = msg
+      document.getElementById(key === 'price' ? 'f-price' : 'f-date').setAttribute('aria-invalid', String(Boolean(msg)))
+    }
+    if (!v.name) {
+      document.getElementById('f-name').setAttribute('aria-invalid', 'true')
+      document.getElementById('f-name').focus()
+      return toast('請輸入名稱')
+    }
+    if (errors.price || errors.date) return
+    const id = location.hash.startsWith('#edit-') ? location.hash.slice(6) : `n${Date.now()}`
+    const existing = state.subs.find((x) => x.id === id)
+    const record = { ...(existing || {}), ...v, id, price, active: existing ? existing.active : true }
+    state.subs = existing ? state.subs.map((x) => (x.id === id ? record : x)) : [...state.subs, record]
+    state.openId = id
+    location.hash = 'home'
+    toast(`已儲存 ${record.name}`)
+  })
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && document.querySelector('.sheet')) location.hash = 'home'
+  })
+
+  document.addEventListener('click', (event) => {
+    const picker = event.target.closest('.date-picker')
+    if (!picker) return
+    if (event.target.closest('.date-trigger')) {
+      if (picker.querySelector('.calendar')) return closeCalendar(picker, false)
+      picker.dataset.focus = picker.querySelector('input').value || TODAY
+      return renderCalendar(picker, true)
+    }
+    const pick = event.target.closest('[data-date], [data-pick]')
+    if (pick) return pickDate(picker, pick.dataset.date ?? pick.dataset.pick)
+    const shift = event.target.closest('[data-shift]')
+    if (!shift) return
+    picker.dataset.focus = dpAddMonths(picker.dataset.focus, Number(shift.dataset.shift))
+    renderCalendar(picker)
+    picker.querySelector(`[data-shift="${shift.dataset.shift}"]`).focus()
+  })
+
+  document.addEventListener('change', (event) => {
+    const select = event.target.closest('.cal-caption select')
+    if (!select) return
+    const picker = select.closest('.date-picker')
+    const [y, m] = dpParts(picker.dataset.focus)
+    const months = select.dataset.part === 'year' ? (Number(select.value) - y) * 12 : Number(select.value) - m
+    picker.dataset.focus = dpAddMonths(picker.dataset.focus, months)
+    renderCalendar(picker)
+    picker.querySelector(`select[data-part="${select.dataset.part}"]`).focus()
+  })
+
+  // capture：先於表單的 Esc 處理，Esc 只關閉月曆
+  document.addEventListener(
+    'keydown',
+    (event) => {
+      const picker = event.target.closest?.('.date-picker')
+      if (!picker?.querySelector('.calendar')) return
+      if (event.key === 'Escape') {
+        event.stopPropagation()
+        return closeCalendar(picker)
+      }
+      const from = event.target.closest('[data-date]')?.dataset.date
+      if (!from) return
+      const months = event.shiftKey ? 12 : 1
+      const moves = {
+        ArrowLeft: () => dpAddDays(from, -1),
+        ArrowRight: () => dpAddDays(from, 1),
+        ArrowUp: () => dpAddDays(from, -7),
+        ArrowDown: () => dpAddDays(from, 7),
+        Home: () => dpAddDays(from, -dpWeekday(from)),
+        End: () => dpAddDays(from, 6 - dpWeekday(from)),
+        PageUp: () => dpAddMonths(from, -months),
+        PageDown: () => dpAddMonths(from, months),
+      }
+      if (!moves[event.key]) return
+      event.preventDefault()
+      picker.dataset.focus = moves[event.key]()
+      renderCalendar(picker, true)
+    },
+    true,
+  )
+
+  document.addEventListener('pointerdown', (event) => {
+    document.querySelectorAll('.date-picker').forEach((picker) => {
+      if (picker.querySelector('.calendar') && !picker.contains(event.target)) closeCalendar(picker, false)
+    })
+  })
+
+  window.addEventListener('hashchange', route)
+  route()
+</script>

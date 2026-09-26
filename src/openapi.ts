@@ -46,10 +46,6 @@ export function createOpenAPIApp() {
         url: 'http://localhost:5173',
         description: '本地開發環境',
       },
-      {
-        url: 'https://subscription-manager.workers.dev',
-        description: '生產環境',
-      },
     ],
     tags: [
       {
@@ -61,8 +57,8 @@ export function createOpenAPIApp() {
         description: '訂閱管理 API',
       },
       {
-        name: 'Config',
-        description: '系統配置 API',
+        name: 'Settings',
+        description: '設定、通知管道與匯出',
       },
       {
         name: 'Notify',

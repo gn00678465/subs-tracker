@@ -1,553 +1,240 @@
-import { Buffer } from 'node:buffer'
-
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi'
-import {
-  generateAuthenticationOptions,
-  generateRegistrationOptions,
-  verifyAuthenticationResponse,
-  verifyRegistrationResponse,
-} from '@simplewebauthn/server'
+import type { AuthenticationResponseJSON, RegistrationResponseJSON } from '@simplewebauthn/server'
+import type { Context } from 'hono'
 
-import { authMiddleware } from '../middleware/auth'
-import { getConfig } from '../services/config'
+import { authMiddleware, recentAuthMiddleware } from '../middleware/auth'
 import {
-  deleteCredential,
-  extractChallenge,
-  extractRPID,
-  getChallenge,
-  getCredential,
-  getUserCredentials,
-  storeChallenge,
-  storeCredential,
-  updateCredentialCounter,
-  updateCredentialNickname,
-} from '../services/webauthn'
+  authenticationOptions,
+  deletePasskeyById,
+  listPasskeyViews,
+  registrationOptions,
+  relyingParty,
+  renamePasskeyById,
+  verifyAuthentication,
+  verifyRegistration,
+} from '../services/passkey'
+import { loadSettings } from '../services/settings'
 import type { HonoEnv } from '../types'
-import type { StoredCredential } from '../types/webauthn'
 import { generateJWT, setTokenCookie } from '../utils/crypto'
+import { UserError } from '../utils/errors'
 import * as logger from '../utils/logger'
 import { created, notFound, serverError, success, validationError } from '../utils/response'
 
 const webauthn = new OpenAPIHono<HonoEnv>()
 
-// ==================== 註冊端點 ====================
+// 登入（/authenticate/*）不需要登入狀態；新增與刪除 passkey 要在 10 分鐘內登入過，改名不需要
+webauthn.use('/register/*', authMiddleware, recentAuthMiddleware)
+webauthn.use('/credentials/*', authMiddleware)
+webauthn.on('DELETE', '/credentials/:id', recentAuthMiddleware)
 
-/**
- * POST /api/webauthn/register/options
- * 生成註冊選項（需認證）
- */
-const registerOptionsRoute = createRoute({
-  method: 'post',
-  path: '/register/options',
-  tags: ['WebAuthn'],
-  summary: '生成 WebAuthn 註冊選項',
-  responses: {
-    200: {
-      content: {
-        'application/json': {
-          schema: z.object({
-            success: z.boolean(),
-            options: z.any(),
-          }),
-        },
-      },
-      description: '註冊選項生成成功',
-    },
-    401: {
-      content: {
-        'application/json': {
-          schema: z.object({
-            success: z.boolean(),
-            message: z.string(),
-          }),
-        },
-      },
-      description: '未授權',
-    },
-  },
+const ErrorResponseSchema = z.object({
+  success: z.literal(false),
+  message: z.string(),
+  code: z.string().optional(),
 })
 
-// @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
-webauthn.openapi(registerOptionsRoute, async (c) => {
-  const authResult = await authMiddleware(c, async () => {})
-  if (authResult) return authResult
-
-  try {
-    const user = c.get('user')
-    const config = await getConfig(c.env)
-
-    // 取得已註冊的憑證（用於 excludeCredentials）
-    const existingCreds = await getUserCredentials(user.username, c.env)
-
-    const rpID = config.WEBAUTHN_RP_ID || extractRPID(c.req.header('origin'))
-
-    const options = await generateRegistrationOptions({
-      rpName: config.WEBAUTHN_RP_NAME || 'SubsTracker',
-      rpID,
-      userName: user.username,
-      userDisplayName: user.username,
-      attestationType: config.WEBAUTHN_ATTESTATION || 'none',
-      authenticatorSelection: {
-        authenticatorAttachment: config.WEBAUTHN_AUTHENTICATOR_ATTACHMENT,
-        residentKey: config.WEBAUTHN_RESIDENT_KEY || 'preferred',
-        userVerification: config.WEBAUTHN_USER_VERIFICATION || 'preferred',
-      },
-      excludeCredentials: existingCreds.map((cred) => ({
-        id: cred.credentialID,
-        transports: cred.transports,
-      })),
-      timeout: config.WEBAUTHN_TIMEOUT || 60000,
-    })
-
-    // 儲存 challenge
-    await storeChallenge(options.challenge, 'registration', c.env, user.username)
-
-    return success(c, options)
-  } catch (error) {
-    logger.error('Failed to generate registration options', error, { prefix: 'WebAuthn' })
-    return serverError(c, error instanceof Error ? error.message : '生成註冊選項失敗')
-  }
+const json = <T extends z.ZodType>(schema: T, description: string) => ({
+  content: { 'application/json': { schema } },
+  description,
 })
 
-/**
- * POST /api/webauthn/register/verify
- * 驗證註冊回應（需認證）
- */
-const registerVerifyRoute = createRoute({
-  method: 'post',
-  path: '/register/verify',
-  tags: ['WebAuthn'],
-  summary: '驗證 WebAuthn 註冊回應',
-  request: {
-    body: {
-      content: {
-        'application/json': {
-          schema: z.any(),
-        },
-      },
-    },
-  },
-  responses: {
-    200: {
-      content: {
-        'application/json': {
-          schema: z.object({
-            success: z.boolean(),
-            message: z.string().optional(),
-          }),
-        },
-      },
-      description: '註冊驗證成功',
-    },
-  },
+const okResponse = <T extends z.ZodType>(data: T, description: string) =>
+  json(z.object({ success: z.literal(true), data, message: z.string().optional() }), description)
+
+const messageResponse = (description: string) =>
+  json(z.object({ success: z.literal(true), message: z.string() }), description)
+
+const errorResponses = {
+  400: json(ErrorResponseSchema, '驗證失敗或逾時'),
+  401: json(ErrorResponseSchema, '沒有登入'),
+  403: json(ErrorResponseSchema, '需要重新驗證（code: REAUTH_REQUIRED）'),
+  500: json(ErrorResponseSchema, '伺服器錯誤'),
+}
+
+// 瀏覽器產生的回應由 @simplewebauthn/server 驗證；這裡只確認取得 challenge 需要的欄位
+const credentialResponseSchema = z
+  .object({ id: z.string(), response: z.object({ clientDataJSON: z.string() }).passthrough() })
+  .passthrough()
+
+const optionsSchema = z.object({}).passthrough().openapi({ description: 'WebAuthn options JSON' })
+
+const passkeySchema = z
+  .object({
+    id: z.string(),
+    nickname: z.string().nullable(),
+    provider: z.string().nullable(),
+    createdAt: z.string(),
+    lastUsedAt: z.string().nullable(),
+    synced: z.boolean().nullable(),
+    usableHere: z.boolean(),
+  })
+  .openapi('Passkey')
+
+const idParam = z.object({
+  id: z
+    .string()
+    .min(1)
+    .openapi({ param: { name: 'id', in: 'path' } }),
 })
 
-// @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
-webauthn.openapi(registerVerifyRoute, async (c) => {
-  const authResult = await authMiddleware(c, async () => {})
-  if (authResult) return authResult
+function handleError(c: Context<HonoEnv>, error: unknown, action: string): Response {
+  if (error instanceof UserError) return validationError(c, error.message)
+  logger.error(`${action}失敗`, error, { prefix: 'WebAuthn' })
+  return serverError(c, `${action}失敗`)
+}
 
-  try {
-    const user = c.get('user')
-    const body = await c.req.json()
-    const config = await getConfig(c.env)
-
-    // 取得 challenge
-    const challengeId = extractChallenge(body)
-    if (!challengeId) {
-      return validationError(c, '無效的 challenge')
+webauthn.openapi(
+  createRoute({
+    method: 'post',
+    path: '/register/options',
+    tags: ['WebAuthn'],
+    summary: '新增 passkey：取得註冊選項',
+    responses: { 200: okResponse(optionsSchema, '註冊選項'), ...errorResponses },
+  }),
+  // @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
+  async (c) => {
+    try {
+      return success(c, await registrationOptions(c.env, relyingParty(c.req.url)))
+    } catch (error) {
+      return handleError(c, error, '產生註冊選項')
     }
+  },
+)
 
-    const storedChallenge = await getChallenge(challengeId, c.env)
-
-    if (!storedChallenge) {
-      return validationError(c, 'Challenge 已過期或無效')
+webauthn.openapi(
+  createRoute({
+    method: 'post',
+    path: '/register/verify',
+    tags: ['WebAuthn'],
+    summary: '新增 passkey：驗證並儲存',
+    request: { body: { content: { 'application/json': { schema: credentialResponseSchema } } } },
+    responses: { 201: okResponse(passkeySchema, '已新增'), ...errorResponses },
+  }),
+  // @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
+  async (c) => {
+    try {
+      const passkey = await verifyRegistration(
+        c.env,
+        relyingParty(c.req.url),
+        c.req.valid('json') as unknown as RegistrationResponseJSON,
+        c.req.header('user-agent') ?? null,
+      )
+      return created(c, passkey, '已新增 passkey')
+    } catch (error) {
+      return handleError(c, error, '新增 passkey')
     }
+  },
+)
 
-    const rpID = config.WEBAUTHN_RP_ID || extractRPID(c.req.header('origin'))
-    let expectedOrigin = config.WEBAUTHN_RP_ORIGINS
-    if (!expectedOrigin || expectedOrigin.length === 0) {
-      logger.warning('WEBAUTHN_RP_ORIGINS not configured, using request origin as fallback', {
-        prefix: 'WebAuthn',
-        data: { origin: c.req.header('origin') },
-      })
-      expectedOrigin = [c.req.header('origin') || '']
-    }
-
-    const verification = await verifyRegistrationResponse({
-      response: body,
-      expectedChallenge: storedChallenge.challenge,
-      expectedOrigin,
-      expectedRPID: rpID,
-    })
-
-    if (verification.verified && verification.registrationInfo) {
-      const { credential, credentialDeviceType, credentialBackedUp } = verification.registrationInfo
-
-      const storedCredential: StoredCredential = {
-        credentialID: credential.id,
-        publicKey: Buffer.from(credential.publicKey).toString('base64url'),
-        counter: credential.counter,
-        transports: body.response.transports,
-        createdAt: new Date().toISOString(),
-        userAgent: c.req.header('user-agent'),
-        deviceType: credentialDeviceType,
-        backedUp: credentialBackedUp,
-      }
-
-      await storeCredential(user.username, storedCredential, c.env)
-
-      logger.info('WebAuthn registration successful', { prefix: 'WebAuthn', data: { username: user.username } })
-
-      return success(c, null, 'Passkey 註冊成功')
-    }
-
-    return validationError(c, '註冊驗證失敗')
-  } catch (error) {
-    logger.error('Failed to verify registration', error, { prefix: 'WebAuthn' })
-    return serverError(c, error instanceof Error ? error.message : '註冊驗證失敗')
-  }
-})
-
-// ==================== 認證端點 ====================
-
-/**
- * POST /api/webauthn/authenticate/options
- * 生成認證選項（公開）
- */
-const authenticateOptionsRoute = createRoute({
-  method: 'post',
-  path: '/authenticate/options',
-  tags: ['WebAuthn'],
-  summary: '生成 WebAuthn 認證選項',
-  request: {
-    body: {
-      content: {
-        'application/json': {
-          schema: z.object({
-            username: z.string(),
-          }),
-        },
-      },
+webauthn.openapi(
+  createRoute({
+    method: 'post',
+    path: '/authenticate/options',
+    tags: ['WebAuthn'],
+    summary: 'passkey 登入：取得驗證選項',
+    description:
+      '`conditional: true` 給登入頁的自動填入使用，不列出憑證。已登入時完成 passkey 登入，也用來重新驗證身分。',
+    request: {
+      body: { content: { 'application/json': { schema: z.object({ conditional: z.boolean().default(false) }) } } },
     },
+    responses: { 200: okResponse(optionsSchema, '驗證選項'), ...errorResponses },
+  }),
+  // @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
+  async (c) => {
+    try {
+      const { conditional } = c.req.valid('json')
+      return success(c, await authenticationOptions(c.env, relyingParty(c.req.url), { conditional }))
+    } catch (error) {
+      return handleError(c, error, '產生驗證選項')
+    }
   },
-  responses: {
-    200: {
-      content: {
-        'application/json': {
-          schema: z.object({
-            success: z.boolean(),
-            options: z.any(),
-          }),
-        },
-      },
-      description: '認證選項生成成功',
+)
+
+webauthn.openapi(
+  createRoute({
+    method: 'post',
+    path: '/authenticate/verify',
+    tags: ['WebAuthn'],
+    summary: 'passkey 登入：驗證並登入',
+    request: { body: { content: { 'application/json': { schema: credentialResponseSchema } } } },
+    responses: { 201: okResponse(z.object({ username: z.string() }), '登入成功'), ...errorResponses },
+  }),
+  // @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
+  async (c) => {
+    try {
+      const username = await verifyAuthentication(
+        c.env,
+        relyingParty(c.req.url),
+        c.req.valid('json') as unknown as AuthenticationResponseJSON,
+      )
+      setTokenCookie(c, await generateJWT(username, (await loadSettings(c.env)).jwtSecret))
+      return created(c, { username }, '登入成功')
+    } catch (error) {
+      return handleError(c, error, 'passkey 登入')
+    }
+  },
+)
+
+webauthn.openapi(
+  createRoute({
+    method: 'get',
+    path: '/credentials',
+    tags: ['WebAuthn'],
+    summary: '列出 passkey',
+    responses: { 200: okResponse(z.array(passkeySchema), 'passkey 清單'), ...errorResponses },
+  }),
+  // @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
+  async (c) => {
+    try {
+      return success(c, await listPasskeyViews(c.env, relyingParty(c.req.url)))
+    } catch (error) {
+      return handleError(c, error, '讀取 passkey')
+    }
+  },
+)
+
+webauthn.openapi(
+  createRoute({
+    method: 'put',
+    path: '/credentials/{id}',
+    tags: ['WebAuthn'],
+    summary: '修改 passkey 名稱',
+    description: '空白名稱代表恢復預設名稱。',
+    request: {
+      params: idParam,
+      body: { content: { 'application/json': { schema: z.object({ nickname: z.string().max(64) }) } } },
     },
-  },
-})
-
-// @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
-webauthn.openapi(authenticateOptionsRoute, async (c) => {
-  try {
-    const { username } = await c.req.json()
-    const config = await getConfig(c.env)
-
-    const userCredentials = await getUserCredentials(username, c.env)
-
-    if (userCredentials.length === 0 || username !== config.ADMIN_USERNAME) {
-      logger.warning(`Authentication options requested for invalid user or user without passkey: ${username}`, {
-        prefix: 'WebAuthn',
-      })
-      return validationError(c, '認證初始化失敗')
+    responses: { 200: messageResponse('已儲存'), 404: json(ErrorResponseSchema, 'passkey 不存在'), ...errorResponses },
+  }),
+  // @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
+  async (c) => {
+    try {
+      const renamed = await renamePasskeyById(c.env, c.req.valid('param').id, c.req.valid('json').nickname)
+      return renamed ? success(c, undefined, '已儲存') : notFound(c, 'passkey 不存在')
+    } catch (error) {
+      return handleError(c, error, '修改 passkey 名稱')
     }
-
-    const rpID = config.WEBAUTHN_RP_ID || extractRPID(c.req.header('origin'))
-
-    const options = await generateAuthenticationOptions({
-      rpID,
-      allowCredentials: userCredentials.map((cred) => ({
-        id: cred.credentialID,
-        transports: cred.transports,
-      })),
-      timeout: config.WEBAUTHN_TIMEOUT || 60000,
-      userVerification: config.WEBAUTHN_USER_VERIFICATION || 'preferred',
-    })
-
-    await storeChallenge(options.challenge, 'authentication', c.env, username)
-
-    return success(c, options)
-  } catch (error) {
-    logger.error('Failed to generate authentication options', error, { prefix: 'WebAuthn' })
-    return serverError(c, error instanceof Error ? error.message : '生成認證選項失敗')
-  }
-})
-
-/**
- * POST /api/webauthn/authenticate/verify
- * 驗證認證回應並簽發 JWT（公開）
- */
-const authenticateVerifyRoute = createRoute({
-  method: 'post',
-  path: '/authenticate/verify',
-  tags: ['WebAuthn'],
-  summary: '驗證 WebAuthn 認證回應',
-  request: {
-    body: {
-      content: {
-        'application/json': {
-          schema: z.any(),
-        },
-      },
-    },
   },
-  responses: {
-    200: {
-      content: {
-        'application/json': {
-          schema: z.object({
-            success: z.boolean(),
-            data: z
-              .object({
-                username: z.string(),
-              })
-              .optional(),
-            message: z.string().optional(),
-          }),
-        },
-      },
-      description: '認證成功',
-    },
+)
+
+webauthn.openapi(
+  createRoute({
+    method: 'delete',
+    path: '/credentials/{id}',
+    tags: ['WebAuthn'],
+    summary: '刪除 passkey',
+    request: { params: idParam },
+    responses: { 200: messageResponse('已刪除'), 404: json(ErrorResponseSchema, 'passkey 不存在'), ...errorResponses },
+  }),
+  // @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
+  async (c) => {
+    try {
+      const deleted = await deletePasskeyById(c.env, c.req.valid('param').id)
+      return deleted ? success(c, undefined, '已刪除') : notFound(c, 'passkey 不存在')
+    } catch (error) {
+      return handleError(c, error, '刪除 passkey')
+    }
   },
-})
-
-// @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
-webauthn.openapi(authenticateVerifyRoute, async (c) => {
-  try {
-    const body = await c.req.json()
-    const config = await getConfig(c.env)
-
-    // 從 response 中提取 challenge
-    const challengeId = extractChallenge(body)
-    if (!challengeId) {
-      return validationError(c, '無效的 challenge')
-    }
-
-    const storedChallenge = await getChallenge(challengeId, c.env)
-
-    if (!storedChallenge || !storedChallenge.username) {
-      return validationError(c, 'Challenge 已過期或無效')
-    }
-
-    const credential = await getCredential(body.id, c.env)
-
-    if (!credential) {
-      return notFound(c, '憑證不存在')
-    }
-
-    const rpID = config.WEBAUTHN_RP_ID || extractRPID(c.req.header('origin'))
-    let expectedOrigin = config.WEBAUTHN_RP_ORIGINS
-    if (!expectedOrigin || expectedOrigin.length === 0) {
-      logger.warning('WEBAUTHN_RP_ORIGINS not configured, using request origin as fallback', {
-        prefix: 'WebAuthn',
-        data: { origin: c.req.header('origin') },
-      })
-      expectedOrigin = [c.req.header('origin') || '']
-    }
-
-    const verification = await verifyAuthenticationResponse({
-      response: body,
-      expectedChallenge: storedChallenge.challenge,
-      expectedOrigin,
-      expectedRPID: rpID,
-      credential: {
-        id: credential.credentialID,
-        publicKey: Buffer.from(credential.publicKey, 'base64url'),
-        counter: credential.counter,
-      },
-    })
-
-    if (verification.verified && verification.authenticationInfo) {
-      // 更新 counter
-      await updateCredentialCounter(credential.credentialID, verification.authenticationInfo.newCounter, c.env)
-
-      // 生成 JWT token
-      const token = await generateJWT(storedChallenge.username, config.JWT_SECRET)
-      setTokenCookie(c, token)
-
-      logger.info('WebAuthn authentication successful', {
-        prefix: 'WebAuthn',
-        data: { username: storedChallenge.username },
-      })
-
-      return created(c, { username: storedChallenge.username }, '登入成功')
-    }
-
-    return validationError(c, '認證驗證失敗')
-  } catch (error) {
-    logger.error('Failed to verify authentication', error, { prefix: 'WebAuthn' })
-    return serverError(c, error instanceof Error ? error.message : '認證驗證失敗')
-  }
-})
-
-// ==================== 管理端點 ====================
-
-/**
- * GET /api/webauthn/credentials
- * 列出使用者的所有憑證（需認證）
- */
-const listCredentialsRoute = createRoute({
-  method: 'get',
-  path: '/credentials',
-  tags: ['WebAuthn'],
-  summary: '列出使用者的所有 Passkey',
-  responses: {
-    200: {
-      content: {
-        'application/json': {
-          schema: z.object({
-            success: z.boolean(),
-            data: z.array(z.any()),
-          }),
-        },
-      },
-      description: '取得憑證列表成功',
-    },
-  },
-})
-
-// @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
-webauthn.openapi(listCredentialsRoute, async (c) => {
-  const authResult = await authMiddleware(c, async () => {})
-  if (authResult) return authResult
-
-  try {
-    const user = c.get('user')
-    const credentials = await getUserCredentials(user.username, c.env)
-
-    // 移除敏感資訊（publicKey）
-    const safeCredentials = credentials.map(({ publicKey: _publicKey, ...cred }) => cred)
-
-    return success(c, safeCredentials)
-  } catch (error) {
-    logger.error('Failed to list credentials', error, { prefix: 'WebAuthn' })
-    return serverError(c, error instanceof Error ? error.message : '取得憑證列表失敗')
-  }
-})
-
-/**
- * DELETE /api/webauthn/credentials/:id
- * 刪除憑證（需認證）
- */
-const deleteCredentialRoute = createRoute({
-  method: 'delete',
-  path: '/credentials/:id',
-  tags: ['WebAuthn'],
-  summary: '刪除 Passkey',
-  request: {
-    params: z.object({
-      id: z.string(),
-    }),
-  },
-  responses: {
-    200: {
-      content: {
-        'application/json': {
-          schema: z.object({
-            success: z.boolean(),
-            message: z.string(),
-          }),
-        },
-      },
-      description: '刪除成功',
-    },
-  },
-})
-
-// @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
-webauthn.openapi(deleteCredentialRoute, async (c) => {
-  const authResult = await authMiddleware(c, async () => {})
-  if (authResult) return authResult
-
-  try {
-    const user = c.get('user')
-    const credentialID = c.req.param('id')
-
-    // 驗證所有權
-    const userCreds = await getUserCredentials(user.username, c.env)
-    if (!userCreds.find((cred) => cred.credentialID === credentialID)) {
-      return validationError(c, '無權限刪除此憑證')
-    }
-
-    await deleteCredential(credentialID, user.username, c.env)
-
-    return success(c, undefined, 'Passkey 刪除成功')
-  } catch (error) {
-    logger.error('Failed to delete credential', error, { prefix: 'WebAuthn' })
-    return serverError(c, error instanceof Error ? error.message : '刪除憑證失敗')
-  }
-})
-
-/**
- * PUT /api/webauthn/credentials/:id
- * 更新憑證暱稱（需認證）
- */
-const updateCredentialRoute = createRoute({
-  method: 'put',
-  path: '/credentials/:id',
-  tags: ['WebAuthn'],
-  summary: '更新 Passkey 暱稱',
-  request: {
-    params: z.object({
-      id: z.string(),
-    }),
-    body: {
-      content: {
-        'application/json': {
-          schema: z.object({
-            nickname: z.string(),
-          }),
-        },
-      },
-    },
-  },
-  responses: {
-    200: {
-      content: {
-        'application/json': {
-          schema: z.object({
-            success: z.boolean(),
-            message: z.string(),
-          }),
-        },
-      },
-      description: '更新成功',
-    },
-  },
-})
-
-// @ts-expect-error - Response helper functions are runtime-compatible with OpenAPI typed responses
-webauthn.openapi(updateCredentialRoute, async (c) => {
-  const authResult = await authMiddleware(c, async () => {})
-  if (authResult) return authResult
-
-  try {
-    const user = c.get('user')
-    const credentialID = c.req.param('id')
-    const { nickname } = await c.req.json()
-
-    // 驗證所有權
-    const userCreds = await getUserCredentials(user.username, c.env)
-    if (!userCreds.find((cred) => cred.credentialID === credentialID)) {
-      return validationError(c, '無權限更新此憑證')
-    }
-
-    await updateCredentialNickname(credentialID, nickname, c.env)
-
-    return success(c, undefined, '暱稱更新成功')
-  } catch (error) {
-    logger.error('Failed to update credential nickname', error, { prefix: 'WebAuthn' })
-    return serverError(c, error instanceof Error ? error.message : '更新暱稱失敗')
-  }
-})
+)
 
 export default webauthn
