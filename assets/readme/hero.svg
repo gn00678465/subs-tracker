@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="460" viewBox="0 0 1200 460" role="img" aria-labelledby="title desc">
+  <title id="title">SubsTracker</title>
+  <desc id="desc">自架在 Cloudflare Workers 的訂閱管理工具。右側是首頁卡匣：一張已過期的訂閱在「今天」分隔線上方，7 天內要扣款的四張卡依日期疊在下方。</desc>
+
+  <rect width="1200" height="460" rx="28" fill="#eceef1"/>
+
+  <g id="title-block" transform="translate(0 22)" font-family="PingFang TC, 'Noto Sans TC', 'Microsoft JhengHei', -apple-system, 'Segoe UI', sans-serif">
+    <text x="64" y="96" fill="#4a5260" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" letter-spacing="1.5">SELF-HOSTED · CLOUDFLARE WORKERS · D1</text>
+    <text x="60" y="186" fill="#15181c" font-size="84" font-weight="700" letter-spacing="-2">SubsTracker</text>
+    <text x="64" y="248" fill="#15181c" font-size="30" font-weight="600">在扣款前提醒你。</text>
+    <text x="64" y="292" fill="#4a5260" font-size="24">訂閱資料只存在你自己的 Cloudflare 帳號。</text>
+    <g font-size="18" fill="#4a5260">
+      <text x="64" y="358">提醒管道</text>
+      <text x="148" y="358" fill="#15181c" font-weight="600">Telegram · Email · Bark · Webhook</text>
+    </g>
+  </g>
+
+  <g id="card-stack" transform="translate(632 40)" font-family="PingFang TC, 'Noto Sans TC', 'Microsoft JhengHei', -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#ffffff">
+    <text x="4" y="18" fill="#15181c" font-size="18" font-weight="600">需要處理</text>
+    <g transform="translate(0 30)">
+      <rect width="504" height="60" rx="14" fill="#8a3b2e"/>
+      <text x="22" y="37">Adobe Lightroom</text>
+      <text x="376" y="37" text-anchor="end" font-weight="700">USD 11.99/月</text>
+      <text x="484" y="37" text-anchor="end" font-weight="700">過期 6 天</text>
+    </g>
+
+    <g transform="translate(0 122)">
+      <text x="4" y="6" fill="#bf3019" font-size="18" font-weight="700">今天 9/26（六）</text>
+      <line x1="150" y1="0" x2="504" y2="0" stroke="#bf3019" stroke-width="2"/>
+    </g>
+
+    <text x="4" y="170" fill="#15181c" font-size="18" font-weight="600">7 天內</text>
+    <g transform="translate(0 184)">
+      <g>
+        <rect width="504" height="64" rx="14" fill="#7a2e5c"/>
+        <text x="22" y="40">Netflix 標準方案</text>
+        <text x="376" y="40" text-anchor="end" font-weight="700">TWD 390/月</text>
+        <text x="484" y="40" text-anchor="end" font-weight="700">3 天後</text>
+      </g>
+      <g transform="translate(0 48)">
+        <rect width="504" height="64" rx="14" fill="#2f3a45"/>
+        <text x="22" y="40">經濟日報電子報</text>
+        <text x="376" y="40" text-anchor="end" font-weight="700">TWD 60/週</text>
+        <text x="484" y="40" text-anchor="end">4 天後</text>
+      </g>
+      <g transform="translate(0 96)">
+        <rect width="504" height="64" rx="14" fill="#1f5f4a"/>
+        <text x="22" y="40">Spotify Premium</text>
+        <rect x="186" y="21" width="48" height="26" rx="13" fill="none" stroke="#ffffff" stroke-width="1.5"/>
+        <text x="210" y="40" text-anchor="middle" font-size="16" font-weight="700">試用</text>
+        <text x="376" y="40" text-anchor="end" font-weight="700">TWD 149/月</text>
+        <text x="484" y="40" text-anchor="end" font-weight="700">5 天後</text>
+      </g>
+      <g transform="translate(0 144)">
+        <rect width="504" height="64" rx="14" fill="#7a2e5c"/>
+        <text x="22" y="40">YouTube Premium</text>
+        <text x="376" y="40" text-anchor="end" font-weight="700">TWD 199/月</text>
+        <text x="484" y="40" text-anchor="end">6 天後</text>
+      </g>
+    </g>
+  </g>
+</svg>
