@@ -148,9 +148,20 @@ body {
   border-radius: var(--radius-card);
 }
 .lip-name {
+  min-width: 0;
   font-weight: 500;
   font-size: 15px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 名稱太長時截斷名稱，標籤保持完整 */
+.lip-name .n {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.lip-name .t {
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -309,7 +320,7 @@ body {
   border-radius: 999px;
   border: 1px solid currentColor;
   margin-inline-start: 8px;
-  vertical-align: 2px;
+  flex: none;
 }
 /* 卡片互相重疊，淡化只能用不透明的混色；opacity 會讓後面的卡透出來 */
 .card.state-paused {
@@ -748,6 +759,16 @@ a.banner:focus-visible {
   margin-top: 4px;
   font-size: 12px;
   color: var(--ink-3);
+}
+.link {
+  all: unset;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.link:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
 /* 卡疊分組 */
@@ -1282,11 +1303,6 @@ textarea.input {
   .home-main .lip-name .sub,
   .home-main .lip-name {
     display: contents;
-  }
-  .lip-name .n {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
   .lip-name .sub span {
     font-size: 13px;

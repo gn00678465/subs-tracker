@@ -47,7 +47,12 @@ const inputFields = {
   isFreeTrial: z.boolean(),
   reminder: reminderSchema,
   paymentMethod: z.string().trim().max(40),
-  website: z.string().trim().max(2048),
+  // 卡片把網站顯示成連結，其他協定（例如 javascript:）會在點擊時執行
+  website: z
+    .string()
+    .trim()
+    .max(2048)
+    .refine((value) => value === '' || /^https?:\/\/\S+$/i.test(value), '網址要以 http:// 或 https:// 開頭'),
   notes: z.string().max(4000),
   isActive: z.boolean(),
 }

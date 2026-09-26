@@ -3,8 +3,9 @@ import { csrf } from 'hono/csrf'
 import { logger } from 'hono/logger'
 import { prettyJSON } from 'hono/pretty-json'
 
-import { optionalAuthMiddleware } from './middleware/auth'
+import { optionalAuthMiddleware, pageAuthMiddleware } from './middleware/auth'
 import { createOpenAPIApp } from './openapi'
+import { HomePage } from './pages/Home'
 import { LoginPage } from './pages/Login'
 import auth from './routes/auth'
 import settings from './routes/settings'
@@ -48,6 +49,8 @@ app.get('/', optionalAuthMiddleware, async (c) => {
   const passkeys = await listPasskeyViews(c.env, relyingParty(c.req.url))
   return c.html(<LoginPage hasPasskey={passkeys.some((passkey) => passkey.usableHere)} />)
 })
+
+app.get('/admin', pageAuthMiddleware, (c) => c.html(<HomePage />))
 
 export default {
   fetch: app.fetch,

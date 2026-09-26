@@ -257,9 +257,20 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     border-radius: var(--radius-card);
   }
   .lip-name {
+    min-width: 0;
     font-weight: 500;
     font-size: 15px;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* 名稱太長時截斷名稱，標籤保持完整 */
+  .lip-name .n {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+  }
+  .lip-name .t {
     overflow: hidden;
     text-overflow: ellipsis;
   }
@@ -418,7 +429,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     border-radius: 999px;
     border: 1px solid currentColor;
     margin-inline-start: 8px;
-    vertical-align: 2px;
+    flex: none;
   }
   /* 卡片互相重疊，淡化只能用不透明的混色；opacity 會讓後面的卡透出來 */
   .card.state-paused {
@@ -1455,11 +1466,6 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     .home-main .lip-name {
       display: contents;
     }
-    .lip-name .n {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
     .lip-name .sub span {
       font-size: 13px;
       color: rgb(255 255 255 / 0.78);
@@ -2392,7 +2398,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     return `
       <div class="${cls}" style="--tone: ${tone(s.category)}" data-id="${s.id}">
         <button class="lip" type="button" aria-expanded="${open}">
-          <span class="lip-name"><span class="n">${esc(s.name)}${tags.map((t) => `<span class="tag">${t}</span>`).join('')}</span><span class="sub"><span>${esc(s.category || '未分類')}</span><span>${esc(s.payment || '')}</span></span></span>
+          <span class="lip-name"><span class="n"><span class="t">${esc(s.name)}</span>${tags.map((t) => `<span class="tag">${t}</span>`).join('')}</span><span class="sub"><span>${esc(s.category || '未分類')}</span><span>${esc(s.payment || '')}</span></span></span>
           <span class="lip-meta"><span class="amt">${s.currency} ${money(s.currency, s.price)}<small>${periodText(s)}</small></span><span class="when">${when}</span></span>
         </button>
         <div class="detail"><div class="detail-inner"><div class="detail-body">
